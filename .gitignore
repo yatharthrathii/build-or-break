@@ -1,0 +1,43 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!build-logic/
+build-logic/**/build/
+
+# Android Studio and IntelliJ
+.idea/
+*.iml
+.cxx/
+captures/
+local.properties
+
+# techspec.md section 12: no secrets in the repository.
+# local.properties holds the signing config and the RevenueCat key. CI reads
+# them from repository secrets instead.
+keystore.properties
+*.jks
+*.keystore
+
+# Build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and reports
+*.log
+**/build/reports/
+
+# Roborazzi screenshot diffs. The recorded goldens are committed, the failure
+# output is not.
+**/build/outputs/roborazzi/
+*_compare.png
+*_actual.png
