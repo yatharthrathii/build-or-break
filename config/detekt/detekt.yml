@@ -1,0 +1,89 @@
+# Build or Break - Detekt configuration
+#
+# buildUponDefaultConfig is true, so this file only records where we differ from
+# the defaults and why. rules.md section 4 makes every finding a build failure.
+
+build:
+  maxIssues: 0
+
+complexity:
+  LongMethod:
+    threshold: 40
+  LongParameterList:
+    # The timeline resolver legitimately takes several inputs. Composables take
+    # more. Both are readable because the parameters are named.
+    functionThreshold: 8
+    constructorThreshold: 10
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    ignoreAnnotatedFunctions: ['Composable']
+  LargeClass:
+    # rules.md section 4: if a file passes 300 lines, it is probably doing two
+    # things.
+    threshold: 300
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+  SwallowedException:
+    # rules.md section 4 forbids this outright.
+    active: true
+  ThrowingExceptionsWithoutMessageOrCause:
+    active: true
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
+
+style:
+  MaxLineLength:
+    maxLineLength: 120
+    excludeCommentStatements: false
+  MagicNumber:
+    ignoreNumbers: ['-1', '0', '1', '2']
+    ignoreAnnotated: ['Composable', 'Preview']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  ReturnCount:
+    max: 4
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview']
+  ForbiddenComment:
+    active: true
+    # A TODO with no owner and no date becomes permanent. Reference a milestone
+    # from implementationPlan.md instead.
+    comments:
+      - reason: 'Reference a milestone, for example: TODO(M4): wire the fallback tier'
+        value: 'TODO:'
+      - reason: 'Fix it or file it'
+        value: 'FIXME:'
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - reason: 'rules.md section 4: inject TimeProvider, never read the clock directly'
+        value: 'java.time.Instant.now'
+      - reason: 'rules.md section 4: inject TimeProvider, never read the clock directly'
+        value: 'java.time.LocalDate.now'
+      - reason: 'rules.md section 4: inject TimeProvider, never read the clock directly'
+        value: 'java.time.LocalDateTime.now'
+      - reason: 'rules.md section 4: inject TimeProvider, never read the clock directly'
+        value: 'java.time.LocalTime.now'
+      - reason: 'rules.md section 4: inject TimeProvider, never read the clock directly'
+        value: 'java.lang.System.currentTimeMillis'
+      - reason: 'Use the injected AppDispatchers'
+        value: 'kotlinx.coroutines.GlobalScope'
+      - reason: 'Use a proper logger, not stdout'
+        value: 'kotlin.io.println'
+
+potential-bugs:
+  UnsafeCallOnNullableType:
+    # rules.md section 4: no !!
+    active: true
+  CastToNullableType:
+    active: true
