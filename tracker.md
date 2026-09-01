@@ -7,10 +7,15 @@ of a milestone. If this file is stale, nothing else in the repo can be trusted.
 **Last updated:** 2026-09-01
 **Current milestone:** M1 - Foundation (M0 still open, do it in parallel)
 
-**Blocking next action:** the Gradle wrapper is missing. Open the project in
-Android Studio and let it generate the wrapper, or run
-`gradle wrapper --gradle-version 8.14.3` once, then `./gradlew build`. Nothing
-in M1 is confirmed until that build is green.
+**Repository:** github.com/yatharthrathii/build-or-break
+
+**Blocking next action:** the Gradle wrapper is missing, so `gradlew` does not
+exist and **CI will fail on every push until it is committed**. Open the project
+in Android Studio and let it generate the wrapper, or run
+`gradle wrapper --gradle-version 8.14.3` once. Then `./gradlew build` locally,
+fix whatever versions do not resolve, and commit `gradlew`, `gradlew.bat` and
+`gradle/wrapper/gradle-wrapper.jar`. Nothing in M1 is confirmed until that build
+is green.
 
 ---
 
@@ -48,9 +53,9 @@ in M1 is confirmed until that build is green.
 - [ ] 15 tester names written down (need 12 to follow through)
 - [ ] At least 3 testers on Xiaomi, Realme, Oppo or Vivo confirmed
 - [x] Local git repository initialised, personal identity set locally only
-- [ ] GitHub repository created at github.com/yatharthrathii
-- [ ] Personal push credentials sorted (see the trap in `rules.md` section 10)
-- [ ] Remote added and `main` pushed
+- [x] GitHub repository created: github.com/yatharthrathii/build-or-break
+- [x] Personal push credentials sorted
+- [x] Remote added and `main` pushed, 9 commits, 63 files, no secrets
 - [ ] Package name reserved: `com.buildorbreak.app`
 - [ ] `Build or Break` checked for availability on Play
 
