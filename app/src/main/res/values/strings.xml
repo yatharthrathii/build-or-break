@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    rules.md section 9: every user visible string lives here from the first
+    commit. No hardcoded strings in composables, ever, so that adding Hindi and
+    a Hinglish variant in V1.5 is a translation job and not a refactor.
+
+    rules.md section 2 governs the wording: short, second person, present tense,
+    no em dash, no en dash, no exclamation marks, no filler adjectives.
+-->
+<resources>
+    <string name="app_name">Build or Break</string>
+
+    <!-- Temporary. Removed in M5 when the Today screen lands. -->
+    <string name="placeholder_foundation">M1 foundation. Timeline engine lands in M2.</string>
+</resources>
