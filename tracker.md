@@ -47,7 +47,10 @@ in M1 is confirmed until that build is green.
 - [ ] Closed testing requirement confirmed for this account
 - [ ] 15 tester names written down (need 12 to follow through)
 - [ ] At least 3 testers on Xiaomi, Realme, Oppo or Vivo confirmed
-- [ ] GitHub repository created, public
+- [x] Local git repository initialised, personal identity set locally only
+- [ ] GitHub repository created at github.com/yatharthrathii
+- [ ] Personal push credentials sorted (see the trap in `rules.md` section 10)
+- [ ] Remote added and `main` pushed
 - [ ] Package name reserved: `com.buildorbreak.app`
 - [ ] `Build or Break` checked for availability on Play
 

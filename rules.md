@@ -295,8 +295,9 @@ almost certainly has the company GitHub account cached, so the first push can
 still land under the wrong account. Check Credential Manager, or use a personal
 access token or SSH key scoped to the personal account, before pushing.
 
-**Status:** waiting on the owner. Nothing git related has been run in this
-project.
+**Status:** done. The repository is initialised and `user.name` and `user.email`
+are set locally to the owner's personal identity. The global config was not
+touched. Nothing has been pushed and no remote has been added.
 
 ### Attribution
 
@@ -304,7 +305,12 @@ Whether to record AI assistance in commit trailers is the repository owner's
 call, not a default. Ask once, record the answer here, and then apply it
 consistently. Do not silently add or silently omit a co author trailer.
 
-**Decision:** _pending. The owner will decide before the first commit._
+**Decision:** no co author trailer. Commits carry the owner's name and email
+only. This follows from the standing requirement that nothing about this project
+reads as machine written, and the owner is the author of record.
+
+If that call is ever reversed, reverse it going forward rather than rewriting
+history.
 
 ### Branches
 
