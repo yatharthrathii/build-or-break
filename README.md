@@ -116,4 +116,8 @@ The thinking lives in the repository rather than in my head.
 
 ## Licence
 
-Not decided yet.
+MIT. See [`LICENSE`](LICENSE).
+
+Take the scheduling engine, take the tiered alarm approach, take whatever is
+useful. If you are fighting the same battle with Doze and OEM battery managers,
+`scheduler/` is the part worth reading.
