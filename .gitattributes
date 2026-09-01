@@ -1,0 +1,13 @@
+* text=auto eol=lf
+
+*.bat      text eol=crlf
+gradlew    text eol=lf
+gradlew.bat text eol=crlf
+
+*.jar   binary
+*.png   binary
+*.webp  binary
+*.ttf   binary
+*.otf   binary
+*.keystore binary
+*.jks   binary
