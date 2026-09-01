@@ -305,12 +305,12 @@ Whether to record AI assistance in commit trailers is the repository owner's
 call, not a default. Ask once, record the answer here, and then apply it
 consistently. Do not silently add or silently omit a co author trailer.
 
-**Decision:** no co author trailer. Commits carry the owner's name and email
-only. This follows from the standing requirement that nothing about this project
-reads as machine written, and the owner is the author of record.
+**Decision: settled. No co author trailer.** Commits carry the owner's name and
+email only. The owner is the author of record, and this follows from the
+standing requirement that nothing about this project reads as machine written.
 
-If that call is ever reversed, reverse it going forward rather than rewriting
-history.
+Do not raise this again. If it is ever reversed, reverse it going forward rather
+than rewriting history.
 
 ### Branches
 
@@ -366,7 +366,22 @@ another developer sitting next to you.
 
 ---
 
-## 12. Definition of done
+## 12. Licence
+
+**MIT, from the first public commit.** The `LICENSE` file at the repository root
+is the authority.
+
+- Update the copyright year only when the year actually changes. A range that
+  spans years nobody worked in is noise
+- Every third party dependency must be MIT, Apache 2.0, or BSD compatible.
+  Check before adding one. A GPL dependency in an Android app shipped to Play is
+  a problem that surfaces late and costs a rewrite
+- The About screen lists open source licences. Generate that list from the
+  dependency graph, never maintain it by hand
+
+---
+
+## 13. Definition of done
 
 A task is done when all of the following are true:
 
