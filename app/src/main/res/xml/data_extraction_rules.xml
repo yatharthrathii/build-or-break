@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12 and above. Same reasoning as backup_rules.xml.
+
+    Device transfer keeps the user's plan and history, because losing a routine
+    when you change phones is the worst possible first impression. The secure
+    prefs and the entitlement cache are excluded from both paths.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="buildorbreak_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="entitlement_cache.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="buildorbreak_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="entitlement_cache.xml" />
+    </device-transfer>
+</data-extraction-rules>

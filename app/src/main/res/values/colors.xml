@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Only the handful of colours the Android platform needs before Compose takes
+    over: the launcher icon and the splash window. The real palette lives in
+    :core:designsystem as Compose tokens, specified in design.md section 2.
+
+    Do not add app colours here. If a colour is needed in Compose, it belongs in
+    the design system.
+-->
+<resources>
+    <color name="paper_surface">#F7F4EF</color>
+    <color name="rust_primary">#A8452B</color>
+</resources>

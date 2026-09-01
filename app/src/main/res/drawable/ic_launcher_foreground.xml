@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The rail motif from design.md section 5.4: a vertical stroke with one filled
+    notch and a single leader line.
+
+    No checkmark, no calendar, no clock face, no letter. It reads at 48dp and it
+    looks like nothing else in this category, which is the entire point.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- The rail -->
+    <path
+        android:fillColor="#A8452B"
+        android:fillAlpha="0.35"
+        android:pathData="M41,26 H47 V54 H41 Z" />
+    <path
+        android:fillColor="#A8452B"
+        android:pathData="M41,54 H47 V84 H41 Z" />
+
+    <!-- The now marker: a printed notch, deliberately hard cornered -->
+    <path
+        android:fillColor="#A8452B"
+        android:pathData="M35,49 H53 V61 H35 Z" />
+
+    <!-- The leader line running out to an item -->
+    <path
+        android:fillColor="#A8452B"
+        android:pathData="M53,53 H76 V57 H53 Z" />
+</vector>

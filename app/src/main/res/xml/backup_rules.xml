@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    techspec.md section 12: the AI API key and the entitlement cache are never
+    backed up. A key restored onto a device the user no longer controls is a
+    credential leak, and a restored entitlement cache is a way to hand out Pro
+    for free.
+
+    Applies to Android 11 and below.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="buildorbreak_secure_prefs.xml" />
+    <exclude domain="sharedpref" path="entitlement_cache.xml" />
+</full-backup-content>
