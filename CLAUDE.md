@@ -38,8 +38,13 @@ M1 foundation is scaffolded but **the build has not been verified**. The Gradle
 wrapper is missing and no Gradle CLI is installed on this machine. Nothing in M1
 counts as done until `./gradlew build` is green. See the top of `tracker.md`.
 
-M0 is still open and should run in parallel, because the 12 tester, 14 day
-closed testing clock is the longest lead time item in the project.
+**Phasing:** Phase 1 is build habits only and ships to the developer's own phone
+first, not to Play. Break mode is Phase 2. Play Store work is deferred to stage
+1c, after Phase 1 is feature complete. Nothing costs money before then.
+
+**No machine learning anywhere.** Every adaptive behaviour is a median, an
+average, a group by or a division, running in `:core:domain` with no network.
+See `techspec.md` section 5b before reaching for an API.
 
 ## Project layout
 

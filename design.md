@@ -218,6 +218,37 @@ ripple expands once from the rail notch. It fires once in the lifetime of the
 install, flagged by `first_completion_seen`. That restraint is what makes it
 land.
 
+### Milestones
+
+Nine moments, listed in `appflow.md` section 8.3. Each fires once in the lifetime
+of the install. The design job here is **restraint**, because praise that arrives
+often stops being praise.
+
+- A milestone is a **card that slides up from the bottom of Today**, not a modal,
+  not a full screen takeover, not a dialog that must be dismissed
+- It uses `primaryContainer` as its ground, which is the only time that token
+  appears at card size anywhere in the app. That is what makes it register
+- **No confetti. No badge. No trophy. No emoji. No sound.** One haptic
+  `LONG_PRESS`, and the rail draws its filled section one step further
+- It carries a number, then at most six words. `Halfway. +1.0 of +2.0.
+  16 days left.`
+- It auto dismisses after eight seconds, or on any tap or scroll. It never
+  requires acknowledgement
+- **Goal reached** is the one exception and gets a full screen: the whole run
+  drawn as one continuous rail, the start and end numbers, and one question about
+  what comes next
+
+### The countdown
+
+- Lives in the daily close card only. It is never in the top bar, never a
+  persistent widget element, never in a notification
+- The progress bar is the rail vocabulary, not a Material `LinearProgressIndicator`:
+  a `2.dp` horizontal line, filled portion in `primary`, remainder in `outline`
+- The projected value is set in `bodyMedium`, never emphasised, never coloured
+  red or amber. It is a fact, not a warning
+- **On a `POOR` day the countdown and the bar are not rendered at all.** Not
+  greyed, not collapsed. Absent. See `rules.md` section 2 rule 8
+
 ### Reduced motion
 
 If `Settings.Global.ANIMATOR_DURATION_SCALE` is 0, every spring becomes an

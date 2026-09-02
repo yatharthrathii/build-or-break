@@ -56,20 +56,41 @@ Six things. Everything else is table stakes.
 
 **Goals**
 - The developer uses it daily for a real weight gain routine and it holds up
+- It works just as well for any other build habit: gym, study, sleep, medicine
 - Alarm delivery is measurably reliable on Indian mid range Android hardware
-- Ships to Play Store production as a portfolio grade, open source Android app
-- Monetization is wired in from the first commit, so nothing needs rewriting
+- Ships to Play Store eventually as a portfolio grade, open source Android app
+- Monetization is architected from the first commit, so nothing needs rewriting
 
-**Non goals for V1**
+**Non goals for Phase 1**
 - iOS. The platform has no exact alarm API. The core promise cannot be kept
 - Cloud sync, accounts, social features, leaderboards
 - Generating plans, diet advice, or exercise content
-- Bad habit breaking (designed for, but not shipped)
+- **Breaking bad habits.** Designed for in the data model, built in Phase 2
 - Project or task management
+- **Progress photos.** Rejected deliberately, see section 6
+
+### Release phasing
+
+Phase 1 ships to the developer's own phone first, not to Play. That is a
+deliberate sequencing decision and it removes the entire Play surface from the
+critical path: no twelve tester wait, no console fee, no restricted permission
+declaration, no data safety form, no store listing.
+
+| Stage | What | When |
+|---|---|---|
+| **1a. Personal build** | Signed APK, sideloaded, developer uses it daily | About week 10 |
+| **1b. Feature complete** | Everything in Phase 1, hardened by six weeks of real use | About week 17 |
+| **1c. Play release** | Console, testers, declarations, listing, monetization | After 1b |
+| **Phase 2** | Break mode and everything in the V2 list | After 1c |
+
+Tiered alarm delivery and permission fallbacks are still built in stage 1a. Not
+because Play requires them, but because Android denies exact alarms by default
+and OEM battery managers kill background work regardless of how the app is
+installed.
 
 ## 6. Feature scope
 
-### V1: ships to production
+### Phase 1: everything below ships before Play
 
 **Plan structure**
 - One active plan (free tier limit)
@@ -96,6 +117,9 @@ Six things. Everything else is table stakes.
 - Whole day shift
 - Day template switching
 - Backfill within twenty four hours
+- Median based time shift suggestions after ten observations
+- Never miss twice intervention
+- Skip reason pattern detection, surfaced in the weekly review only
 
 **Reflection**
 - Optional skip reason: chips plus free text, never mandatory
@@ -110,23 +134,52 @@ Six things. Everything else is table stakes.
 - Android 16 Live Updates: the day as a live status bar chip
 - Full TalkBack support and large font support
 
-### V1.5: after closed testing feedback
+**Goals and motivation (Phase 1)**
 
-- Learning tracks: `Track`, `TrackUnit`, `TrackSession`, "where you stopped"
-  note, completion ETA projection
-- Median based auto time shift suggestions
-- Never miss twice intervention
-- Skip reason pattern detection, local, no AI
-- Hindi and Hinglish locales
-- Paywall live, subscriptions and lifetime purchase enabled
+Every plan can carry one goal. Four goal types cover every build habit:
 
-### V2: after traction
+| Type | Target is | Example |
+|---|---|---|
+| `NUMBER` | A measured value reaching a target | plus 2 kg, minus 5 kg |
+| `COUNT` | Doing something N times in a period | 12 gym sessions this month |
+| `DURATION` | Accumulating N hours | 40 hours of backend study |
+| `CONSISTENCY` | Holding an adherence percentage | medicine on 95% of days |
+
+Built on top of them:
+
+- Daily close with a goal countdown, **suppressed entirely on a bad day**
+- Nine one time milestones (first completion, first full day, 25, 50 and 75
+  percent, goal reached, best week, thirty day item run, first week)
+- Weekly review that adjusts **the schedule**, never the plan
+- Honest projection: "at this rate, plus 1.1 kg" rather than "you are failing"
+- Seven day moving average on all measured values
+- A "do not count this week" control for illness and travel
+- Realistic target check at goal creation, using the previous period's adherence
+
+**Learning tracks (Phase 1)**
+
+- `Track`, `TrackUnit`, `TrackSession`
+- Paste a syllabus, the evening slot advances through it
+- "Where you stopped" note carried into the next session
+- Completion ETA projection
+
+### Phase 2
 
 - Break mode: risk windows, urge surfing timer, urge log, saved counter
 - Temptation bundling via per item deep links
-- AI weekly narrative using the user's own API key
+- Optional AI weekly narrative, opt in, user's own API key
+- Optional plan import fallback via a model when the parser cannot read the text
 - Optional geofence nudges
 - Wear OS complication
+- Hindi and Hinglish locales
+
+### Explicitly rejected
+
+**Progress photos.** Considered and dropped. A photo cannot produce a weight
+number, so the number still has to be typed, which means the photo adds storage,
+backup, export and privacy work for no measurable signal. A seven day moving
+average on the number the user already enters does the motivational job better
+and costs nothing. Do not reintroduce this.
 
 ### Never
 

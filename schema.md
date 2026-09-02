@@ -60,6 +60,31 @@ enum class SkipChip {
 }
 
 enum class TrackUnitState { PENDING, IN_PROGRESS, DONE, SKIPPED }
+
+enum class GoalKind {
+    NUMBER,       // a measured value reaching a target: plus 2 kg, minus 5 kg
+    COUNT,        // do something N times: 12 gym sessions
+    DURATION,     // accumulate N minutes: 40 hours of study
+    CONSISTENCY,  // hold an adherence percentage: medicine on 95% of days
+}
+
+enum class DayQuality {
+    GOOD,   // 80 percent or more of the day completed
+    OK,     // 50 to 80 percent
+    POOR,   // under 50 percent. No countdown is shown, see rules.md section 2
+}
+
+enum class Milestone {
+    FIRST_COMPLETION,      // the very first item ever completed
+    FIRST_FULL_DAY,        // every item on a day done
+    FIRST_WEEK,            // seven days of use
+    GOAL_QUARTER,
+    GOAL_HALF,
+    GOAL_THREE_QUARTERS,
+    GOAL_REACHED,
+    BEST_WEEK,             // best adherence so far, only after four weeks exist
+    ITEM_THIRTY_DAY_RUN,   // one item done thirty days running
+}
 ```
 
 ---
@@ -180,7 +205,55 @@ data class DeliveryAudit(
     val latencySeconds: Long?,   // computed, denormalised for fast reporting
 )
 
-// V1.5, tables created in V1 so no migration is needed later
+data class Goal(
+    val id: Long,
+    val planId: Long,
+    val kind: GoalKind,
+    val title: String,           // "Gain 2 kg"
+    val itemId: Long?,           // COUNT and DURATION goals track one item
+    val valueKind: ValueKind,    // NUMBER goals track one measurement series
+    val startValue: Double,      // 59.4 kg, or 0 for count and duration
+    val targetValue: Double,     // 61.4 kg, or 12 sessions, or 2400 minutes
+    val startDate: LocalDate,
+    val targetDate: LocalDate,
+    val isActive: Boolean,
+)
+
+/**
+ * One row per day per goal. Written by the daily close job so the weekly and
+ * monthly views never have to recompute a month of history.
+ */
+data class GoalProgress(
+    val goalId: Long,
+    val date: LocalDate,
+    val rawValue: Double?,       // today's reading, null when nothing was logged
+    val smoothedValue: Double?,  // seven day moving average, the honest number
+    val cumulative: Double,      // count and duration goals accumulate here
+    val paceTarget: Double,      // where a straight line to the target sits today
+    val projectedFinal: Double,  // at this rate, what the end value will be
+    val counted: Boolean,        // false when the user marked the week as skipped
+)
+
+data class DayClose(
+    val date: LocalDate,
+    val planId: Long,
+    val itemsDone: Int,
+    val itemsMinimum: Int,
+    val itemsMissed: Int,
+    val itemsTotal: Int,
+    val quality: DayQuality,
+    val closedAt: Instant,
+)
+
+/** One row per milestone, ever. The presence of a row is what stops a repeat. */
+data class MilestoneAward(
+    val milestone: Milestone,
+    val goalId: Long?,
+    val itemId: Long?,
+    val awardedOn: LocalDate,
+    val seenAt: Instant?,
+)
+
 data class Track(
     val id: Long,
     val planId: Long,
@@ -349,6 +422,50 @@ delivery_audit
   was_device_idle   INTEGER  not null
   latency_seconds   INTEGER  nullable
   INDEX(scheduled_for)
+
+goal
+  id                INTEGER  PK
+  plan_id           INTEGER  FK -> plan.id  CASCADE  [index]
+  kind              TEXT     not null
+  title             TEXT     not null
+  item_id           INTEGER  FK -> item.id  SET NULL  nullable
+  value_kind        TEXT     not null
+  start_value       REAL     not null
+  target_value      REAL     not null
+  start_date        INTEGER  not null
+  target_date       INTEGER  not null
+  is_active         INTEGER  not null
+
+goal_progress
+  goal_id           INTEGER  FK -> goal.id  CASCADE
+  date              INTEGER  not null
+  raw_value         REAL     nullable
+  smoothed_value    REAL     nullable
+  cumulative        REAL     not null
+  pace_target       REAL     not null
+  projected_final   REAL     not null
+  counted           INTEGER  not null default 1
+  PRIMARY KEY(goal_id, date)
+
+day_close
+  date              INTEGER  PK
+  plan_id           INTEGER  FK -> plan.id  CASCADE
+  items_done        INTEGER  not null
+  items_minimum     INTEGER  not null
+  items_missed      INTEGER  not null
+  items_total       INTEGER  not null
+  quality           TEXT     not null
+  closed_at         INTEGER  not null
+
+milestone_award
+  milestone         TEXT     not null
+  goal_id           INTEGER  FK -> goal.id  CASCADE  nullable
+  item_id           INTEGER  FK -> item.id  CASCADE  nullable
+  awarded_on        INTEGER  not null
+  seen_at           INTEGER  nullable
+  PRIMARY KEY(milestone, goal_id, item_id)
+  -- The primary key is the whole anti repeat mechanism. A milestone that has a
+  -- row has already fired and can never fire again.
 
 track
   id                INTEGER  PK
