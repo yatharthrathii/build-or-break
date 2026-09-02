@@ -3,29 +3,26 @@
 Living document. Update it at the end of every working session, not at the end
 of a milestone. If this file is stale, nothing else in the repo can be trusted.
 
-**Status:** M1 scaffolded, not yet verified by a build
+**Status:** M1 scaffolded, build not yet verified
 **Last updated:** 2026-09-01
-**Current milestone:** M1 - Foundation (M0 still open, do it in parallel)
-
 **Repository:** github.com/yatharthrathii/build-or-break
+**Target:** working APK on own phone by about week 10, Phase 1 complete by
+about week 17, Play Store after that
 
 **Blocking next action:** the Gradle wrapper is missing, so `gradlew` does not
-exist and **CI will fail on every push until it is committed**. Open the project
-in Android Studio and let it generate the wrapper, or run
-`gradle wrapper --gradle-version 8.14.3` once. Then `./gradlew build` locally,
-fix whatever versions do not resolve, and commit `gradlew`, `gradlew.bat` and
-`gradle/wrapper/gradle-wrapper.jar`. Nothing in M1 is confirmed until that build
-is green.
+exist and CI fails on every push. Open the project in Android Studio and let it
+generate the wrapper, or run `gradle wrapper --gradle-version 8.14.3`. Then
+`./gradlew build`, fix whatever does not resolve, and commit `gradlew`,
+`gradlew.bat` and `gradle/wrapper/gradle-wrapper.jar`.
 
 ---
 
 ## How to use this file
 
 - Tick a box only when it is actually done, not when it is mostly done
-- Add a dated line to the session log at the end of every session
-- Move anything that is blocked into the Blocked table with a reason
-- Anything learned the hard way goes into Decisions and Learnings, so it is not
-  re learned in three weeks
+- Add a dated line to the session log every session
+- Anything blocked goes in the Blocked table with a reason
+- Anything learned the hard way goes in Decisions and Learnings
 
 ---
 
@@ -33,72 +30,70 @@ is green.
 
 | Milestone | Scope | Estimate | Status |
 |---|---|---|---|
-| M0 | Set the clock running | 2 days | Not started |
 | M1 | Foundation | 1 week | Scaffolded, build not verified |
-| M2 | Timeline engine | 2 weeks | Not started |
+| M2 | Timeline and goal engine | 3 weeks | Not started |
 | M3 | Persistence | 1 week | Not started |
-| M4 | Scheduler | 3 weeks | Not started |
-| M5 | The app | 2 weeks | Not started |
-| M6 | Closed testing | 2 weeks (overlaps) | Not started |
-| M7 | Insights, widget, polish | 2 weeks | Not started |
-| M8 | Monetization | 1 week | Not started |
-| M9 | Production | 1 week | Not started |
+| M4 | Scheduler | 3 to 4 weeks | Not started |
+| M5 | App, core screens | 3 weeks | Not started |
+| **M5b** | **Signed APK on own phone** | 2 days | **The point of stage 1a** |
+| M6 | Goals, motivation, weekly review | 2 weeks | Not started |
+| M7 | Learning tracks | 1.5 weeks | Not started |
+| M8 | Insights, widget, polish | 2 weeks | Not started |
+| M9 | Play preparation | 1 week plus 14 day wait | Deferred |
+| M10 | Monetization | 1 week | Deferred |
+| M11 | Production | 1 week | Deferred |
 
----
-
-## M0 - Set the clock running
-
-- [ ] Play Console account created, USD 25 paid
-- [ ] Closed testing requirement confirmed for this account
-- [ ] 15 tester names written down (need 12 to follow through)
-- [ ] At least 3 testers on Xiaomi, Realme, Oppo or Vivo confirmed
-- [x] Local git repository initialised, personal identity set locally only
-- [x] GitHub repository created: github.com/yatharthrathii/build-or-break
-- [x] Personal push credentials sorted
-- [x] Remote added and `main` pushed, 9 commits, 63 files, no secrets
-- [ ] Package name reserved: `com.buildorbreak.app`
-- [ ] `Build or Break` checked for availability on Play
+Nothing costs money before M9.
 
 ---
 
 ## M1 - Foundation
 
 - [x] `libs.versions.toml` with every version pinned
-- [x] Convention plugins in `build-logic` (application, library, compose, hilt, room, jvm)
+- [x] Convention plugins in `build-logic`
 - [x] All 11 modules created and wired
-- [x] SDK levels set: compile 36, target 36, min 26, JDK 17
-- [x] Hilt, Room + KSP, DataStore, Navigation 3, kotlinx.serialization declared
-- [x] Spotless + ktlint, Detekt configured to fail the build
-- [x] Detekt `ForbiddenMethodCall` rules banning direct clock access and GlobalScope
+- [x] SDK levels: compile 36, target 36, min 26, JDK 17
+- [x] Spotless, ktlint and Detekt configured to fail the build
+- [x] Detekt `ForbiddenMethodCall` bans direct clock access and `GlobalScope`
 - [x] GitHub Actions workflow written
 - [x] `:core:common` with `TimeProvider`, `AppDispatchers`, `Outcome`
-- [x] `:core:testing` with `FakeTimeProvider`, `TestAppDispatchers`, and its own tests
-- [x] App shell: Application, MainActivity, `CoreModule`, launcher icon, backup rules
-- [x] R8 release config, proguard rules, backup exclusions for secrets
+- [x] `:core:testing` with `FakeTimeProvider` and its own tests
+- [x] App shell, `CoreModule`, launcher icon, backup rules, R8 config
 - [x] `:benchmark` with baseline profile generator and startup benchmark
-- [ ] **Gradle wrapper generated** (blocking, see top of file)
+- [x] Repository created, personal identity set locally, first push done
+- [ ] **Gradle wrapper generated and committed** (blocking)
 - [ ] `./gradlew build` green locally
-- [ ] CI green on first push
-- [ ] Verify `:core:domain` cannot import `android.util.Log`
-- [ ] Version numbers in `libs.versions.toml` confirmed against what actually resolves
+- [ ] Version numbers confirmed against what actually resolves
+- [ ] CI green
+- [ ] `:core:domain` verified unable to import `android.util.Log`
 - [ ] ADR 001 written
-- [ ] **Exit:** build green, CI green, `:core:domain` cannot import Android
 
 ---
 
-## M2 - Timeline engine
+## M2 - Timeline and goal engine
 
-**Implementation**
+**Timeline**
 - [ ] `:core:model` complete
 - [ ] `Anchor` sealed interface, all four types
-- [ ] `TimelineResolver`, all nine resolution steps
+- [ ] `TimelineResolver`, all nine steps
 - [ ] Cycle detection
 - [ ] `INTERVAL` expansion
 - [ ] `WINDOW` nag ladder
 - [ ] Day shift with pinned handling
 - [ ] Salience budget
 - [ ] Cascade diff
-- [ ] Weekly statistics
+
+**Goals**
+- [ ] Four goal kinds
+- [ ] Seven day moving average
+- [ ] Pace target and projection
+- [ ] `DayQuality` at eighty and fifty percent
+- [ ] Milestone evaluation, four suppression rules
+- [ ] Weekly review, both outcome branches
+- [ ] Catch up with the twenty percent cap
+- [ ] Median time shift detection
+- [ ] Skip reason grouping
+- [ ] Best and worst weekday
 - [ ] Export generator
 
 **Tests (these are the exit criteria)**
@@ -106,166 +101,155 @@ is green.
 - [ ] Three deep `RELATIVE` chain
 - [ ] `RELATIVE` cycle detected and broken
 - [ ] Skipped parent resolves child from planned time
-- [ ] Day shift respects pinned
-- [ ] Day shift past midnight clamps
+- [ ] Day shift respects pinned, clamps past midnight
 - [ ] Weekday mask filters correctly
 - [ ] `INTERVAL` shorter than window fires once
-- [ ] DST spring forward
-- [ ] DST fall back
+- [ ] DST spring forward and fall back
 - [ ] Timezone change keeps wall clock time
-- [ ] Budget flags 4 alarms
+- [ ] Budget flags four alarms
 - [ ] Cascade diff names only moved items
-- [ ] Coverage 90% or higher
-- [ ] Suite runs in under 1 second
+- [ ] Moving average smooths a 1 kg daily swing
+- [ ] Projection correct for all four goal kinds
+- [ ] A `POOR` day yields no countdown and no milestone
+- [ ] A milestone with an award row never fires again
+- [ ] No two milestones on consecutive days
+- [ ] Catch up never exceeds twenty percent of a week
+- [ ] Coverage 90 percent or higher
+- [ ] Suite under 1 second
 
 ---
 
 ## M3 - Persistence
 
-- [ ] All Room entities, version 1, including Track tables
+- [ ] All tables from `schema.md`, version 1
+- [ ] goal, goal_progress, day_close, milestone_award included
+- [ ] Track tables included, active in Phase 1
 - [ ] `exportSchema = true`, schema JSON committed
 - [ ] DAOs including the single Today query
-- [ ] Entity to domain mappers
-- [ ] Repository implementations
-- [ ] DataStore preferences
-- [ ] `EncryptedSharedPreferences` set up
+- [ ] Mappers, repository implementations
+- [ ] DataStore, `EncryptedSharedPreferences`
 - [ ] Migration test harness
-- [ ] Debug seed: the real 22 item weight gain routine
-- [ ] **Exit:** seeded day loads in one query and resolves correctly
+- [ ] Debug seed: real 22 item routine plus a plus 2 kg goal
 
 ---
 
 ## M4 - Scheduler (the hard one)
 
-**Implementation**
 - [ ] `DeliveryTier` runtime detection
-- [ ] `AlarmScheduler` interface and implementation
-- [ ] `setAlarmClock` for ALARM tier
-- [ ] `setExactAndAllowWhileIdle` for other tiers
+- [ ] `setAlarmClock` and `setExactAndAllowWhileIdle`
 - [ ] Rolling reschedule window
-- [ ] Notification channels per tier
-- [ ] Actions handled in a receiver, no activity launch
+- [ ] Channels per tier
+- [ ] Actions in a receiver, no activity launch
 - [ ] Snooze consequence preview
 - [ ] `RemoteInput` measurement entry
-- [ ] Full screen wake alarm with 60 s volume ramp
-- [ ] Foreground service for active blocks
-- [ ] Receivers: boot, locked boot, package replaced, timezone, time, date
-- [ ] Daily maintenance job at 00:05
-- [ ] `DeliveryAudit` write and update
-- [ ] OEM detection and vendor deep links
-- [ ] Android 16 `ProgressStyle` Live Update
-- [ ] Permission flows with fallbacks
-- [ ] ADR 002 and ADR 005 written
+- [ ] Full screen wake alarm, 60 s ramp, dismiss chains to task one
+- [ ] Foreground service for blocks
+- [ ] All six receivers
+- [ ] Daily 00:05 job, writes `day_close` and `goal_progress`
+- [ ] `DeliveryAudit`
+- [ ] OEM detection and deep links
+- [ ] Android 16 Live Update
+- [ ] ADR 002 and ADR 005
 
-**Exit criteria, physical device only**
-- [ ] 20 consecutive overnight alarms within 60 s on a Xiaomi or Realme
+**Exit, physical device only**
+- [ ] 20 overnight alarms within 60 s on a Xiaomi or Realme
 - [ ] Survives reboot
 - [ ] Survives force stop plus app open
-- [ ] Every notification action works without opening the app
-- [ ] All permissions denied still leaves a usable app
-- [ ] Audit log produces a real on time percentage
+- [ ] Every action works without opening the app
+- [ ] All permissions denied still usable
+- [ ] Audit log gives a real percentage
 
 ---
 
-## M5 - The app
+## M5 - App, core screens
 
-- [ ] Design system: tokens, Fraunces, DM Sans, paper grain
-- [ ] Four custom state glyphs
-- [ ] The rail component
-- [ ] Today screen, all interactions
+- [ ] Design tokens, Fraunces, DM Sans, paper grain
+- [ ] Four state glyphs, the rail
+- [ ] Today screen
 - [ ] Block runner
-- [ ] Item editor, template editor
-- [ ] Plan import parser and preview
-- [ ] Skip reason sheet
-- [ ] Day shift sheet, template picker, backfill
-- [ ] Settings screens
-- [ ] Reliability screen and delivery log
+- [ ] Item and template editors, day templates
+- [ ] Plan import and preview
+- [ ] Skip reason, day shift, template picker, backfill
+- [ ] Goal setup with the honesty check
+- [ ] Daily close card, all three versions
+- [ ] Settings, Reliability, delivery log
 - [ ] Onboarding
-- [ ] Roborazzi screenshot tests, light and dark
-- [ ] **Exit:** real 22 item routine runs end to end for a full day
-- [ ] **Exit:** `design.md` section 14 checklist passes
+- [ ] Roborazzi tests
+- [ ] `design.md` section 14 checklist passes
 
 ---
 
-## M6 - Closed testing
+## M5b - Get it on the phone
 
-- [ ] Release signing config, keystore backed up
-- [ ] Verified R8 release build
-- [ ] Privacy policy hosted
-- [ ] Data Safety form: no data collected
-- [ ] `USE_EXACT_ALARM` declaration submitted
-- [ ] `USE_FULL_SCREEN_INTENT` declaration submitted
-- [ ] Store listing written
-- [ ] Icon, feature graphic, 6 screenshots, all self made
-- [ ] Closed testing track live
-- [ ] 12 testers opted in
-- [ ] Tester feedback channel created
-- [ ] **14 day clock started on:** _______________
+- [ ] Release keystore generated with `keytool`
+- [ ] **Keystore backed up in two places** (losing it is unrecoverable)
+- [ ] Signing config reading from `local.properties`
+- [ ] Signed release APK installed on the daily phone
+- [ ] Real routine and goal entered
+- [ ] **Daily use started on:** _______________
 
 ---
 
-## M7 - Insights, widget, polish
+## M6 - Goals, motivation, weekly review
 
-- [ ] Insights screen, consistency ring
-- [ ] Pattern surfacing
-- [ ] Measurement charts
-- [ ] Export CSV and Markdown
+- [ ] Milestone cards
+- [ ] Countdown, suppressed on poor days
+- [ ] Weekly review, both branches
+- [ ] Catch up suggestions
+- [ ] Median time shift surfaced
+- [ ] Never miss twice
+- [ ] Skip reason patterns
+- [ ] Do not count this week
+
+---
+
+## M7 - Learning tracks
+
+- [ ] Track, unit, session wired to the timeline
+- [ ] Syllabus paste and parse
+- [ ] Session screen with the "where you stopped" note
+- [ ] Completion ETA
+- [ ] Duration goals reading from sessions
+
+---
+
+## M8 - Insights, widget, polish
+
+- [ ] Insights, consistency ring, raw plus smoothed charts
+- [ ] Monthly review
+- [ ] Export and share
 - [ ] Glance widget
-- [ ] All empty and error states
-- [ ] Copy reviewed against `rules.md` section 2
-- [ ] TalkBack pass
-- [ ] 200% font scale pass
+- [ ] Empty and error states
+- [ ] Copy review against `rules.md` section 2
+- [ ] TalkBack and 200 percent font pass
 - [ ] Baseline profile committed
-- [ ] Macrobenchmark results recorded
-- [ ] Tester bugs fixed
-- [ ] **Exit:** all performance budgets met and measured
+- [ ] Macrobenchmark recorded
+- [ ] Everything six weeks of use turned up
 
 ---
 
-## M8 - Monetization
+## Deferred to stage 1c (M9 to M11)
 
-- [ ] `EntitlementRepository` and `Feature` enum
-- [ ] `:billing` module, RevenueCat isolated
-- [ ] Offline entitlement cache
-- [ ] All gates from `appflow.md` section 11
-- [ ] Paywall screen
-- [ ] Play products created with regional pricing
-- [ ] Restore purchase
-- [ ] Downgrade preserves everything
-- [ ] Real purchase tested end to end
-- [ ] ADR 007 written
-
----
-
-## M9 - Production
-
-- [ ] 14 days closed testing complete
-- [ ] Production access applied for
-- [ ] Production access granted
-- [ ] README with architecture diagram
-- [ ] All 8 ADRs written
-- [ ] CI and coverage badges
-- [ ] Commit history reviewed
-- [ ] Reliability figure published in README
-- [ ] **Live on Play Store**
+Play Console, twelve testers, permission declarations, data safety, store
+listing, RevenueCat, paywall, production release. Nothing here costs money or
+time until Phase 1 is feature complete.
 
 ---
 
 ## Measured numbers
 
-Fill these in as they become real. These are what go in the README and the CV.
+Fill in as they become real. These go in the README and the CV.
 
 | Metric | Target | Measured | Date |
 |---|---|---|---|
 | Cold start | under 500 ms | | |
 | Today screen rendered | under 700 ms | | |
 | Release APK size | under 12 MB | | |
-| Alarm on time within 60 s | 95% or better | | |
+| Alarm on time within 60 s | 95 percent or better | | |
 | Total alarms measured | | | |
 | Devices tested on | at least 4 | | |
-| `:core:domain` coverage | 90% or higher | | |
-| Domain test suite runtime | under 1 s | | |
-| Crash free sessions | 99.5% or better | | |
+| `:core:domain` coverage | 90 percent or higher | | |
+| Domain suite runtime | under 1 s | | |
 | Consecutive days of personal use | 30 or more | | |
 
 ---
@@ -274,29 +258,29 @@ Fill these in as they become real. These are what go in the README and the CV.
 
 | Item | Blocked by | Since | Next action |
 |---|---|---|---|
-| | | | |
+| M1 exit criteria | Gradle wrapper missing | 2026-09-01 | Generate in Android Studio |
 
 ---
 
 ## Decisions and learnings
 
-Anything found the hard way goes here, with a date. This is the file that stops
-the same mistake being made twice.
-
 | Date | Learning |
 |---|---|
-| 2026-09-01 | Play Console personal accounts created after 13 Nov 2023 need 12 testers opted in for 14 continuous days before production access, and since 2026 Google also checks that testers actually used the app. This is the longest lead time item in the project, so M0 comes before any code |
-| 2026-09-01 | `targetSdk 36` is mandatory for new submissions as of 31 Aug 2026. Any tutorial or Stack Overflow answer written for API 33 or 34 is unsafe for the alarm and foreground service code paths |
-| 2026-09-01 | `:core:testing` depends on `:core:common`, so `:core:common` can never have a test that uses the shared fixtures. That is a project dependency cycle and Gradle rejects it. `FakeTimeProvider` is therefore tested from inside `:core:testing`. Same rule applies to `:core:model` |
-| 2026-09-01 | Detekt `ForbiddenMethodCall` is the mechanism that actually enforces the injected clock rule. Writing the rule in a document is a suggestion, failing the build is a rule |
+| 2026-09-01 | Play Console personal accounts created after 13 Nov 2023 need 12 testers opted in for 14 continuous days before production, and since 2026 Google checks they actually used the app. Deferring Play to stage 1c takes this off the critical path entirely |
+| 2026-09-01 | `targetSdk 36` is mandatory for new submissions as of 31 Aug 2026. Any answer written for API 33 or 34 is unsafe for alarm and foreground service code |
+| 2026-09-01 | `:core:testing` depends on `:core:common`, so `:core:common` cannot have a test that uses the shared fixtures. That is a project dependency cycle. Same applies to `:core:model` |
+| 2026-09-01 | Detekt `ForbiddenMethodCall` is what actually enforces the injected clock. A rule in a document is a suggestion, a failing build is a rule |
+| 2026-09-01 | No machine learning anywhere in this product. Every adaptive behaviour is a median, an average, a group by or a division. See `techspec.md` section 5b. It works offline, costs nothing, and can always explain itself |
+| 2026-09-01 | Progress photos rejected. A photo cannot produce a weight number, so the number gets typed anyway, and the photo adds storage, backup, export and privacy work for no signal |
+| 2026-09-01 | The countdown is hidden entirely on a day under 50 percent completion. Telling someone how far behind they are on a day they already know went badly is the fastest way to lose them |
 
 ---
 
 ## Session log
 
-Append one line per session. Date, what moved, what is next.
-
 | Date | Done | Next |
 |---|---|---|
-| 2026-09-01 | Project docs written: rules, prd, techspec, schema, design, appflow, implementation plan, tracker | Start M0 |
-| 2026-09-01 | M1 scaffolded: version catalog, 6 convention plugins, 11 modules, detekt and spotless config, CI workflow, TimeProvider and FakeTimeProvider with tests, app shell and launcher icon. Build NOT verified, no Gradle wrapper on this machine | Generate the wrapper, run `./gradlew build`, fix whatever versions do not resolve |
+| 2026-09-01 | Project docs written: rules, prd, techspec, schema, design, appflow, implementation plan, tracker | Start M1 |
+| 2026-09-01 | M1 scaffolded: version catalog, 6 convention plugins, 11 modules, detekt and spotless, CI workflow, TimeProvider and FakeTimeProvider with tests, app shell and launcher icon. Build not verified | Generate wrapper, run build |
+| 2026-09-01 | Repo created and pushed. Personal identity local only, no AI trailers, MIT licence, README written | Verify build |
+| 2026-09-01 | Scope updated: all Build features moved into Phase 1, Break moved to Phase 2, Play deferred to stage 1c, goal and motivation system designed, photos rejected, no ML confirmed and documented | Generate wrapper, then M2 |

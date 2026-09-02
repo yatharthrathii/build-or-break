@@ -53,6 +53,20 @@ first commit, not after fifty of them.
    One tap export, human readable format, no lock in. Uninstalling the app
    removes everything.
 
+7. **Every insight is deterministic. No machine learning, no model, no API.**
+   Every adaptive behaviour in this product is a median, an average, a group by,
+   or a division. That is not a limitation we tolerate, it is the design. It
+   means the app works offline, costs nothing to run, answers instantly, never
+   invents a number, and can always explain exactly why it said what it said.
+   See `techspec.md` section 5b.
+
+8. **The app changes the schedule, never the plan.**
+   If someone is behind their goal, the app may suggest moving a step, swapping
+   in a minimum version, or changing a day template. It must never suggest what
+   to eat, how much, what to train, or what dose to take. Counting the user's
+   own plan back to them is arithmetic. Telling them to add three hundred
+   calories is advice we are not qualified or permitted to give.
+
 ---
 
 ## 2. Writing rules (code comments, UI copy, docs, commits)
@@ -78,6 +92,16 @@ first commit, not after fifty of them.
    step. That is the only place it earns its keep.
 
 7. **Numbers before adjectives.** "47 minutes" beats "a good session".
+
+8. **Never show a goal countdown after a bad day.** A day below fifty percent
+   completion gets the count of what was done and tomorrow's start time. No
+   progress bar, no days remaining, no projection. Telling someone how far
+   behind they are on the day they already know it went badly is the single
+   fastest way to lose them. Full treatment in `appflow.md` section 8.
+
+9. **Celebrate rarely and specifically.** A milestone fires once in the lifetime
+   of the install, never twice in two days, and never after a missed day. Praise
+   that arrives every day stops being praise by the third one.
 
 ---
 

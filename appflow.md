@@ -318,21 +318,159 @@ the app surfaces it once in the weekly report. Not sooner, never as a popup.
 
 ---
 
-## 8. End of day
+## 8. End of day, goals and milestones
 
-Fires at the last item's settle time, or at a configured wind down time.
+### 8.1 Daily close
+
+Fires at the last item's settle time, or at a configured wind down time. It is a
+card at the bottom of Today, never a modal.
+
+**The card has three versions and the difference between them is the single most
+important behavioural decision in the product.**
+
+**Good day, eighty percent or more done:**
+```
+  11 of 12 done
+  Your best day this week
+
+  28 days left for +2.0 kg
+  +0.4 so far
+  ▓▓▓░░░░░░░░░░░░
+
+  Tomorrow starts at 8:00
+```
+
+**Ok day, fifty to eighty percent:**
+```
+  8 of 12 done, 4 missed
+
+  28 days left
+
+  Tomorrow starts at 8:00
+```
+Countdown stays. The praise line does not, because it would not be true.
+
+**Poor day, under fifty percent:**
+```
+  3 of 12 done
+
+  Tomorrow starts at 8:00
+```
+**No countdown. No progress bar. No projection. No encouragement.**
+
+`rules.md` section 2 rule 8 makes this non negotiable. Telling someone how far
+behind they are on the day they already know it went badly is the fastest way to
+lose them. The count is factual and stays. Everything else waits until tomorrow.
+
+### 8.2 The countdown when behind pace
+
+Never phrased as failure. Always the projected number plus a way forward.
+
+| Situation | Copy |
+|---|---|
+| On pace | `28 days left. On pace for +2.0 kg.` |
+| Slightly behind | `28 days left. At this rate, +1.7 kg.` |
+| Well behind | `28 days left. At this rate, +1.1 kg.` plus `[ Look at the plan ]` |
+
+`[ Look at the plan ]` opens the weekly review, section 8.4. It never opens a
+suggestion about food, dose or training load. `rules.md` section 1 rule 8.
+
+### 8.3 Milestones
+
+Nine of them. Each fires **once in the lifetime of the install**, enforced by the
+presence of a row in `milestone_award`.
+
+| Milestone | Copy |
+|---|---|
+| First ever completion | The ink drop animation only, no words |
+| First full day | `Full day. 12 of 12. First time.` |
+| First week | `One week in. 76 percent, 44 things done.` |
+| Goal 25 percent | `A quarter in. +0.5 of +2.0. 23 days left.` |
+| Goal 50 percent | `Halfway. +1.0 of +2.0. 16 days left.` |
+| Goal 75 percent | `Three quarters. +1.5 of +2.0. 8 days left.` |
+| Goal reached | A full screen. The whole run, then: set the next one? |
+| Best week | `Best week yet. 88 percent against 79 last week.` |
+| Item thirty day run | `Weight check, 30 days running. Your steadiest one.` |
+
+**Four suppression rules, all enforced in the domain layer:**
+
+1. At most one milestone shown per day
+2. Never the same category on consecutive days
+3. **Never on a day whose quality is `POOR`.** It waits for the next good day
+4. All of it switchable off in Settings, in one toggle
+
+Best week never fires before four weeks of data exist, otherwise week two is
+always the best week and the message is meaningless.
+
+### 8.4 Weekly review
+
+Sunday night, or the day the user picks. It is a screen, not a notification.
 
 ```
-Small card at the bottom of Today, not a modal:
+  Week 3
 
-  9 of 12 done. 2 minimum. 1 missed.
-  Weight 61.4 kg, up 0.2 since Monday.
-  Tomorrow starts at 8:00.
+  Weight          +0.15 kg          (7 day average)
+  Pace needed     +0.50 kg
 
-  [ See tomorrow ]
+  You did 96 percent of your plan
+
+  Missed: 1 shake, 0 gym
+
+  ---
+
+  Over three weeks you have done 90 percent of your
+  plan and gained 0.8 kg. Pace needs 1.5.
+
+  This is not a timing problem any more. You are
+  following the plan.
+
+  [ Export the report ]
 ```
 
-No score. No grade. No streak. No emoji.
+Two distinct outcomes, and the app must tell them apart:
+
+| What the data says | What the app offers |
+|---|---|
+| Behind **and** adherence is low | Schedule fixes: move the item, change the day template, default that weekday to the minimum version, add a catch up slot |
+| Behind **and** adherence is high | Nothing to fix in the schedule. Say so plainly, and offer the export so the user can take real data back to whoever wrote the plan |
+
+The second row is the honest one and no competitor does it. The app admits its
+job ends where advice begins.
+
+**Catch up is capped.** A week's suggested additions may never exceed twenty
+percent of a normal week, and are spread across the days with the best history,
+never stacked on tomorrow. Asking someone five shakes behind to drink five extra
+shakes tomorrow is how an app gets uninstalled.
+
+### 8.5 Goal setup, and the honesty check
+
+When a goal is created, if there is at least one previous period of data, the app
+compares the ask against what actually happened:
+
+```
+  You asked for +2.0 kg in 30 days.
+
+  Last month you gained 1.1 kg.
+  +2.0 needs about 95 percent adherence.
+  You ran at 88 percent.
+
+  [ Keep +2.0 ]   [ Try +1.5 ]
+```
+
+Both buttons are real. The app does not block the ambitious choice, it just
+refuses to let it be uninformed. Being honest on day one is better than being
+disappointing on day thirty.
+
+### 8.6 Do not count this week
+
+One control, in the weekly review and in Settings.
+
+Illness, travel, a wedding. Tapping it sets `counted = false` on that week's
+`goal_progress` rows, pushes `targetDate` out by seven days, and greys the week
+in every chart. It does not delete anything.
+
+Real life does this to everyone roughly once a month, and no habit app has an
+answer for it.
 
 ---
 

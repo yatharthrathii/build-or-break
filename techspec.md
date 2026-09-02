@@ -133,6 +133,63 @@ that item's occurrence carrying a `shiftMin`. Downstream `RELATIVE` items move
 with it, `FIXED` items do not. The preview shown in the notification is simply
 the diff between two calls to `resolve`.
 
+## 5b. The insight engine: why there is no model here
+
+Every adaptive behaviour in this product is deterministic arithmetic running in
+`:core:domain`. There is no machine learning, no trained model, no inference
+call, and no network dependency. This section exists because the question comes
+up, and because the answer needs to be written down once.
+
+| Feature the user sees | What it actually is | Roughly |
+|---|---|---|
+| "You take this at 5:45, not 4:00" | Median of the last 30 completion times | 8 lines |
+| "Wednesday, missed 4 times, work came up" | One `GROUP BY weekday, chip HAVING n >= 3` | 1 query |
+| "At this rate, plus 1.1 kg" | `(progress / daysElapsed) * totalDays` | 4 lines |
+| "Sunday is your strongest day" | Group by weekday, average completion | 3 lines |
+| Cascade, day shift, snooze preview | Arithmetic over the anchor graph | Already in the resolver |
+| Weekly and monthly review | Counting | Aggregate queries |
+| Never miss twice | A counter | 1 field |
+
+The one place naive arithmetic gives a wrong answer is body weight, which swings
+by up to a kilogram a day from water and food. Raw readings must never drive a
+suggestion. All weight derived output uses a **seven day moving average**, with
+raw readings drawn faintly behind the smoothed line.
+
+```kotlin
+fun smoothed(readings: List<Double>): List<Double> =
+    readings.windowed(size = 7, step = 1, partialWindows = true).map { it.average() }
+```
+
+**Why this is the right call, not a compromise:**
+
+- Works with no network, which `rules.md` section 1 requires anyway
+- Costs nothing per user, forever
+- Answers in under a millisecond instead of seconds
+- Cannot invent a number, and cannot be wrong in a way we did not write
+- Is unit testable with fixed inputs, which a model is not
+- Can always explain itself, because the reason is the calculation
+
+**Where a language model could legitimately help, later and optionally:**
+
+1. **Plan import fallback.** A deterministic parser handles the common shape,
+   which is a leading time token followed by a title. A model is only a fallback
+   for text the parser cannot read, and even then the user confirms every row
+   before anything is saved.
+2. **Weekly narrative.** Turning numbers the app already has into readable
+   prose. This is cosmetic. It produces no information the numbers did not
+   already contain.
+
+Both are V2, both are opt in, and both use the user's own API key, so they cost
+this project nothing. Neither may ever become a dependency of a core feature.
+
+**Where real machine learning would apply, and why it does not here:** research
+on just-in-time adaptive interventions uses reinforcement learning to pick
+notification timing. That needs many users and months of data per user. With a
+single user, a median is a better estimator than a trained policy, and it is
+also honest about its own uncertainty.
+
+---
+
 ## 6. Time handling
 
 Time correctness is the highest bug risk in this product. Rules:
