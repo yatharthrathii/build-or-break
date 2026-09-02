@@ -14,7 +14,8 @@ Read this first, every session.
 |---|---|---|
 | `rules.md` | This file. Non negotiables. | Every session, first |
 | `prd.md` | What we are building and why. Scope, features, monetization | Before adding any feature |
-| `techspec.md` | Stack, modules, architecture, platform strategy | Before writing code |
+| `techspec.md` | Stack, modules, platform strategy | Before writing code |
+| `architecture.md` | Layers, contracts, flows, naming, the feature recipe | Before writing code, every time |
 | `schema.md` | Domain model, Room entities, migrations | Before touching data |
 | `design.md` | Design system, tokens, tone of voice | Before touching UI |
 | `appflow.md` | Every screen and every flow, including notifications | Before building a screen |
