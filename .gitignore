@@ -27,6 +27,25 @@ keystore.properties
 *.class
 output.json
 
+# Project documents. Local only, deliberately not published.
+#
+# These drive the build and are read every session, but they are working
+# documents, not a public artefact. The repository root stays as code plus a
+# README. Reasoning that is worth publishing goes in docs/adr/ once there is
+# enough code for it to sit next to.
+#
+# WARNING: these are not backed up by git. Keep a copy somewhere else.
+rules.md
+prd.md
+techspec.md
+architecture.md
+schema.md
+design.md
+appflow.md
+implementationPlan.md
+tracker.md
+CLAUDE.md
+
 # OS
 .DS_Store
 Thumbs.db

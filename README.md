@@ -101,19 +101,6 @@ by Focus and by the ringer switch, and the Critical Alerts entitlement is not
 granted for this category. The core promise of the app cannot be kept there, so
 I would rather not ship a worse version of it than pretend.
 
-## Docs
-
-The thinking lives in the repository rather than in my head.
-
-- [`rules.md`](rules.md) is the constitution and wins over everything else
-- [`prd.md`](prd.md) is scope, the tier split, and the risks
-- [`techspec.md`](techspec.md) is the stack and the alarm strategy
-- [`schema.md`](schema.md) is the data model
-- [`design.md`](design.md) is the design system
-- [`appflow.md`](appflow.md) is every screen and every notification
-- [`implementationPlan.md`](implementationPlan.md) is the build order
-- [`tracker.md`](tracker.md) is where I am actually up to
-
 ## Licence
 
 MIT. See [`LICENSE`](LICENSE).
