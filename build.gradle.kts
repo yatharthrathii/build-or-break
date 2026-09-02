@@ -118,6 +118,11 @@ tasks.register("qualityCheck") {
         provider {
             subprojects.mapNotNull { module ->
                 when {
+                    // :benchmark is a com.android.test module. Its tests only run
+                    // on a connected device, so there is no unit test task to
+                    // depend on. It also applies com.android.base, so this branch
+                    // has to come first.
+                    module.plugins.hasPlugin("com.android.test") -> null
                     module.plugins.hasPlugin("com.android.base") -> "${module.path}:testDebugUnitTest"
                     module.plugins.hasPlugin("org.jetbrains.kotlin.jvm") -> "${module.path}:test"
                     else -> null
