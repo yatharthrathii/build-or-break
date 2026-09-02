@@ -29,10 +29,7 @@ sealed interface Anchor {
      * of these is resolved in dependency order, and a cycle is detected and
      * broken rather than allowed to hang.
      */
-    data class Relative(
-        val parentItemId: Long,
-        val offset: Duration,
-    ) : Anchor {
+    data class Relative(val parentItemId: Long, val offset: Duration) : Anchor {
         override val type: AnchorType get() = AnchorType.RELATIVE
     }
 
@@ -43,11 +40,7 @@ sealed interface Anchor {
      * The last one is the final call. At [to] the occurrence settles to MISSED
      * with no further noise.
      */
-    data class Window(
-        val from: LocalTime,
-        val to: LocalTime,
-        val nagLadder: List<Duration> = emptyList(),
-    ) : Anchor {
+    data class Window(val from: LocalTime, val to: LocalTime, val nagLadder: List<Duration> = emptyList()) : Anchor {
         override val type: AnchorType get() = AnchorType.WINDOW
     }
 
@@ -58,11 +51,7 @@ sealed interface Anchor {
      * A window shorter than the interval yields exactly one occurrence at
      * [from], never zero.
      */
-    data class Interval(
-        val every: Duration,
-        val from: LocalTime,
-        val to: LocalTime,
-    ) : Anchor {
+    data class Interval(val every: Duration, val from: LocalTime, val to: LocalTime) : Anchor {
         override val type: AnchorType get() = AnchorType.INTERVAL
     }
 }

@@ -23,10 +23,15 @@ object PlanFixtures {
 
     const val TEMPLATE_ID = 1L
 
+    /** The default wake hour, so a test that does not care about time says nothing about it. */
+    const val DEFAULT_HOUR = 8
+
+    private const val DEFAULT_OFFSET_MINUTES = 10L
+
     fun item(
         id: Long,
         title: String = "Item $id",
-        anchor: Anchor = fixedAt(8, 0),
+        anchor: Anchor = fixedAt(DEFAULT_HOUR),
         templateId: Long = TEMPLATE_ID,
         blockId: Long? = null,
         kind: ItemKind = ItemKind.DO,
@@ -58,28 +63,22 @@ object PlanFixtures {
         archivedAt = null,
     )
 
-    fun fixedAt(hour: Int, minute: Int = 0): Anchor.Fixed =
-        Anchor.Fixed(LocalTime.of(hour, minute))
+    fun fixedAt(hour: Int, minute: Int = 0): Anchor.Fixed = Anchor.Fixed(LocalTime.of(hour, minute))
 
-    fun relativeTo(parentItemId: Long, offset: Duration = 10.minutes): Anchor.Relative =
+    fun relativeTo(parentItemId: Long, offset: Duration = DEFAULT_OFFSET_MINUTES.minutes): Anchor.Relative =
         Anchor.Relative(parentItemId, offset)
 
-    fun window(
-        fromHour: Int,
-        toHour: Int,
-        nagLadder: List<Duration> = emptyList(),
-    ): Anchor.Window = Anchor.Window(
+    fun window(fromHour: Int, toHour: Int, nagLadder: List<Duration> = emptyList()): Anchor.Window = Anchor.Window(
         from = LocalTime.of(fromHour, 0),
         to = LocalTime.of(toHour, 0),
         nagLadder = nagLadder,
     )
 
-    fun interval(everyMinutes: Long, fromHour: Int, toHour: Int): Anchor.Interval =
-        Anchor.Interval(
-            every = everyMinutes.minutes,
-            from = LocalTime.of(fromHour, 0),
-            to = LocalTime.of(toHour, 0),
-        )
+    fun interval(everyMinutes: Long, fromHour: Int, toHour: Int): Anchor.Interval = Anchor.Interval(
+        every = everyMinutes.minutes,
+        from = LocalTime.of(fromHour, 0),
+        to = LocalTime.of(toHour, 0),
+    )
 
     fun minimum(title: String = "Minimum", duration: Duration? = null): MinimumVersion =
         MinimumVersion(title = title, duration = duration)

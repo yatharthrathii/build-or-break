@@ -22,33 +22,56 @@ plugins {
 // rules.md section 4: warnings are errors in CI. Detekt and ktlint gate the
 // build. A suppression needs a one line reason attached to it.
 
+// Where we deliberately differ from ktlint's defaults, and why. Anything not
+// listed here is enforced as shipped.
+val ktlintOverrides =
+    mapOf(
+        // Composables are PascalCase by convention.
+        "ktlint_standard_function-naming" to "disabled",
+        // A file holding several small related types is clearer than several
+        // near empty files, so the name does not have to match one class.
+        "ktlint_standard_filename" to "disabled",
+        // Wrapping every `libs.versions.x.get()` across three lines makes build
+        // files harder to read, not easier.
+        "ktlint_standard_chain-method-continuation" to "disabled",
+        // Model types carry KDoc on individual fields. Collapsing a constructor
+        // onto one line throws that away.
+        "ktlint_standard_class-signature" to "disabled",
+        "ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than" to "4",
+    )
+
 allprojects {
-    apply(plugin = rootProject.libs.plugins.spotless.get().pluginId)
+    apply(
+        plugin =
+        rootProject.libs.plugins.spotless
+            .get()
+            .pluginId,
+    )
 
     extensions.configure<SpotlessExtension> {
         kotlin {
             target("src/**/*.kt")
             targetExclude("**/build/**/*.kt")
             ktlint(rootProject.libs.versions.ktlint.get())
-                .editorConfigOverride(
-                    mapOf(
-                        "ktlint_standard_function-naming" to "disabled",
-                        "ktlint_standard_filename" to "disabled",
-                        "ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than" to "4",
-                    ),
-                )
+                .editorConfigOverride(ktlintOverrides)
             trimTrailingWhitespace()
             endWithNewline()
         }
         kotlinGradle {
             target("*.gradle.kts")
             ktlint(rootProject.libs.versions.ktlint.get())
+                .editorConfigOverride(ktlintOverrides)
         }
     }
 }
 
 subprojects {
-    apply(plugin = rootProject.libs.plugins.detekt.get().pluginId)
+    apply(
+        plugin =
+        rootProject.libs.plugins.detekt
+            .get()
+            .pluginId,
+    )
 
     extensions.configure<DetektExtension> {
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
@@ -58,7 +81,9 @@ subprojects {
     }
 
     tasks.withType<Detekt>().configureEach {
-        jvmTarget = rootProject.libs.versions.javaTarget.get()
+        jvmTarget =
+            rootProject.libs.versions.javaTarget
+                .get()
         reports {
             html.required.set(true)
             xml.required.set(false)
@@ -67,6 +92,18 @@ subprojects {
             md.required.set(false)
         }
     }
+}
+
+// Pins how the wrapper is regenerated, so `./gradlew wrapper` is reproducible
+// and does not depend on whoever ran it last.
+//
+// validateDistributionUrl is off because the check is a network call, and the
+// distribution is already resolved from the local Gradle cache. The URL itself
+// is still written into gradle-wrapper.properties and used on a clean machine.
+tasks.wrapper {
+    gradleVersion = "8.14.3"
+    distributionType = Wrapper.DistributionType.BIN
+    validateDistributionUrl = false
 }
 
 // Convenience aggregate used by CI. Keeps the workflow file short.

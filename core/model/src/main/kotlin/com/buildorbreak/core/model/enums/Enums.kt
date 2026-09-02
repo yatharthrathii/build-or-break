@@ -65,8 +65,11 @@ enum class OccurrenceState {
     ;
 
     val isSettled: Boolean
-        get() = this == DONE || this == DONE_MINIMUM || this == SKIPPED ||
-            this == MISSED || this == CANCELLED
+        get() = this == DONE ||
+            this == DONE_MINIMUM ||
+            this == SKIPPED ||
+            this == MISSED ||
+            this == CANCELLED
 
     /** Counts toward adherence. A minimum version still counts. */
     val isDone: Boolean

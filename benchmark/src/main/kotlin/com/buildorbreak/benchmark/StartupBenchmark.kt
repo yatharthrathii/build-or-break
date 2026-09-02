@@ -28,8 +28,7 @@ class StartupBenchmark {
     fun coldStartupNoCompilation() = measureStartup(StartupMode.COLD, CompilationMode.None())
 
     @Test
-    fun coldStartupWithBaselineProfile() =
-        measureStartup(StartupMode.COLD, CompilationMode.Partial())
+    fun coldStartupWithBaselineProfile() = measureStartup(StartupMode.COLD, CompilationMode.Partial())
 
     @Test
     fun warmStartup() = measureStartup(StartupMode.WARM, CompilationMode.Partial())
