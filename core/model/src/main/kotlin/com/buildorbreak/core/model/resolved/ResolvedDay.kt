@@ -62,10 +62,7 @@ data class ResolvedEntry(
  * Surfaced inline on Today, never as a dialog, and never by silently firing
  * everything anyway.
  */
-data class BudgetWarning(
-    val alarmCount: Int,
-    val notifyCount: Int,
-) {
+data class BudgetWarning(val alarmCount: Int, val notifyCount: Int) {
     companion object {
         const val MAX_ALARMS = 3
         const val MAX_NOTIFY = 10
@@ -105,16 +102,7 @@ data class CascadePreview(
     val movesNothing: Boolean get() = moved.isEmpty()
 }
 
-data class MovedEntry(
-    val itemId: Long,
-    val title: String,
-    val from: LocalDateTime,
-    val to: LocalDateTime,
-)
+data class MovedEntry(val itemId: Long, val title: String, val from: LocalDateTime, val to: LocalDateTime)
 
 /** Two items ending up closer than a threshold after a shift. */
-data class Collision(
-    val firstItemId: Long,
-    val secondItemId: Long,
-    val gap: Duration,
-)
+data class Collision(val firstItemId: Long, val secondItemId: Long, val gap: Duration)

@@ -24,8 +24,7 @@ value class Weekdays(val bits: Int) {
 
     operator fun plus(day: DayOfWeek): Weekdays = Weekdays(bits or day.bit)
 
-    operator fun minus(day: DayOfWeek): Weekdays =
-        Weekdays(bits and day.bit.inv() and ALL_BITS)
+    operator fun minus(day: DayOfWeek): Weekdays = Weekdays(bits and day.bit.inv() and ALL_BITS)
 
     val isEmpty: Boolean get() = bits == 0
 
@@ -50,7 +49,6 @@ value class Weekdays(val bits: Int) {
 
         val Weekend: Weekdays = of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
 
-        fun of(vararg days: DayOfWeek): Weekdays =
-            Weekdays(days.fold(0) { acc, day -> acc or day.bit })
+        fun of(vararg days: DayOfWeek): Weekdays = Weekdays(days.fold(0) { acc, day -> acc or day.bit })
     }
 }

@@ -9,13 +9,7 @@ import java.time.ZoneId
 import kotlin.time.Duration
 
 /** A named routine. Only one is active at a time on the free tier. */
-data class Plan(
-    val id: Long,
-    val name: String,
-    val isActive: Boolean,
-    val zone: ZoneId,
-    val createdAt: Instant,
-)
+data class Plan(val id: Long, val name: String, val isActive: Boolean, val zone: ZoneId, val createdAt: Instant)
 
 /**
  * One shape of a day: office day, working from home, rest day, sick day.
@@ -52,10 +46,7 @@ data class Block(
 )
 
 /** The smaller version of an item, defined in advance, offered on a bad day. */
-data class MinimumVersion(
-    val title: String,
-    val duration: Duration? = null,
-)
+data class MinimumVersion(val title: String, val duration: Duration? = null)
 
 /**
  * One thing to do.

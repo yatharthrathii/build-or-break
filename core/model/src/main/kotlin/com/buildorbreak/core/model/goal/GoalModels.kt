@@ -38,18 +38,13 @@ data class Goal(
 
     val isIncreasing: Boolean get() = span >= 0
 
-    fun daysElapsed(on: LocalDate): Int =
-        ChronoUnit.DAYS.between(startDate, on).toInt().coerceIn(0, totalDays)
+    fun daysElapsed(on: LocalDate): Int = ChronoUnit.DAYS.between(startDate, on).toInt().coerceIn(0, totalDays)
 
-    fun daysLeft(on: LocalDate): Int =
-        ChronoUnit.DAYS.between(on, targetDate).toInt().coerceAtLeast(0)
+    fun daysLeft(on: LocalDate): Int = ChronoUnit.DAYS.between(on, targetDate).toInt().coerceAtLeast(0)
 }
 
 /** A single reading in a measurement series, before smoothing. */
-data class Reading(
-    val date: LocalDate,
-    val value: Double,
-)
+data class Reading(val date: LocalDate, val value: Double)
 
 /**
  * One row per day per goal, written by the daily close.

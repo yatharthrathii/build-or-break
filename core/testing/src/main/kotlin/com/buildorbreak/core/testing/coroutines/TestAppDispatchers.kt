@@ -11,9 +11,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
  * deterministic and virtual time works everywhere.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class TestAppDispatchers(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
-) : AppDispatchers {
+class TestAppDispatchers(private val dispatcher: TestDispatcher = UnconfinedTestDispatcher()) : AppDispatchers {
     override val default: CoroutineDispatcher = dispatcher
     override val io: CoroutineDispatcher = dispatcher
     override val main: CoroutineDispatcher = dispatcher
