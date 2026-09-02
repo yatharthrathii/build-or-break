@@ -14,6 +14,7 @@ session. It wins over anything else, including this file.
 | `rules.md` | Anything. Every session, first |
 | `prd.md` | Adding or changing a feature |
 | `techspec.md` | Writing code |
+| `architecture.md` | Writing code. Contracts, flows, naming, the recipe |
 | `schema.md` | Touching data or persistence |
 | `design.md` | Touching UI |
 | `appflow.md` | Building a screen or a notification |
