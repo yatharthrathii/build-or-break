@@ -1,9 +1,12 @@
 package com.buildorbreak.core.testing.fixtures
 
+import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.ItemKind
 import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.plan.Anchor
+import com.buildorbreak.core.model.plan.Block
+import com.buildorbreak.core.model.plan.DayTemplate
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.plan.MinimumVersion
 import com.buildorbreak.core.model.plan.Weekdays
@@ -22,6 +25,8 @@ import kotlin.time.Duration.Companion.minutes
 object PlanFixtures {
 
     const val TEMPLATE_ID = 1L
+
+    const val PLAN_ID = 1L
 
     /** The default wake hour, so a test that does not care about time says nothing about it. */
     const val DEFAULT_HOUR = 8
@@ -61,6 +66,40 @@ object PlanFixtures {
         trackId = null,
         sortOrder = sortOrder,
         archivedAt = null,
+    )
+
+    fun template(
+        id: Long = TEMPLATE_ID,
+        planId: Long = PLAN_ID,
+        name: String = "Office day",
+        weekdays: Weekdays = Weekdays.EveryDay,
+        isDefault: Boolean = true,
+        mode: DayMode = DayMode.NORMAL,
+        sortOrder: Int = 0,
+    ): DayTemplate = DayTemplate(
+        id = id,
+        planId = planId,
+        name = name,
+        weekdays = weekdays,
+        isDefault = isDefault,
+        mode = mode,
+        sortOrder = sortOrder,
+    )
+
+    fun block(
+        id: Long,
+        title: String = "Block $id",
+        anchor: Anchor = fixedAt(DEFAULT_HOUR),
+        templateId: Long = TEMPLATE_ID,
+        salience: Salience = Salience.NOTIFY,
+        sortOrder: Int = id.toInt(),
+    ): Block = Block(
+        id = id,
+        templateId = templateId,
+        title = title,
+        anchor = anchor,
+        salience = salience,
+        sortOrder = sortOrder,
     )
 
     fun fixedAt(hour: Int, minute: Int = 0): Anchor.Fixed = Anchor.Fixed(LocalTime.of(hour, minute))
