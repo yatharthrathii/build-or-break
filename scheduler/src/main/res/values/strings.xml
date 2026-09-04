@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        Notification copy. Kept short because a heads up notification gets one
+        line, and kept plain because somebody reads these half asleep.
+    -->
+    <string name="action_done">Done</string>
+    <string name="action_minimum">Smaller version</string>
+    <string name="action_snooze">Snooze</string>
+    <string name="action_skip">Skip</string>
+
+    <string name="milestone_title">Worth noticing</string>
+
+    <!--
+        The foreground service notification. Android requires one and the user
+        will see it, so it says something true rather than "service running".
+    -->
+    <string name="running_block_title">Running your routine</string>
+    <string name="running_block_text">Keeping the next few steps on time</string>
+    <string name="channel_service">Running steps</string>
+
+</resources>

@@ -5,6 +5,15 @@ plugins {
 
 android {
     namespace = "com.buildorbreak.scheduler"
+
+    lint {
+        // A library has no targetSdk of its own, so lint assumes the minimum and
+        // rejects USE_EXACT_ALARM, which is only allowed from API 33. The app
+        // that ships this targets 36. Telling lint what it will actually run
+        // against is more honest than moving the permission away from the code
+        // that depends on it.
+        targetSdk = libs.versions.targetSdk.get().toInt()
+    }
 }
 
 dependencies {
