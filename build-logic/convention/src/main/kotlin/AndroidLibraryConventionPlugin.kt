@@ -29,6 +29,13 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 lint {
                     warningsAsErrors = true
                     abortOnError = true
+
+                    // Version nags are not correctness. warningsAsErrors turns
+                    // "a newer Gradle exists" into a failing build, which would
+                    // mean an upgrade nobody asked for becomes the only way to
+                    // ship. Versions here are pinned on purpose and upgraded
+                    // deliberately, not because lint noticed a release.
+                    disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
                 }
             }
 

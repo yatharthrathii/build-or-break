@@ -7,7 +7,13 @@
     Do not add app colours here. If a colour is needed in Compose, it belongs in
     the design system.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <color name="paper_surface">#F7F4EF</color>
-    <color name="rust_primary">#A8452B</color>
+
+    <!--
+        Referenced from the splash theme in M5 rather than from code, which lint
+        cannot see. Kept because the splash window is drawn by the platform
+        before any Compose colour exists, so this value has to live here.
+    -->
+    <color name="rust_primary" tools:ignore="UnusedResources">#A8452B</color>
 </resources>

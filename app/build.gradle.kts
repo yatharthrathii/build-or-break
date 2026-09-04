@@ -10,6 +10,14 @@ plugins {
 android {
     namespace = "com.buildorbreak.app"
 
+    lint {
+        // Lint is wrong about this one. It reports mipmap-anydpi-v26 as a
+        // redundant qualifier because minSdk is already 26, and merging the
+        // folder into mipmap-anydpi as it suggests makes AAPT fail to link the
+        // launcher icon at all. The qualifier stays.
+        disable += "ObsoleteSdkInt"
+    }
+
     defaultConfig {
         applicationId = "com.buildorbreak.app"
     }
