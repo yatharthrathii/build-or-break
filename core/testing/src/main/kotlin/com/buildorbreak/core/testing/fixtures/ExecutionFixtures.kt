@@ -1,7 +1,9 @@
 package com.buildorbreak.core.testing.fixtures
 
 import com.buildorbreak.core.model.enums.OccurrenceState
+import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.execution.Occurrence
+import com.buildorbreak.core.model.execution.SkipReason
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -46,6 +48,57 @@ object ExecutionFixtures {
         shiftMinutes = shiftMinutes,
         snoozeCount = snoozeCount,
         sequenceInDay = sequenceInDay,
+    )
+
+    /** Settled as never happened, with no reason offered. The common case. */
+    fun missed(itemId: Long, date: LocalDate = DATE, id: Long = itemId): Occurrence = occurrence(
+        itemId = itemId,
+        id = id,
+        date = date,
+        plannedAt = date.atTime(PlanFixtures.DEFAULT_HOUR, 0),
+        state = OccurrenceState.MISSED,
+    )
+
+    /** Done, at the planned time. */
+    fun done(
+        itemId: Long,
+        date: LocalDate = DATE,
+        id: Long = itemId,
+        zone: ZoneId = ZONE,
+    ): Occurrence = occurrence(
+        itemId = itemId,
+        id = id,
+        date = date,
+        plannedAt = date.atTime(PlanFixtures.DEFAULT_HOUR, 0),
+        state = OccurrenceState.DONE,
+        settledAt = date.atTime(PlanFixtures.DEFAULT_HOUR, 0).atZone(zone).toInstant(),
+    )
+
+    /** Done, but [minutesLate] after it was planned. Feeds the time shift detector. */
+    fun doneLate(
+        itemId: Long,
+        date: LocalDate,
+        minutesLate: Long,
+        id: Long = date.toEpochDay(),
+        zone: ZoneId = ZONE,
+    ): Occurrence {
+        val planned = date.atTime(PlanFixtures.DEFAULT_HOUR, 0)
+        return occurrence(
+            itemId = itemId,
+            id = id,
+            date = date,
+            plannedAt = planned,
+            state = OccurrenceState.DONE,
+            settledAt = planned.plusMinutes(minutesLate).atZone(zone).toInstant(),
+        )
+    }
+
+    fun skipReason(occurrenceId: Long, chip: SkipChip, id: Long = occurrenceId): SkipReason = SkipReason(
+        id = id,
+        occurrenceId = occurrenceId,
+        chip = chip,
+        text = null,
+        createdAt = Instant.EPOCH,
     )
 
     /** Completed, at a real local moment. This is what a RELATIVE child hangs off. */
