@@ -1,10 +1,17 @@
 plugins {
     alias(libs.plugins.buildorbreak.jvm.library)
+
+    // The export format is a published contract, not an internal type, so it
+    // is written with a real serialiser rather than by hand. Pure JVM, which
+    // keeps the no Android rule below intact.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 dependencies {
     api(projects.core.model)
     api(projects.core.common)
+
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(projects.core.testing)
 }
