@@ -13,6 +13,16 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
 
+    // Annotations only, a couple of kilobytes, no runtime and no Android. It
+    // lets Hilt construct the use cases from their own constructors instead of
+    // a hundred lines of @Provides in :app that would have to be edited every
+    // time a use case gains a dependency.
+    //
+    // The rule this module keeps is that it stays pure JVM and cannot import
+    // Android. A jar containing four annotations does not break that; pulling
+    // in Dagger or Hilt would, and neither is here.
+    implementation(libs.javax.inject)
+
     testImplementation(projects.core.testing)
 }
 
