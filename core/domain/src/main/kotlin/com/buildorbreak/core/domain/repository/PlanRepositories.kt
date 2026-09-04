@@ -48,6 +48,14 @@ interface ItemRepository {
 
     fun observeBlocksForTemplate(templateId: Long): Flow<List<Block>>
 
+    /**
+     * One item, for a receiver that has an id and ten seconds.
+     *
+     * A broadcast receiver woken by an alarm cannot collect a flow and wait for
+     * a template to arrive. It knows which item fired and needs its title now.
+     */
+    suspend fun byId(itemId: Long): Item?
+
     suspend fun upsert(item: Item): Outcome<Long, DataError>
 
     suspend fun upsertBlock(block: Block): Outcome<Long, DataError>

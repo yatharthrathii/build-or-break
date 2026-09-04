@@ -14,6 +14,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 class ItemRepositoryImpl @Inject constructor(
     private val items: ItemDao,
@@ -26,6 +27,8 @@ class ItemRepositoryImpl @Inject constructor(
 
     override fun observeBlocksForTemplate(templateId: Long): Flow<List<Block>> =
         items.observeBlocksForTemplate(templateId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
+
+    override suspend fun byId(itemId: Long): Item? = withContext(dispatchers.io) { items.byId(itemId)?.toModel() }
 
     override suspend fun upsert(item: Item): Outcome<Long, DataError> =
         sqlOutcome(dispatchers.io) { items.upsert(item.toEntity()) }

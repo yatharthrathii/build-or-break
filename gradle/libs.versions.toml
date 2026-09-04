@@ -40,6 +40,7 @@ collectionsImmutable = "0.4.0"
 
 # DI
 hilt = "2.57"
+javaxInject = "1"
 hiltNavigationCompose = "1.2.0"
 
 # Quality
@@ -115,6 +116,7 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "collectionsImmutable" }
 
 # Hilt
+javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
