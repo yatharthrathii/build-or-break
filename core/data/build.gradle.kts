@@ -9,17 +9,21 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.domain)
     implementation(projects.core.model)
+    implementation(projects.core.domain)
     implementation(projects.core.common)
 
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.security.crypto)
-    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(projects.core.testing)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.ext.junit)
 }
 
-// Room, DataStore, and every repository implementation. Room types never leave
-// this module. See schema.md.
+// Room, DataStore and every repository implementation. architecture.md section 3:
+// this module may depend on :core:domain, and :core:domain may never depend on
+// it. The domain declares what it needs as an interface and this satisfies it,
+// never the other way round.
+//
+// Nothing in here leaves the module. Entities, DAOs and DataStore keys are
+// implementation detail; callers see models and repository interfaces only.
