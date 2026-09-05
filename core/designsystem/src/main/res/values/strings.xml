@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The design system owns the strings its own components draw.
+    A component that took its labels from the caller would make every screen
+    repeat the same two words, and one of them would eventually say something
+    different.
+-->
+<resources>
+    <!-- Row notes. Rare on purpose: a note on every row is noise. -->
+    <string name="row_note_pinned">pinned</string>
+    <string name="row_note_degraded">time could not be worked out</string>
+    <string name="row_note_separator">" · "</string>
+</resources>
