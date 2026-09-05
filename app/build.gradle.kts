@@ -25,6 +25,22 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    androidComponents {
+        /*
+         * Unit tests run on debug only.
+         *
+         * Compose UI tests need androidx.compose.ui:ui-test-manifest, which
+         * supplies the activity they render into and is deliberately a debug
+         * only dependency: shipping it in a release would put test scaffolding
+         * in the APK. Running the same tests twice against a variant that
+         * cannot host them adds no coverage, since unit tests never go through
+         * R8 or the release manifest anyway.
+         */
+        beforeVariants(selector().withBuildType("release")) { variant ->
+            variant.enableUnitTest = false
+        }
+    }
 }
 
 dependencies {

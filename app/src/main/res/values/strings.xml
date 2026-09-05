@@ -10,6 +10,90 @@
 <resources>
     <string name="app_name">Build or Break</string>
 
-    <!-- Temporary. Removed in M5 when the Today screen lands. -->
-    <string name="placeholder_foundation">M1 foundation. Timeline engine lands in M2.</string>
+    <!-- Today -->
+    <string name="today_subtitle">%1$s · %2$s</string>
+
+    <!--
+        A plural rather than one string. English does not inflect here, but Hindi
+        does, and rules.md wants a translator to be able to do their job without
+        anybody reopening the Kotlin.
+    -->
+    <plurals name="today_done_count">
+        <item quantity="one">%1$d of %2$d done</item>
+        <item quantity="other">%1$d of %2$d done</item>
+    </plurals>
+    <string name="today_action_done">Done</string>
+    <string name="today_action_snooze">Snooze</string>
+    <string name="today_action_skip">Skip</string>
+    <string name="today_notice_fix">Fix</string>
+
+    <string name="today_empty_title">Nothing today</string>
+    <string name="today_empty_body">This template has no steps that run on this weekday.</string>
+
+    <string name="today_no_plan_title">No plan yet</string>
+    <string name="today_no_plan_body">Paste in the routine you already have and this will run it. Importing arrives in the next milestone.</string>
+
+    <!--
+        Budget. Counts rather than a percentage, because "4 of 11" can be checked
+        against the list and a percentage has to be taken on trust.
+    -->
+    <plurals name="budget_too_many_alarms">
+        <item quantity="one">%1$d alarm today. More than three and they stop landing.</item>
+        <item quantity="other">%1$d alarms today. More than three and they stop landing.</item>
+    </plurals>
+
+    <plurals name="budget_too_many_notifications">
+        <item quantity="one">%1$d notification today. That is a lot to hear.</item>
+        <item quantity="other">%1$d notifications today. That is a lot to hear.</item>
+    </plurals>
+
+    <!--
+        Reliability. Every line says what is lost rather than which permission is
+        missing, because somebody reading this after a missed alarm wants to know
+        whether it will happen again.
+    -->
+    <string name="tier_full_screen_headline">Alarms will work</string>
+    <string name="tier_full_screen_body">A step set to alarm will take over the screen, ring and get louder until you deal with it.</string>
+
+    <string name="tier_heads_up_headline">Alarms will arrive on time</string>
+    <string name="tier_heads_up_body">Alarms arrive at the right minute with sound, but cannot take over the screen. Enough for a reminder, easy to sleep through.</string>
+    <string name="tier_heads_up_short">Alarms arrive on time but will not take over the screen.</string>
+
+    <string name="tier_inexact_headline">Alarms may be late</string>
+    <string name="tier_inexact_body">Android is batching this app\'s alarms, so a step due at 06:30 may arrive at 06:45 or later. The app will not pretend otherwise.</string>
+    <string name="tier_inexact_short">Alarms may arrive several minutes late.</string>
+
+    <string name="tier_in_app_headline">Nothing will reach you</string>
+    <string name="tier_in_app_body">Notifications are off, so the routine only exists while this app is open. Nothing will be delivered.</string>
+    <string name="tier_in_app_short">Nothing will reach you outside this app.</string>
+
+    <string name="reliability_what_would_change">What would change that</string>
+
+    <string name="fix_notifications_what">Turn notifications on</string>
+    <string name="fix_notifications_why">Without them nothing can be delivered at all.</string>
+
+    <string name="fix_channel_what">Turn the Alarms channel back up</string>
+    <string name="fix_channel_why">It is set to silent, so alarms arrive without a sound.</string>
+
+    <string name="fix_exact_what">Allow alarms and reminders</string>
+    <string name="fix_exact_why">Without it Android decides when to deliver, which can be fifteen minutes late.</string>
+
+    <string name="fix_full_screen_what">Allow full screen alarms</string>
+    <string name="fix_full_screen_why">Alarms will still ring, but will not wake the screen.</string>
+
+    <string name="fix_battery_what">Remove battery restrictions</string>
+    <string name="fix_battery_why">Your phone may stop this app overnight, whatever else is allowed.</string>
+
+    <string name="fix_open_notification_settings">Open notification settings</string>
+    <string name="fix_open_alarm_settings">Open alarm settings</string>
+    <string name="fix_open_app_settings">Open app settings</string>
+    <string name="fix_open_battery_settings">Open battery settings</string>
+
+    <!--
+        The one switch no API can see the state of. The copy says so plainly,
+        because claiming to know would be worse than admitting the gap.
+    -->
+    <string name="autostart_title">Allow autostart</string>
+    <string name="autostart_body">Your phone keeps its own list of apps allowed to start on their own. This app cannot see that list, so it cannot tell you whether this is already done. If alarms go missing overnight, this is usually why.</string>
+    <string name="autostart_action">Open autostart settings</string>
 </resources>
