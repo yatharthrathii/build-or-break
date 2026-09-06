@@ -1,67 +1,65 @@
 package com.buildorbreak.app.feature.plan
 
-import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.R
-import com.buildorbreak.core.designsystem.component.QuietCard
-import com.buildorbreak.core.designsystem.component.Rule
+import com.buildorbreak.core.designsystem.component.FillButton
+import com.buildorbreak.core.designsystem.component.GhostButton
+import com.buildorbreak.core.designsystem.component.HeavyRule
+import com.buildorbreak.core.designsystem.component.Kicker
+import com.buildorbreak.core.designsystem.component.SegmentedTabs
+import com.buildorbreak.core.designsystem.component.SquareToggle
+import com.buildorbreak.core.designsystem.component.Stepper
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.enums.AnchorType
 import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.plan.Weekdays
-import java.time.DayOfWeek
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
-private val CLOCK: DateTimeFormatter
-    get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+private const val DURATION_STEP = 5
+private const val MAX_DURATION = 600
 
 /**
  * One step, edited.
  *
- * The anchor kind is the first choice on the screen and everything below it
+ * The timing kind is the first choice on the screen and everything below it
  * changes to suit, because the four kinds are the one idea this app has that
  * other routine apps do not. Burying them behind an "advanced" section would
  * hide the reason somebody chose this app.
+ *
+ * Save is in the header, and when it is off the line under the header says
+ * why. A greyed button with no explanation was the single most confusing thing
+ * about the first version of this screen.
  */
 @Composable
 fun ItemEditorScreen(
@@ -78,340 +76,253 @@ fun ItemEditorScreen(
         state = state,
         onChange = viewModel::onChange,
         onSave = { viewModel.onSave(onDone) },
+        onArchive = { viewModel.onArchive(onDone) },
         onCancel = onDone,
         modifier = modifier,
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ItemEditorContent(
     state: ItemEditorUiState,
     onChange: (ItemEditorUiState) -> Unit,
     onSave: () -> Unit,
+    onArchive: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(modifier = modifier.fillMaxSize()) { insets ->
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .statusBarsPadding()
+            .imePadding(),
+    ) {
+        EditorHeader(state = state, onSave = onSave, onCancel = onCancel)
+
         Column(
             modifier = Modifier
-                .padding(insets)
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(Theme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Theme.spacing.medium),
+                .padding(horizontal = 16.dp)
+                .padding(top = 16.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            OutlinedTextField(
-                value = state.title,
-                onValueChange = { onChange(state.copy(title = it)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text(stringResource(R.string.editor_title_label)) },
-            )
+            EditorBody(state = state, onChange = onChange)
 
-            AnchorSection(state = state, onChange = onChange)
-
-            Rule()
-
-            SalienceSection(state = state, onChange = onChange)
-
-            WeekdaySection(state = state, onChange = onChange)
-
-            Rule()
-
-            MinimumSection(state = state, onChange = onChange)
-
-            PinnedSection(state = state, onChange = onChange)
-
-            Row(horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small)) {
-                TextButton(onClick = onCancel) { Text(stringResource(R.string.editor_cancel)) }
-
-                Button(onClick = onSave, enabled = state.canSave) {
-                    Text(stringResource(R.string.editor_save))
-                }
+            if (!state.isNew) {
+                GhostButton(
+                    text = stringResource(R.string.editor_archive),
+                    onClick = onArchive,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
             }
         }
     }
 }
 
-// Anchor ------------------------------------------------------------------------
-
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AnchorSection(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
-    Text(text = stringResource(R.string.editor_when), style = MaterialTheme.typography.titleMedium)
+private fun EditorBody(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
+    TextBox(
+        label = stringResource(R.string.editor_title_label),
+        value = state.title,
+        onValueChange = { onChange(state.copy(title = it)) },
+        placeholder = stringResource(R.string.editor_title_hint),
+    )
 
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small)) {
-        AnchorType.entries.forEach { kind ->
-            FilterChip(
-                selected = state.anchor.kind == kind,
-                onClick = { onChange(state.copy(anchor = state.anchor.copy(kind = kind))) },
-                label = { Text(stringResource(anchorLabel(kind))) },
+    TimingSection(state = state, onChange = onChange)
+
+    SalienceSection(state = state, onChange = onChange)
+
+    WeekdaySection(state = state, onChange = onChange)
+
+    DurationSection(state = state, onChange = onChange)
+
+    TextBox(
+        label = stringResource(R.string.editor_minimum_title),
+        value = state.minimumTitle,
+        onValueChange = { onChange(state.copy(minimumTitle = it)) },
+        placeholder = stringResource(R.string.editor_minimum_hint),
+        help = stringResource(R.string.editor_minimum_body),
+    )
+
+    PinnedRow(state = state, onChange = onChange)
+}
+
+/** Back, the title, and Save. Under it, the reason Save is off, when it is. */
+@Composable
+private fun EditorHeader(state: ItemEditorUiState, onSave: () -> Unit, onCancel: () -> Unit) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = stringResource(R.string.action_back),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable(role = Role.Button, onClick = onCancel),
             )
-        }
-    }
 
-    when (state.anchor.kind) {
-        AnchorType.FIXED -> TimeField(
-            label = R.string.editor_at,
-            time = state.anchor.at,
-            onPicked = { onChange(state.copy(anchor = state.anchor.copy(at = it))) },
-        )
-
-        AnchorType.RELATIVE -> RelativeFields(state = state, onChange = onChange)
-
-        AnchorType.WINDOW -> WindowFields(state = state, onChange = onChange)
-
-        AnchorType.INTERVAL -> {
-            WindowFields(state = state, onChange = onChange)
-
-            NumberField(
-                label = R.string.editor_every_minutes,
-                value = state.anchor.everyMinutes,
-                onValue = { onChange(state.copy(anchor = state.anchor.copy(everyMinutes = it))) },
+            Text(
+                text = stringResource(if (state.isNew) R.string.editor_new_title else R.string.editor_edit_title)
+                    .uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 14.dp),
             )
+
+            FillButton(text = stringResource(R.string.editor_save), onClick = onSave, enabled = state.canSave)
         }
+
+        HeavyRule()
+
+        state.saveBlocker?.let { BlockerLine(blocker = it) }
     }
 }
 
+/** Why Save is off, on a tint, in one sentence. */
 @Composable
-private fun RelativeFields(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
-    NumberField(
-        label = R.string.editor_offset_minutes,
-        value = state.anchor.offsetMinutes,
-        onValue = { onChange(state.copy(anchor = state.anchor.copy(offsetMinutes = it))) },
+private fun BlockerLine(blocker: SaveBlocker) {
+    Text(
+        text = stringResource(blockerText(blocker)),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(horizontal = 16.dp, vertical = 9.dp),
     )
-
-    Text(text = stringResource(R.string.editor_after_which), style = MaterialTheme.typography.labelLarge)
-
-    if (state.parents.isEmpty()) {
-        // Nothing to hang off. Said plainly rather than shown as an empty list,
-        // which would read as a bug.
-        Text(
-            text = stringResource(R.string.editor_no_parents),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Theme.colours.warning,
-        )
-    }
-
-    state.parents.forEach { parent ->
-        FilterChip(
-            selected = state.anchor.parentItemId == parent.id,
-            onClick = { onChange(state.copy(anchor = state.anchor.copy(parentItemId = parent.id))) },
-            label = { Text(parent.title) },
-        )
-    }
 }
 
-@Composable
-private fun WindowFields(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
-    TimeField(
-        label = R.string.editor_from,
-        time = state.anchor.from,
-        onPicked = { onChange(state.copy(anchor = state.anchor.copy(from = it))) },
-    )
-
-    TimeField(
-        label = R.string.editor_to,
-        time = state.anchor.to,
-        onPicked = { onChange(state.copy(anchor = state.anchor.copy(to = it))) },
-    )
-
-    if (state.anchor.to <= state.anchor.from) {
-        Text(
-            text = stringResource(R.string.editor_window_backwards),
-            style = MaterialTheme.typography.labelMedium,
-            color = Theme.colours.warning,
-        )
-    }
-}
-
-// The rest ----------------------------------------------------------------------
-
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SalienceSection(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
-    Text(text = stringResource(R.string.editor_how_loud), style = MaterialTheme.typography.titleMedium)
+    Column {
+        Kicker(text = stringResource(R.string.editor_how_loud))
 
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small)) {
-        Salience.entries.forEach { salience ->
-            FilterChip(
-                selected = state.salience == salience,
-                onClick = { onChange(state.copy(salience = salience)) },
-                label = { Text(stringResource(salienceLabel(salience))) },
-            )
-        }
-    }
-}
+        SegmentedTabs(
+            options = Salience.entries.map { stringResource(salienceLabel(it)) },
+            selectedIndex = Salience.entries.indexOf(state.salience),
+            onSelect = { onChange(state.copy(salience = Salience.entries[it])) },
+            stretch = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun WeekdaySection(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
-    Text(text = stringResource(R.string.editor_which_days), style = MaterialTheme.typography.titleMedium)
-
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Theme.spacing.tight)) {
-        DayOfWeek.entries.forEach { day ->
-            val selected = day in state.weekdays
-
-            FilterChip(
-                selected = selected,
-                onClick = {
-                    val updated = if (selected) state.weekdays - day else state.weekdays + day
-                    onChange(state.copy(weekdays = updated))
-                },
-                label = { Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
-            )
-        }
-    }
-
-    if (state.weekdays.isEmpty) {
-        // A step on no days never runs. Saying so is cheaper than letting
-        // somebody wonder why it never appeared.
         Text(
-            text = stringResource(R.string.editor_no_days),
-            style = MaterialTheme.typography.labelMedium,
-            color = Theme.colours.warning,
+            text = stringResource(salienceHint(state.salience)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 7.dp),
         )
     }
 }
 
 @Composable
-private fun MinimumSection(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
-    QuietCard {
-        Column(
-            modifier = Modifier.padding(Theme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Theme.spacing.small),
-        ) {
-            Text(text = stringResource(R.string.editor_minimum_title), style = MaterialTheme.typography.titleMedium)
+private fun WeekdaySection(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
+    Column {
+        Kicker(text = stringResource(R.string.editor_which_days))
 
-            // Declared in advance because nobody having a bad day is in a state
-            // to decide what a fair smaller version would be.
+        WeekdayRow(
+            weekdays = state.weekdays,
+            onChange = { onChange(state.copy(weekdays = it)) },
+            modifier = Modifier.padding(top = 8.dp),
+        )
+
+        if (state.weekdays.isEmpty) {
+            // A step on no days never runs. Saying so is cheaper than letting
+            // somebody wonder why it never appeared.
             Text(
-                text = stringResource(R.string.editor_minimum_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            OutlinedTextField(
-                value = state.minimumTitle,
-                onValueChange = { onChange(state.copy(minimumTitle = it)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text(stringResource(R.string.editor_minimum_label)) },
+                text = stringResource(R.string.editor_no_days),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(top = 7.dp),
             )
         }
     }
 }
 
 @Composable
-private fun PinnedSection(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
+private fun DurationSection(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
+    val minutes = state.durationMinutes ?: 0
+
+    Column {
+        Kicker(text = stringResource(R.string.editor_duration))
+
+        Stepper(
+            value = if (minutes == 0) {
+                stringResource(R.string.editor_duration_none)
+            } else {
+                stringResource(R.string.editor_minutes_value, minutes)
+            },
+            onDecrement = { onChange(state.copy(durationMinutes = (minutes - DURATION_STEP).coerceAtLeast(0))) },
+            onIncrement = {
+                onChange(state.copy(durationMinutes = (minutes + DURATION_STEP).coerceAtMost(MAX_DURATION)))
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+    }
+}
+
+@Composable
+private fun PinnedRow(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = stringResource(R.string.editor_pinned_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.editor_pinned_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
 
             Text(
                 text = stringResource(R.string.editor_pinned_body),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 3.dp),
             )
         }
 
-        Switch(checked = state.pinned, onCheckedChange = { onChange(state.copy(pinned = it)) })
-    }
-}
-
-// Fields ------------------------------------------------------------------------
-
-@Composable
-private fun TimeField(@StringRes label: Int, time: LocalTime, onPicked: (LocalTime) -> Unit) {
-    var picking by remember { mutableStateOf(false) }
-
-    TextButton(onClick = { picking = true }) {
-        Text("${stringResource(label)}: ${time.format(CLOCK)}")
-    }
-
-    if (picking) {
-        TimePickerDialog(
-            initial = time,
-            onDismiss = { picking = false },
-            onPicked = {
-                onPicked(it)
-                picking = false
-            },
+        SquareToggle(
+            checked = state.pinned,
+            onCheckedChange = { onChange(state.copy(pinned = it)) },
+            modifier = Modifier.padding(start = Theme.spacing.medium),
         )
     }
 }
 
-/**
- * The platform picker, in a plain dialog.
- *
- * `TimePicker` is still marked experimental in Material 3 and has been for
- * several releases. Writing a wheel by hand to avoid one opt in would be worse:
- * this one already handles 24 hour mode, accessibility and the user's own
- * locale, and none of that is worth reimplementing.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerDialog(initial: LocalTime, onDismiss: () -> Unit, onPicked: (LocalTime) -> Unit) {
-    val picker = rememberTimePickerState(
-        initialHour = initial.hour,
-        initialMinute = initial.minute,
-        is24Hour = true,
-    )
+// Copy lookups -----------------------------------------------------------------
 
-    Dialog(onDismissRequest = onDismiss) {
-        QuietCard {
-            Column(
-                modifier = Modifier.padding(Theme.spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(Theme.spacing.medium),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                TimePicker(state = picker)
-
-                Row(horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small)) {
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.editor_cancel)) }
-
-                    Button(onClick = { onPicked(LocalTime.of(picker.hour, picker.minute)) }) {
-                        Text(stringResource(R.string.editor_set))
-                    }
-                }
-            }
-        }
-    }
+private fun blockerText(blocker: SaveBlocker): Int = when (blocker) {
+    SaveBlocker.NO_TITLE -> R.string.editor_reason_title
+    SaveBlocker.NO_PARENT -> R.string.editor_reason_parent
+    SaveBlocker.WINDOW_BACKWARDS -> R.string.editor_reason_window
 }
 
-@Composable
-private fun NumberField(@StringRes label: Int, value: Int, onValue: (Int) -> Unit) {
-    OutlinedTextField(
-        value = value.toString(),
-        // Anything unparseable becomes zero rather than being rejected, so the
-        // field can be cleared and retyped. The save button is what refuses a
-        // value that makes no sense.
-        onValueChange = { onValue(it.filter(Char::isDigit).toIntOrNull() ?: 0) },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        label = { Text(stringResource(label)) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-    )
-}
-
-@StringRes
-private fun anchorLabel(kind: AnchorType): Int = when (kind) {
-    AnchorType.FIXED -> R.string.anchor_fixed
-    AnchorType.RELATIVE -> R.string.anchor_relative
-    AnchorType.WINDOW -> R.string.anchor_window
-    AnchorType.INTERVAL -> R.string.anchor_interval
-}
-
-@StringRes
-private fun salienceLabel(salience: Salience): Int = when (salience) {
+internal fun salienceLabel(salience: Salience): Int = when (salience) {
     Salience.ALARM -> R.string.salience_alarm
     Salience.NOTIFY -> R.string.salience_notify
     Salience.SILENT -> R.string.salience_silent
     Salience.TIMELINE -> R.string.salience_timeline
+}
+
+private fun salienceHint(salience: Salience): Int = when (salience) {
+    Salience.ALARM -> R.string.editor_salience_hint_alarm
+    Salience.NOTIFY -> R.string.editor_salience_hint_notify
+    Salience.SILENT -> R.string.editor_salience_hint_silent
+    Salience.TIMELINE -> R.string.editor_salience_hint_timeline
 }
 
 // Preview -----------------------------------------------------------------------
@@ -422,14 +333,34 @@ private fun ItemEditorPreview() {
     BuildOrBreakTheme {
         ItemEditorContent(
             state = ItemEditorUiState.Empty.copy(
-                title = "Study block",
-                anchor = AnchorDraft(kind = AnchorType.WINDOW, from = LocalTime.of(7, 30), to = LocalTime.of(9, 30)),
+                title = "Deep work block 2",
+                anchor = AnchorDraft(kind = AnchorType.RELATIVE, offsetMinutes = 30, parentItemId = 1),
                 weekdays = Weekdays.MonToFri,
                 minimumTitle = "Fifteen minutes",
-                parents = persistentListOf(ParentChoice(1, "Wake up")),
+                parents = persistentListOf(ParentChoice(1, "Lunch + walk")),
+                isNew = false,
+                landsAtToday = "14:00",
+                durationMinutes = 50,
             ),
             onChange = {},
             onSave = {},
+            onArchive = {},
+            onCancel = {},
+        )
+    }
+}
+
+@Preview(name = "Item editor, window", showBackground = true)
+@Composable
+private fun ItemEditorWindowPreview() {
+    BuildOrBreakTheme {
+        ItemEditorContent(
+            state = ItemEditorUiState.Empty.copy(
+                anchor = AnchorDraft(kind = AnchorType.WINDOW, from = LocalTime.of(18, 0), to = LocalTime.of(20, 0)),
+            ),
+            onChange = {},
+            onSave = {},
+            onArchive = {},
             onCancel = {},
         )
     }

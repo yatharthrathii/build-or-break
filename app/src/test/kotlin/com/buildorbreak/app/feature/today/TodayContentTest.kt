@@ -1,13 +1,14 @@
 package com.buildorbreak.app.feature.today
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
-import com.buildorbreak.core.model.enums.DeliveryTier
-import com.buildorbreak.core.model.enums.Salience
 import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Rule
@@ -30,132 +31,79 @@ private const val ROBOLECTRIC_MAX_SDK = 35
 // Robolectric 4.14 ships images up to API 35 and the app targets 36. Pinned here
 // rather than lowering targetSdk, which would be letting the test tail wag the
 // release dog. Raise it when Robolectric ships 36.
-@Config(sdk = [ROBOLECTRIC_MAX_SDK])
+// A phone sized window. Robolectric's default is small enough that the card
+// under the ring sits below the fold of the lazy list and never composes.
+@Config(sdk = [ROBOLECTRIC_MAX_SDK], qualifiers = "w411dp-h891dp-xxhdpi")
 class TodayContentTest {
 
     @get:Rule
     val compose = createComposeRule()
 
-    private fun entry(
-        id: Long,
-        time: String,
-        title: String,
-        done: Boolean = false,
-        pinned: Boolean = false,
-    ) = TimelineEntry(
-        occurrenceId = id,
-        itemId = id,
-        time = time,
-        title = title,
-        detail = null,
-        salience = Salience.NOTIFY,
-        isDone = done,
-        isMissed = false,
-        isPinned = pinned,
-        isDegraded = false,
-        hasMinimum = false,
-    )
-
-    private fun stateOf(
-        entries: List<TimelineEntry>,
-        nowIndex: Int = 0,
-        degradedTier: DeliveryTier? = null,
-        hasPlan: Boolean = true,
-    ) = TodayUiState(
-        header = DayHeader(date = "Monday 5 January", subtitle = "Weekday", doneCount = 0, total = entries.size),
-        entries = persistentListOf(*entries.toTypedArray()),
-        nowIndex = nowIndex,
-        budget = null,
-        degradedTier = degradedTier,
-        hasPlan = hasPlan,
-    )
-
-    private fun render(state: TodayUiState, onDone: (Long) -> Unit = {}, onOpenReliability: () -> Unit = {}) {
+    private fun render(state: TodayUiState, actions: TodayActions = TodayActions.None) {
         compose.setContent {
-            BuildOrBreakTheme {
-                TodayContent(
-                    state = state,
-                    onDone = onDone,
-                    onSnooze = {},
-                    onSkip = {},
-                    onOpenReliability = onOpenReliability,
-                    onOpenPlan = {},
-                )
-            }
+            BuildOrBreakTheme { TodayContent(state = state, actions = actions) }
         }
     }
 
-    @Test
-    fun `the day is drawn as a list of times and titles`() {
-        render(stateOf(listOf(entry(1, "06:30", "Wake up"), entry(2, "07:00", "Medicine"))))
-
-        compose.onNodeWithText("06:30").assertIsDisplayed()
-        compose.onNodeWithText("Wake up").assertIsDisplayed()
-        compose.onNodeWithText("Medicine").assertIsDisplayed()
+    /** Brings a row of the lazy list into view before asserting on it. */
+    private fun scrollTo(text: String) {
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(text, substring = true))
     }
 
     @Test
-    fun `actions appear on the next thing only`() {
-        render(stateOf(listOf(entry(1, "06:30", "Wake up"), entry(2, "07:00", "Medicine")), nowIndex = 0))
+    fun `the next step is on the card with a done button`() {
+        render(previewState())
 
-        // One set of buttons, not one per row. A list where every row carries
-        // three buttons is a wall of buttons.
-        assertThat(countOf("Done")).isEqualTo(1)
-        assertThat(countOf("Snooze")).isEqualTo(1)
+        scrollTo("DONE")
+        compose.onNodeWithText("DONE").assertIsDisplayed()
+        // On the card and on the timeline, so two nodes carry the title.
+        compose.onAllNodesWithText("Deep work block 1", substring = true)[0].assertIsDisplayed()
     }
 
     @Test
-    fun `tapping done reports the occurrence that was completed`() {
+    fun `done hands back the occurrence on the card`() {
         var completed: Long? = null
-        render(stateOf(listOf(entry(7, "06:30", "Wake up"))), onDone = { completed = it })
+        render(previewState(), TodayActions.None.copy(onDone = { completed = it }))
 
-        compose.onNodeWithText("Done").performClick()
+        scrollTo("DONE")
+        compose.onNodeWithText("DONE").performClick()
 
-        assertThat(completed).isEqualTo(7L)
+        assertThat(completed).isEqualTo(3L)
     }
 
     @Test
-    fun `a settled row offers nothing to press`() {
-        render(stateOf(listOf(entry(1, "06:30", "Wake up", done = true)), nowIndex = 0))
+    fun `a shifted day says so and offers undo`() {
+        render(previewState())
 
-        assertThat(countOf("Done")).isEqualTo(0)
+        compose.onNodeWithText("UNDO").assertIsDisplayed()
+        compose.onNodeWithText("Day shifted +20 min", substring = true).assertIsDisplayed()
     }
 
     @Test
-    fun `a degraded tier is shown with a way to fix it`() {
-        var opened = false
-        render(
-            stateOf(listOf(entry(1, "06:30", "Wake up")), degradedTier = DeliveryTier.INEXACT_NOTIFICATION),
-            onOpenReliability = { opened = true },
+    fun `a degraded tier gets a line and a fix`() {
+        render(previewState())
+
+        compose.onNodeWithText("FIX").assertIsDisplayed()
+    }
+
+    @Test
+    fun `no plan offers the two ways in`() {
+        render(TodayUiState.Empty)
+
+        compose.onNodeWithText("PASTE A ROUTINE").assertIsDisplayed()
+        compose.onNodeWithText("WRITE IT MYSELF").assertIsDisplayed()
+    }
+
+    @Test
+    fun `everything settled shows the day complete panel`() {
+        val done = previewState().copy(
+            next = null,
+            nowIndex = -1,
+            entries = persistentListOf(previewState().entries.first()),
         )
+        render(done)
 
-        compose.onNodeWithText("Fix").performClick()
-
-        assertThat(opened).isTrue()
+        scrollTo("Nothing left on the rails.")
+        compose.onNodeWithText("Nothing left on the rails.").assertIsDisplayed()
     }
-
-    @Test
-    fun `the top tier says nothing at all`() {
-        render(stateOf(listOf(entry(1, "06:30", "Wake up")), degradedTier = null))
-
-        // A banner that is always on screen is a banner nobody reads.
-        assertThat(countOf("Fix")).isEqualTo(0)
-    }
-
-    @Test
-    fun `a fresh install is told what to do rather than shown an empty list`() {
-        render(stateOf(emptyList(), hasPlan = false))
-
-        compose.onNodeWithText("No plan yet").assertIsDisplayed()
-    }
-
-    @Test
-    fun `a weekday with no steps says so`() {
-        render(stateOf(emptyList(), hasPlan = true))
-
-        compose.onNodeWithText("Nothing today").assertIsDisplayed()
-    }
-
-    /** How many nodes carry this text. Zero is a real and useful answer. */
-    private fun countOf(text: String): Int = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
 }

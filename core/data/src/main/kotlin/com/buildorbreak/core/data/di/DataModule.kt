@@ -9,6 +9,8 @@ import com.buildorbreak.core.data.repository.MeasurementRepositoryImpl
 import com.buildorbreak.core.data.repository.MilestoneRepositoryImpl
 import com.buildorbreak.core.data.repository.OccurrenceRepositoryImpl
 import com.buildorbreak.core.data.repository.PlanRepositoryImpl
+import com.buildorbreak.core.data.repository.ResetRepositoryImpl
+import com.buildorbreak.core.data.repository.SettingsRepositoryImpl
 import com.buildorbreak.core.data.repository.TemplateRepositoryImpl
 import com.buildorbreak.core.data.repository.TrackRepositoryImpl
 import com.buildorbreak.core.domain.repository.DayCloseRepository
@@ -20,6 +22,8 @@ import com.buildorbreak.core.domain.repository.MeasurementRepository
 import com.buildorbreak.core.domain.repository.MilestoneRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
+import com.buildorbreak.core.domain.repository.ResetRepository
+import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
 import com.buildorbreak.core.domain.repository.TrackRepository
 import dagger.Binds
@@ -86,4 +90,12 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindDeliveryAuditRepository(impl: DeliveryAuditRepositoryImpl): DeliveryAuditRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindResetRepository(impl: ResetRepositoryImpl): ResetRepository
 }

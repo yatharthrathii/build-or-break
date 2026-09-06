@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.splashscreen)
+    implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.startup)
 
     // Named by SchedulerStartup so androidx.startup runs WorkManager's own

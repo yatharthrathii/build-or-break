@@ -5,7 +5,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.buildorbreak.core.model.enums.ThemeMode
 import java.time.Instant
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +48,16 @@ class PreferencesDataSource @Inject constructor(
     /** Whether the delivery tier explanation has been shown once. */
     val reliabilityExplained: Flow<Boolean> = store.data.map { it[RELIABILITY_EXPLAINED] ?: false }
 
+    /** Stored by name, and an unknown name follows the system rather than crashing. */
+    val themeMode: Flow<ThemeMode> = store.data.map { prefs ->
+        prefs[THEME_MODE]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: ThemeMode.SYSTEM
+    }
+
+    /** The Monday of a week whose suggestion was declined. Epoch day. */
+    val dismissedReviewWeek: Flow<LocalDate?> = store.data.map { prefs ->
+        prefs[DISMISSED_REVIEW_WEEK]?.let(LocalDate::ofEpochDay)
+    }
+
     suspend fun setOnboardingComplete(complete: Boolean) {
         store.edit { it[ONBOARDING_COMPLETE] = complete }
     }
@@ -57,9 +70,24 @@ class PreferencesDataSource @Inject constructor(
         store.edit { it[RELIABILITY_EXPLAINED] = explained }
     }
 
+    suspend fun setThemeMode(mode: ThemeMode) {
+        store.edit { it[THEME_MODE] = mode.name }
+    }
+
+    suspend fun setDismissedReviewWeek(week: LocalDate) {
+        store.edit { it[DISMISSED_REVIEW_WEEK] = week.toEpochDay() }
+    }
+
+    /** Everything, including whether the first run was seen. Part of a full wipe. */
+    suspend fun clear() {
+        store.edit { it.clear() }
+    }
+
     private companion object {
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
         val LAST_RESCHEDULE_AT = longPreferencesKey("last_reschedule_at")
         val RELIABILITY_EXPLAINED = booleanPreferencesKey("reliability_explained")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+        val DISMISSED_REVIEW_WEEK = longPreferencesKey("dismissed_review_week")
     }
 }

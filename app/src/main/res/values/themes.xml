@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Only the launch theme lives in XML. Everything after the first frame is
-    Compose, driven by :core:designsystem and specified in design.md.
+    Compose, driven by :core:designsystem.
 
-    The launch window uses the light paper surface so the very first frame is
-    already the app's own colour, not a white flash. design.md section 2 makes
-    light the default.
+    The launch window uses the light ground so the very first frame is already
+    the app's own colour, not a white flash.
 -->
 <resources>
     <style name="Theme.BuildOrBreak.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/paper_surface</item>
+        <item name="windowSplashScreenBackground">@color/ground</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="postSplashScreenTheme">@style/Theme.BuildOrBreak</item>
     </style>

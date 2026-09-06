@@ -82,15 +82,22 @@ class ObservePlanUseCase @Inject constructor(
     private val items: ItemRepository,
 ) {
 
+    /**
+     * [templateId] picks which template is being edited. Null, or an id that no
+     * longer exists, falls back to the default so a deleted template never
+     * leaves the editor pointing at nothing.
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
-    operator fun invoke(): Flow<PlanContents> = plans.observeActive().flatMapLatest { plan ->
+    operator fun invoke(templateId: Long? = null): Flow<PlanContents> = plans.observeActive().flatMapLatest { plan ->
         if (plan == null) return@flatMapLatest flowOf(PlanContents.None)
 
         templates.observeForPlan(plan.id).flatMapLatest { available ->
-            val template = chosen(available) ?: return@flatMapLatest flowOf(PlanContents.None)
+            val template = available.firstOrNull { it.id == templateId }
+                ?: chosen(available)
+                ?: return@flatMapLatest flowOf(PlanContents.None)
 
             items.observeForTemplate(template.id).map { list ->
-                PlanContents.Loaded(planName = plan.name, template = template, items = list)
+                PlanContents.Loaded(planName = plan.name, template = template, templates = available, items = list)
             }
         }
     }
@@ -127,7 +134,10 @@ sealed interface PlanContents {
 
     data class Loaded(
         val planName: String,
+        /** The template being edited. */
         val template: DayTemplate,
+        /** Every template on the plan, for the tabs. */
+        val templates: List<DayTemplate>,
         val items: List<Item>,
     ) : PlanContents
 }

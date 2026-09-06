@@ -1,7 +1,9 @@
 package com.buildorbreak.core.designsystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -19,6 +21,8 @@ import androidx.compose.ui.unit.dp
  */
 data class Spacing(
     val hairline: Dp = 1.dp,
+    /** The weight of every drawn border. Two, never one, never rounded. */
+    val rule: Dp = 2.dp,
     val tight: Dp = 4.dp,
     val small: Dp = 8.dp,
     val medium: Dp = 16.dp,
@@ -31,11 +35,28 @@ private val LocalSpacing = staticCompositionLocalOf { Spacing() }
 private val LocalColours = staticCompositionLocalOf { LightExtras }
 
 /**
+ * Square. Everything.
+ *
+ * Zero radius on every Material component is the single decision that makes
+ * the app look like a printed timetable rather than another rounded card app.
+ * It is set once here so that no screen can quietly reintroduce a corner.
+ */
+private val Square = RoundedCornerShape(0.dp)
+
+private val SquareShapes = Shapes(
+    extraSmall = Square,
+    small = Square,
+    medium = Square,
+    large = Square,
+    extraLarge = Square,
+)
+
+/**
  * Everything Compose draws sits inside this.
  *
  * **No dynamic colour.** Material You would take the palette from the user's
- * wallpaper, and this app's whole visual argument is that it is calm, warm and
- * the same every morning. A routine app that is lilac this week because the
+ * wallpaper, and this app's whole visual argument is that it is sharp, fixed
+ * and the same every morning. A routine app that is lilac this week because the
  * wallpaper changed has given up the one thing that made it feel steady.
  */
 @Composable
@@ -50,6 +71,7 @@ fun BuildOrBreakTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Comp
         MaterialTheme(
             colorScheme = scheme,
             typography = BuildOrBreakTypography,
+            shapes = SquareShapes,
             content = content,
         )
     }

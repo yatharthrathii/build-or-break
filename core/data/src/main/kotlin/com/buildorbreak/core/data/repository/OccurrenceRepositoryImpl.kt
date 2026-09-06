@@ -80,4 +80,8 @@ class OccurrenceRepositoryImpl @Inject constructor(
     override suspend fun pendingBefore(instant: Instant): List<Occurrence> = withContext(dispatchers.io) {
         occurrences.pendingBefore(instant, OccurrenceState.PENDING.name).map { it.toModel() }
     }
+
+    override suspend fun between(from: LocalDate, to: LocalDate): List<Occurrence> = withContext(dispatchers.io) {
+        occurrences.between(from, to).map { it.toModel() }
+    }
 }

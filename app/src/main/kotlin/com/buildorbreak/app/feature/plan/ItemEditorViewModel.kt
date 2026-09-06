@@ -4,7 +4,9 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.buildorbreak.core.common.result.Outcome
+import com.buildorbreak.core.domain.usecase.ArchiveItemUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
+import com.buildorbreak.core.domain.usecase.ObserveTodayUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.domain.usecase.SaveItemUseCase
 import com.buildorbreak.core.model.enums.AnchorType
@@ -17,6 +19,8 @@ import com.buildorbreak.core.model.plan.MinimumVersion
 import com.buildorbreak.core.model.plan.Weekdays
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.ImmutableList
@@ -30,6 +34,9 @@ import kotlinx.coroutines.launch
 
 private const val DEFAULT_INTERVAL_MINUTES = 45
 private const val DEFAULT_OFFSET_MINUTES = 15
+
+private val CLOCK: DateTimeFormatter
+    get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
 
 /**
  * Where a new step starts before anybody has said otherwise.
@@ -61,9 +68,12 @@ data class AnchorDraft(
     val parentItemId: Long? = null,
 )
 
-/** A step this one could hang off. Only items above it can be parents. */
+/** A step this one could hang off. Only other items on the template qualify. */
 @Immutable
 data class ParentChoice(val id: Long, val title: String)
+
+/** Why the save button is off. Facts; the screen has the words. */
+enum class SaveBlocker { NO_TITLE, NO_PARENT, WINDOW_BACKWARDS }
 
 @Immutable
 data class ItemEditorUiState(
@@ -77,6 +87,10 @@ data class ItemEditorUiState(
     val minimumTitle: String,
     val parents: ImmutableList<ParentChoice>,
     val isNew: Boolean,
+    /** Where this step lands today, when it is on today's timeline. */
+    val landsAtToday: String?,
+    /** How many relative steps hang off this one. Worth knowing before a move. */
+    val childCount: Int,
 ) {
     /**
      * A window that ends before it starts is the one input the editor refuses.
@@ -85,10 +99,17 @@ data class ItemEditorUiState(
      * is a typo rather than a preference, and letting it save would produce a
      * step that silently runs once at the wrong time.
      */
-    val canSave: Boolean
-        get() = title.isNotBlank() &&
-            (anchor.kind != AnchorType.RELATIVE || anchor.parentItemId != null) &&
-            (anchor.kind !in setOf(AnchorType.WINDOW, AnchorType.INTERVAL) || anchor.to > anchor.from)
+    val saveBlocker: SaveBlocker?
+        get() = when {
+            title.isBlank() -> SaveBlocker.NO_TITLE
+            anchor.kind == AnchorType.RELATIVE && anchor.parentItemId == null -> SaveBlocker.NO_PARENT
+            anchor.kind in setOf(AnchorType.WINDOW, AnchorType.INTERVAL) && anchor.to <= anchor.from ->
+                SaveBlocker.WINDOW_BACKWARDS
+
+            else -> null
+        }
+
+    val canSave: Boolean get() = saveBlocker == null
 
     companion object {
         val Empty = ItemEditorUiState(
@@ -102,6 +123,8 @@ data class ItemEditorUiState(
             minimumTitle = "",
             parents = persistentListOf(),
             isNew = true,
+            landsAtToday = null,
+            childCount = 0,
         )
     }
 }
@@ -117,29 +140,37 @@ data class ItemEditorUiState(
 @HiltViewModel
 class ItemEditorViewModel @Inject constructor(
     private val observePlan: ObservePlanUseCase,
+    private val observeToday: ObserveTodayUseCase,
     private val saveItem: SaveItemUseCase,
+    private val archiveItem: ArchiveItemUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ItemEditorUiState.Empty)
     val state: StateFlow<ItemEditorUiState> = _state.asStateFlow()
 
     private var templateId: Long = 0
+    private var sortOrder: Int = 0
 
     /** [itemId] of zero means a new step. */
     fun load(itemId: Long) = viewModelScope.launch {
-        val contents = observePlan().first()
-        val loaded = contents as? PlanContents.Loaded
+        val loaded = observePlan().first() as? PlanContents.Loaded
+        val siblings = loaded?.items.orEmpty()
 
         templateId = loaded?.template?.id ?: observePlan.defaultTemplateId() ?: 0
 
         val existing = if (itemId > 0) observePlan.itemById(itemId) else null
-        val parents = loaded?.items.orEmpty()
+        sortOrder = existing?.sortOrder ?: ((siblings.maxOfOrNull { it.sortOrder } ?: -1) + 1)
+
+        val parents = siblings
             // A step cannot hang off itself, and a chain that pointed backwards
             // would be a cycle the graph would then have to cut.
             .filter { it.id != itemId }
             .map { ParentChoice(it.id, it.title) }
 
-        _state.value = existing?.let { toState(it, parents) } ?: newState(parents)
+        val landsAt = observeToday().first()?.entryFor(itemId)?.at?.format(CLOCK)
+        val children = siblings.count { (it.anchor as? Anchor.Relative)?.parentItemId == itemId }
+
+        _state.value = existing?.let { toState(it, parents, landsAt, children) } ?: newState(parents)
     }
 
     fun onChange(state: ItemEditorUiState) {
@@ -153,6 +184,12 @@ class ItemEditorViewModel @Inject constructor(
         if (saveItem(toItem(current)) is Outcome.Success) onDone()
     }
 
+    /** Archived rather than deleted, so past occurrences keep their meaning. */
+    fun onArchive(onDone: () -> Unit) = viewModelScope.launch {
+        val id = _state.value.itemId
+        if (id > 0 && archiveItem(id) is Outcome.Success) onDone()
+    }
+
     // Mapping ------------------------------------------------------------------
 
     private fun newState(parents: List<ParentChoice>) = ItemEditorUiState.Empty.copy(
@@ -160,7 +197,12 @@ class ItemEditorViewModel @Inject constructor(
         isNew = true,
     )
 
-    private fun toState(item: Item, parents: List<ParentChoice>) = ItemEditorUiState(
+    private fun toState(
+        item: Item,
+        parents: List<ParentChoice>,
+        landsAt: String?,
+        children: Int,
+    ) = ItemEditorUiState(
         itemId = item.id,
         title = item.title,
         anchor = toDraft(item.anchor),
@@ -171,6 +213,8 @@ class ItemEditorViewModel @Inject constructor(
         minimumTitle = item.minimum?.title.orEmpty(),
         parents = parents.toImmutableList(),
         isNew = false,
+        landsAtToday = landsAt,
+        childCount = children,
     )
 
     /**
@@ -222,7 +266,7 @@ class ItemEditorViewModel @Inject constructor(
         title = state.title.trim(),
         detail = null,
         anchor = toAnchor(state.anchor),
-        duration = state.durationMinutes?.minutes,
+        duration = state.durationMinutes?.takeIf { it > 0 }?.minutes,
         salience = state.salience,
         weekdays = state.weekdays,
         pinned = state.pinned,
@@ -232,7 +276,7 @@ class ItemEditorViewModel @Inject constructor(
         valueKind = ValueKind.NONE,
         bundleUri = null,
         trackId = null,
-        sortOrder = state.itemId.toInt(),
+        sortOrder = sortOrder,
         archivedAt = null,
     )
 }

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The rail motif from design.md section 5.4: a vertical stroke with one filled
-    notch and a single leader line.
+    The mark: a square of accent with the slash cut through it in ink.
 
-    No checkmark, no calendar, no clock face, no letter. It reads at 48dp and it
-    looks like nothing else in this category, which is the entire point.
+    The slash is the identity. BUILD/BREAK is about the line between the two,
+    and one diagonal says so at 48dp without a letter, a clock or a tick.
+    Hard cornered, like everything else.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -12,22 +12,13 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- The rail -->
+    <!-- The square -->
     <path
-        android:fillColor="#A8452B"
-        android:fillAlpha="0.35"
-        android:pathData="M41,26 H47 V54 H41 Z" />
-    <path
-        android:fillColor="#A8452B"
-        android:pathData="M41,54 H47 V84 H41 Z" />
+        android:fillColor="@color/accent"
+        android:pathData="M30,30 H78 V78 H30 Z" />
 
-    <!-- The now marker: a printed notch, deliberately hard cornered -->
+    <!-- The slash, cut from upper right to lower left -->
     <path
-        android:fillColor="#A8452B"
-        android:pathData="M35,49 H53 V61 H35 Z" />
-
-    <!-- The leader line running out to an item -->
-    <path
-        android:fillColor="#A8452B"
-        android:pathData="M53,53 H76 V57 H53 Z" />
+        android:fillColor="@color/ink"
+        android:pathData="M64,26 L72,26 L44,82 L36,82 Z" />
 </vector>

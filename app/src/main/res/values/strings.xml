@@ -5,35 +5,145 @@
     a Hinglish variant in V1.5 is a translation job and not a refactor.
 
     rules.md section 2 governs the wording: short, second person, present tense,
-    no em dash, no en dash, no exclamation marks, no filler adjectives.
+    no em dash, no exclamation marks, no filler adjectives. Labels are written in
+    natural case; the design system sets them in capitals.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Build or Break</string>
+    <string name="action_back">Back</string>
 
-    <!-- Today -->
-    <string name="today_subtitle">%1$s · %2$s</string>
+    <!-- The bottom bar -->
+    <string name="nav_today">Today</string>
+    <string name="nav_plan">Plan</string>
+    <string name="nav_insights">Insights</string>
+    <string name="nav_settings">Settings</string>
 
     <!--
-        A plural rather than one string. English does not inflect here, but Hindi
-        does, and rules.md wants a translator to be able to do their job without
-        anybody reopening the Kotlin.
+        First run. Three screens: what it does, how the plan gets in, and what
+        the phone has to allow. Each asks for one thing.
     -->
-    <plurals name="today_done_count">
-        <item quantity="one">%1$d of %2$d done</item>
-        <item quantity="other">%1$d of %2$d done</item>
-    </plurals>
-    <string name="today_action_done">Done</string>
-    <string name="today_action_snooze">Snooze</string>
-    <string name="today_action_skip">Skip</string>
-    <string name="today_notice_fix">Fix</string>
+    <string name="onboarding_step_of">Step %1$d of %2$d</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_cta_sample">Load sample day</string>
+    <string name="onboarding_cta_paste">Paste a routine</string>
+    <string name="onboarding_cta_write">Start blank</string>
+    <string name="onboarding_start_day">Start my day</string>
+    <string name="onboarding_failed">That could not be saved. Try again.</string>
 
-    <string name="today_empty_title">Nothing today</string>
-    <string name="today_empty_body">This template has no steps that run on this weekday.</string>
+    <string name="onboarding_welcome_title">Your day,\non rails.</string>
+    <string name="onboarding_welcome_body">You already have a routine. Build or Break runs it, and re-times it when the day slips.</string>
+    <string name="onboarding_point_1_title">Steps with real times</string>
+    <string name="onboarding_point_1_body">Fixed times, offsets like 20 min after Gym, or a window you can hit anywhere inside.</string>
+    <string name="onboarding_point_2_title">Alarms that adapt</string>
+    <string name="onboarding_point_2_body">Run late and every dependent step moves with you. Pinned steps hold their ground.</string>
+    <string name="onboarding_point_3_title">Any habit, on this phone</string>
+    <string name="onboarding_point_3_body">Practice, medicine, study, training. No account, no sync, nothing leaves the device.</string>
+
+    <string name="onboarding_start_title">How do you want\nto start?</string>
+    <string name="onboarding_start_body">You can change any of it later.</string>
+    <string name="onboarding_choice_sample_kicker">Recommended</string>
+    <string name="onboarding_choice_sample_title">Start from a sample day</string>
+    <string name="onboarding_choice_sample_body">Nine steps with fixed, relative and window times. Edit or delete anything.</string>
+    <string name="onboarding_choice_paste_kicker">Fastest if you have one</string>
+    <string name="onboarding_choice_paste_title">Paste a routine from an AI chat</string>
+    <string name="onboarding_choice_paste_body">Drop the text in. The app reads the times, offsets and windows, then shows you what it understood before saving.</string>
+    <!-- The hyphen is the import format's window syntax. An en dash would not parse. -->
+    <string name="onboarding_paste_example" tools:ignore="TypographyDashes">07:30 | Gym | 60m\n+15m | Protein + shower\n18:00-20:00 | Language drill</string>
+    <string name="onboarding_choice_write_kicker">Full control</string>
+    <string name="onboarding_choice_write_title">Write it myself</string>
+    <string name="onboarding_choice_write_body">A blank plan. Add the first step and go.</string>
+
+    <string name="onboarding_permissions_title">Three permissions,\none reason each</string>
+    <string name="onboarding_permissions_body">Skip any of them. The app still works, just quieter.</string>
+    <string name="perm_alarms_title">Alarms and reminders</string>
+    <string name="perm_alarms_body">So a step can ring at an exact minute, and ring again at the new minute when the day shifts.</string>
+    <string name="perm_notifications_title">Notifications</string>
+    <string name="perm_notifications_body">For the next up nudge and the one tap Done on the lock screen.</string>
+    <string name="perm_battery_title">Ignore battery optimisation</string>
+    <string name="perm_battery_body">Android can silence delayed alarms to save power. This keeps a 06:40 alarm at 06:40.</string>
+    <string name="perm_autostart_title">Autostart</string>
+    <string name="perm_autostart_body">Your phone keeps its own list of apps allowed to start on their own. The app cannot see that list, so this row never turns green. If alarms go missing overnight, this is usually why.</string>
+    <string name="perm_allow">Allow</string>
+    <string name="perm_open_settings">Open settings</string>
+    <string name="perm_granted">Granted</string>
+    <string name="onboarding_right_now">Right now: %1$s</string>
+    <string name="onboarding_privacy_note">No account, no analytics, no network calls. Your plan lives in one file on this phone.</string>
+
+    <!--
+        The sample day, in the app's own import format. Read by the same parser
+        a pasted routine goes through, so a sample that loads is proof the
+        import works. Nine steps, all four kinds of time, one pinned.
+    -->
+    <string name="sample_routine_plan">My routine</string>
+    <string name="sample_routine_template">Weekday</string>
+    <string name="sample_routine_text">06:40 | Wake + water | alarm
+06:50-07:30 | Journal | 10m
+07:30 | Gym | 60m | alarm | pinned
++15m | Protein + shower | 15m
+09:30-10:20 | Deep work block 1 | 50m
+12:30 | Lunch + walk | 45m | pinned
++30m | Deep work block 2 | 50m | min: fifteen minutes
+18:00-20:00 | Language drill | 30m | min: ten minutes
+22:15 | Wind down, phone away | alarm</string>
+
+    <!-- Today -->
+    <string name="today_title">Today</string>
+    <string name="today_kicker">%1$s · %2$s plan</string>
+    <string name="today_of">%1$d of %2$d</string>
+    <string name="today_steps_kept">Steps kept today</string>
+    <plurals name="today_run_days">
+        <item quantity="one">On time. %1$d day kept.</item>
+        <item quantity="other">On time. %1$d days straight.</item>
+    </plurals>
+    <string name="today_run_none">Keep today and the run starts.</string>
+    <plurals name="today_shift_line">
+        <item quantity="one">Day shifted +%1$d min · %2$d alarm moved</item>
+        <item quantity="other">Day shifted +%1$d min · %2$d alarms moved</item>
+    </plurals>
+    <string name="today_undo">Undo</string>
+    <string name="today_on_time">Everything on its planned time.</string>
+    <string name="today_running_late">Running late</string>
+    <string name="today_notice_fix">Fix</string>
+    <string name="today_next_up">Next up</string>
+    <string name="today_duration_min">%1$d min</string>
+    <string name="today_done">Done</string>
+    <string name="today_done_minimum">Smaller version</string>
+    <string name="today_snooze_10">Snooze 10</string>
+    <string name="today_skip_today">Skip today</string>
+    <string name="today_all_done_kicker">Day complete</string>
+    <string name="today_all_done_title">Nothing left on the rails.</string>
+    <string name="today_all_done_body">Every step is settled. Tomorrow starts from the plan again.</string>
+    <string name="today_late_title">How late?</string>
+    <string name="today_late_body">Every step that is not pinned moves by this much. Undo it from the bar any time.</string>
+    <string name="today_late_option">+%1$d</string>
+    <string name="today_the_day">The day</string>
 
     <string name="today_no_plan_title">No plan yet</string>
-    <string name="today_no_plan_body">Paste in the routine you already have and this will run it.</string>
-    <string name="today_import">Import a routine</string>
-    <string name="today_open_plan">Plan</string>
+    <string name="today_no_plan_body">Paste the routine you already have, or write the first step yourself.</string>
+    <string name="today_paste">Paste a routine</string>
+    <string name="today_write">Write it myself</string>
+    <string name="today_empty_title">Nothing today</string>
+    <string name="today_empty_body">This plan has no steps that run on this weekday.</string>
+
+    <!-- What kind of time a step keeps. Set as a badge. -->
+    <string name="kind_fixed">Fixed</string>
+    <!-- Minutes, not a count of things, so the word after the number does not inflect. -->
+    <string name="kind_after" tools:ignore="PluralsCandidate">+%1$d after %2$s</string>
+    <string name="kind_window">Window</string>
+    <string name="kind_every">Every %1$d min</string>
+
+    <!-- The one note beside a row. -->
+    <string name="note_pinned">Never moves</string>
+    <string name="note_done_at">Done %1$s</string>
+    <string name="note_done_over" tools:ignore="PluralsCandidate">Done %1$s · ran %2$d over</string>
+    <string name="note_done_early" tools:ignore="PluralsCandidate">Done %1$s · %2$d early</string>
+    <string name="note_moved_later">Moved +%1$d</string>
+    <string name="note_moved_earlier">Moved −%1$d</string>
+    <string name="note_ends">Ends %1$s</string>
+    <string name="note_missed">Missed</string>
+    <string name="note_skipped">Skipped</string>
+    <string name="note_snoozed">Snoozed ×%1$d</string>
+    <string name="note_degraded">Time could not be worked out</string>
 
     <!--
         Budget. Counts rather than a percentage, because "4 of 11" can be checked
@@ -43,7 +153,6 @@
         <item quantity="one">%1$d alarm today. More than three and they stop landing.</item>
         <item quantity="other">%1$d alarms today. More than three and they stop landing.</item>
     </plurals>
-
     <plurals name="budget_too_many_notifications">
         <item quantity="one">%1$d notification today. That is a lot to hear.</item>
         <item quantity="other">%1$d notifications today. That is a lot to hear.</item>
@@ -54,8 +163,11 @@
         missing, because somebody reading this after a missed alarm wants to know
         whether it will happen again.
     -->
+    <string name="reliability_title">Reliability</string>
+    <string name="reliability_kicker">What the phone allows</string>
     <string name="tier_full_screen_headline">Alarms will work</string>
     <string name="tier_full_screen_body">A step set to alarm will take over the screen, ring and get louder until you deal with it.</string>
+    <string name="tier_full_screen_short">Alarms will ring and take over the screen.</string>
 
     <string name="tier_heads_up_headline">Alarms will arrive on time</string>
     <string name="tier_heads_up_body">Alarms arrive at the right minute with sound, but cannot take over the screen. Enough for a reminder, easy to sleep through.</string>
@@ -73,19 +185,14 @@
 
     <string name="fix_notifications_what">Turn notifications on</string>
     <string name="fix_notifications_why">Without them nothing can be delivered at all.</string>
-
     <string name="fix_channel_what">Turn the Alarms channel back up</string>
     <string name="fix_channel_why">It is set to silent, so alarms arrive without a sound.</string>
-
     <string name="fix_exact_what">Allow alarms and reminders</string>
     <string name="fix_exact_why">Without it Android decides when to deliver, which can be fifteen minutes late.</string>
-
     <string name="fix_full_screen_what">Allow full screen alarms</string>
     <string name="fix_full_screen_why">Alarms will still ring, but will not wake the screen.</string>
-
     <string name="fix_battery_what">Remove battery restrictions</string>
     <string name="fix_battery_why">Your phone may stop this app overnight, whatever else is allowed.</string>
-
     <string name="fix_open_notification_settings">Open notification settings</string>
     <string name="fix_open_alarm_settings">Open alarm settings</string>
     <string name="fix_open_app_settings">Open app settings</string>
@@ -99,98 +206,210 @@
     <string name="autostart_body">Your phone keeps its own list of apps allowed to start on their own. This app cannot see that list, so it cannot tell you whether this is already done. If alarms go missing overnight, this is usually why.</string>
     <string name="autostart_action">Open autostart settings</string>
 
-    <!-- Plan editor -->
+    <!-- Plan -->
+    <string name="plan_title">Plan</string>
+    <plurals name="plan_kicker">
+        <item quantity="one">%1$d step · %2$s – %3$s</item>
+        <item quantity="other">%1$d steps · %2$s – %3$s</item>
+    </plurals>
+    <string name="plan_kicker_empty">No steps yet</string>
+    <string name="plan_kicker_none">No plan yet</string>
     <string name="plan_none_title">No plan yet</string>
-    <string name="plan_none_body">Bring in the routine you already have. Whatever you wrote, or whatever an AI tool wrote for you.</string>
-    <string name="plan_import">Import a routine</string>
+    <string name="plan_none_body">Bring in the routine you already have, or write the first step yourself.</string>
+    <string name="plan_import">Paste a routine</string>
+    <string name="plan_write">Write it myself</string>
+    <string name="plan_add_step">Add a step</string>
+    <string name="plan_time_relative">+%1$d</string>
+    <string name="plan_time_every">every</string>
+    <string name="plan_line_fixed">Fixed</string>
+    <string name="plan_line_after">After %1$s</string>
+    <string name="plan_line_window">Window · %1$d min wide</string>
+    <string name="plan_line_every">Every %1$d min</string>
+    <plurals name="plan_line_anchor">
+        <item quantity="one">Anchor for %1$d step</item>
+        <item quantity="other">Anchor for %1$d steps</item>
+    </plurals>
+    <string name="plan_line_alarm">Alarm on</string>
+    <string name="plan_line_pinned">Pinned</string>
+    <string name="plan_line_separator">" · "</string>
 
-    <string name="plan_empty_title">No steps yet</string>
-    <string name="plan_empty_body">Add the first thing your day starts with.</string>
+    <!-- Item editor -->
+    <string name="editor_new_title">New step</string>
+    <string name="editor_edit_title">Edit step</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_cancel">Cancel</string>
+    <string name="editor_set">Set</string>
+    <string name="editor_title_label">Title</string>
+    <string name="editor_title_hint">What is this step</string>
+    <string name="editor_reason_title">Add a title to save.</string>
+    <string name="editor_reason_parent">Pick which step this one comes after.</string>
+    <string name="editor_reason_window">The end is before the start.</string>
 
-    <string name="plan_add_step">Add step</string>
-    <string name="plan_remove">Remove</string>
-    <string name="plan_note_pinned">pinned</string>
-    <string name="plan_note_minimum">has a smaller version</string>
-    <string name="plan_note_separator">" · "</string>
+    <string name="editor_timing">Timing</string>
+    <string name="anchor_fixed">Fixed</string>
+    <string name="anchor_relative">Relative</string>
+    <string name="anchor_window">Window</string>
+    <string name="anchor_interval">Repeat</string>
+    <string name="editor_at">At</string>
+    <string name="editor_from">From</string>
+    <string name="editor_to">To</string>
+    <string name="editor_offset">Offset</string>
+    <string name="editor_after">After</string>
+    <string name="editor_every">Every</string>
+    <string name="editor_minutes_value">%1$d min</string>
+    <string name="editor_pick_parent">Pick a step</string>
+    <string name="editor_pick_parent_title">After which step</string>
+    <string name="editor_no_parents">There is nothing else on this plan to hang it off. Add a fixed step first.</string>
+    <string name="editor_lands_at">Today this lands at %1$s.</string>
+    <plurals name="editor_lands_at_anchor">
+        <item quantity="one">Today this lands at %1$s. %2$d step follows it.</item>
+        <item quantity="other">Today this lands at %1$s. %2$d steps follow it.</item>
+    </plurals>
+
+    <string name="editor_how_loud">How loud</string>
+    <string name="salience_alarm">Alarm</string>
+    <string name="salience_notify">Remind</string>
+    <string name="salience_silent">Quiet</string>
+    <string name="salience_timeline">List only</string>
+    <string name="editor_salience_hint_alarm">Rings, takes over the screen, and gets louder until you deal with it.</string>
+    <string name="editor_salience_hint_notify">A notification with sound, at the right minute.</string>
+    <string name="editor_salience_hint_silent">A notification with no sound. There when you look.</string>
+    <string name="editor_salience_hint_timeline">Shows on the timeline only. Nothing is delivered.</string>
+
+    <string name="editor_which_days">Which days</string>
+    <string name="editor_no_days">On no days, this step will never run.</string>
+    <string name="editor_duration">Duration</string>
+    <string name="editor_duration_none">None</string>
+
+    <string name="editor_minimum_title">Smaller version</string>
+    <string name="editor_minimum_body">Decided now, offered on a bad day. Nobody having one is in a state to work out what a fair smaller version would be.</string>
+    <string name="editor_minimum_hint">For example, ten minutes</string>
+
+    <string name="editor_pinned_title">Holds its ground</string>
+    <string name="editor_pinned_body">A pinned step does not move when the whole day is shifted.</string>
+    <string name="editor_archive">Remove this step</string>
 
     <!--
         Import. The first thing anybody does, and the reason the app hands out a
         prompt rather than trying to parse every shape of prose.
     -->
-    <string name="import_title">Bring in your routine</string>
+    <string name="import_title">Paste a routine</string>
     <string name="import_body">This app runs a plan you already have. It does not write one for you.</string>
-
-    <string name="import_prompt_title">Easiest way</string>
-    <string name="import_prompt_body">Copy this and give it to whichever tool wrote your routine. Paste back what it returns and every line will be read correctly.</string>
+    <string name="import_prompt_kicker">Easiest way</string>
+    <string name="import_prompt_title">Copy the prompt, paste the answer</string>
+    <string name="import_prompt_body">Give this to whichever tool wrote your routine. Paste back what it returns and every line will be read correctly.</string>
     <string name="import_copy_prompt">Copy the prompt</string>
     <!-- Shown in the system clipboard preview on Android 13 and above. -->
     <string name="import_clip_label">Routine format prompt</string>
-
     <string name="import_paste_label">Your routine</string>
-    <string name="import_paste_placeholder">06:30 Wake up
-+10m Drink water
-07:30-09:30 Study block</string>
+    <string name="import_paste_placeholder" tools:ignore="TypographyDashes">06:30 | Wake up\n+10m | Drink water\n07:30-09:30 | Study block</string>
     <string name="import_review">Read it</string>
-
     <string name="import_review_title">Check this is right</string>
     <string name="import_nothing_understood">Nothing here looked like a step. Go back and check the times are on each line.</string>
     <string name="import_note_pinned">pinned</string>
     <string name="import_note_minimum">has a smaller version</string>
     <string name="import_note_separator">" · "</string>
     <string name="import_name_label">Name this routine</string>
-    <string name="import_back">Back</string>
+    <string name="import_name_hint">Weekday</string>
     <string name="import_confirm">Save it</string>
     <string name="import_failed">That could not be saved. Try again.</string>
-
     <plurals name="import_understood_count">
         <item quantity="one">%1$d step understood. Check it before saving.</item>
         <item quantity="other">%1$d steps understood. Check them before saving.</item>
     </plurals>
-
-    <!--
-        Never dropped silently. A line the parser could not read is shown, so a
-        misread is caught here rather than at six in the morning.
-    -->
     <plurals name="import_not_understood_count">
         <item quantity="one">%1$d line was not understood</item>
         <item quantity="other">%1$d lines were not understood</item>
     </plurals>
 
-    <!-- Item editor -->
-    <string name="editor_title_label">What is this step</string>
-    <string name="editor_when">When</string>
-    <string name="editor_at">At</string>
-    <string name="editor_from">From</string>
-    <string name="editor_to">To</string>
-    <string name="editor_every_minutes">Repeat every, minutes</string>
-    <string name="editor_offset_minutes">Minutes after</string>
-    <string name="editor_after_which">After which step</string>
-    <string name="editor_no_parents">There is nothing above this to hang it off. Pick another kind of time.</string>
-    <string name="editor_window_backwards">The end is before the start.</string>
+    <!-- Insights -->
+    <string name="insights_title">Insights</string>
+    <string name="insights_week">Week</string>
+    <string name="insights_month">Month</string>
+    <string name="insights_kicker_week">Week %1$d · %2$s</string>
+    <string name="insights_kicker_month">Last 4 weeks · %1$s</string>
+    <string name="insights_percent">%1$d%%</string>
+    <string name="insights_steps_kept">Steps kept</string>
+    <plurals name="insights_kept_of">
+        <item quantity="one">%1$d of %2$d step</item>
+        <item quantity="other">%1$d of %2$d steps</item>
+    </plurals>
+    <string name="insights_change_up">+%1$d pts vs last %2$s</string>
+    <string name="insights_change_down">−%1$d pts vs last %2$s</string>
+    <string name="insights_change_flat">Same as last %1$s</string>
+    <string name="insights_change_none">First %1$s. Nothing to compare yet.</string>
+    <string name="insights_period_week">week</string>
+    <string name="insights_period_month">month</string>
+    <string name="insights_avg_slip">Avg start slip %1$d min</string>
+    <string name="insights_no_slip">Starts on time</string>
+    <string name="insights_kept_per_day">Kept per day</string>
+    <string name="insights_kept_per_week">Kept per week</string>
+    <string name="insights_step_by_step">Step by step</string>
+    <string name="insights_col_step">Step</string>
+    <string name="insights_col_kept">Kept</string>
+    <string name="insights_col_slip">Slip</string>
+    <string name="insights_kept_cell">%1$d/%2$d</string>
+    <string name="insights_slip_late">+%1$dm</string>
+    <string name="insights_slip_early">−%1$dm</string>
+    <string name="insights_slip_none">–</string>
+    <string name="insights_one_change">One change worth making</string>
+    <string name="insights_apply">Open the step</string>
+    <string name="insights_not_this_week">Not this week</string>
+    <plurals name="insights_suggestion_slipped">
+        <item quantity="one">It ran about %1$d min late and was missed %2$d of %3$d day. The plan is later than the day is.</item>
+        <item quantity="other">It ran about %1$d min late and was missed %2$d of %3$d days. The plan is later than the day is.</item>
+    </plurals>
+    <plurals name="insights_suggestion_missed">
+        <item quantity="one">Missed %1$d of %2$d days.</item>
+        <item quantity="other">Missed %1$d of %2$d days.</item>
+    </plurals>
+    <string name="insights_empty_title">Nothing to show yet</string>
+    <string name="insights_empty_body">Keep a few steps and this fills in. The first week is settling in, whatever the numbers say.</string>
+    <string name="insights_no_plan_title">No plan yet</string>
+    <string name="insights_no_plan_body">Once a plan is running, this is where the week shows up.</string>
 
-    <string name="editor_how_loud">How loud</string>
-    <string name="editor_which_days">Which days</string>
-    <string name="editor_no_days">On no days, this step will never run.</string>
+    <!-- The one suggested change, with the step's title in the slot. -->
+    <string name="suggestion_move_time">Move %1$s to when it actually happens</string>
+    <string name="suggestion_widen_window">Give %1$s a window instead of a minute</string>
+    <string name="suggestion_raise_salience">Make %1$s louder</string>
+    <string name="suggestion_use_minimum">Run the smaller version of %1$s by default</string>
+    <string name="suggestion_keep_and_focus">Keep %1$s as it is and focus on it</string>
+    <string name="suggestion_leave_it">Leave %1$s alone</string>
+    <string name="suggestion_remove_item">Take %1$s off the plan</string>
 
-    <string name="editor_minimum_title">Smaller version</string>
-    <string name="editor_minimum_body">Decided now, offered on a bad day. Nobody having one is in a state to work out what a fair smaller version would be.</string>
-    <string name="editor_minimum_label">For example, ten minutes</string>
+    <!-- The shape of the week, in one line under the chart. -->
+    <string name="story_on_track">Holding. Nothing to change.</string>
+    <string name="story_plan_too_small">You keep the plan and the goal is not moving. The plan is the problem, not you.</string>
+    <string name="story_timing_problem">The misses cluster. The times are wrong, not the will.</string>
+    <string name="story_reminder_problem">The misses are scattered and mostly forgotten. Louder would help.</string>
+    <string name="story_losing_grip">Slipping week on week. Worth a smaller plan before a bigger push.</string>
+    <string name="story_settling_in">First week. Too early to conclude anything.</string>
+    <string name="story_mixed">No clear pattern yet.</string>
 
-    <string name="editor_pinned_title">Keep this where it is</string>
-    <string name="editor_pinned_body">A pinned step does not move when the whole day is shifted.</string>
-
-    <string name="editor_save">Save</string>
-    <string name="editor_cancel">Cancel</string>
-    <string name="editor_set">Set</string>
-
-    <!-- The four anchor kinds. The one idea this app has that others do not. -->
-    <string name="anchor_fixed">At a time</string>
-    <string name="anchor_relative">After another step</string>
-    <string name="anchor_window">Any time in a window</string>
-    <string name="anchor_interval">Repeating</string>
-
-    <string name="salience_alarm">Alarm</string>
-    <string name="salience_notify">Notify</string>
-    <string name="salience_silent">Silent</string>
-    <string name="salience_timeline">Timeline only</string>
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_kicker">Build or Break · %1$s</string>
+    <string name="settings_section_alarms">Alarms</string>
+    <string name="settings_reliability">Reliability</string>
+    <plurals name="settings_fixes">
+        <item quantity="one">%1$d to fix</item>
+        <item quantity="other">%1$d to fix</item>
+    </plurals>
+    <string name="settings_section_day">The day</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_section_data">Your data</string>
+    <string name="settings_export">Export plan and history</string>
+    <string name="settings_export_body">One JSON file, shared to wherever you choose.</string>
+    <string name="settings_export_chooser">Share your plan</string>
+    <string name="settings_import">Import from text</string>
+    <string name="settings_delete">Delete everything</string>
+    <string name="settings_delete_body">Plans, history, alarms. No copy exists elsewhere.</string>
+    <string name="settings_delete_confirm_title">Delete everything?</string>
+    <string name="settings_delete_confirm_body">Every plan, every day of history and every alarm goes. There is no server copy to get it back from.</string>
+    <string name="settings_delete_confirm">Delete</string>
+    <string name="settings_delete_cancel">Keep it</string>
+    <string name="settings_footer">Everything stays on this phone. No account, no server, no analytics.</string>
 </resources>

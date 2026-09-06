@@ -1,101 +1,109 @@
 package com.buildorbreak.core.designsystem.component
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.buildorbreak.core.designsystem.R
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
-import com.buildorbreak.core.model.enums.Salience
 
-/** How loudly a row announces itself, expressed without using colour. */
-private val DotSize = 7.dp
-private val AlarmDotSize = 9.dp
-private val TimeColumnWidth = 52.dp
+private val TimeColumnWidth = 46.dp
+private val RailColumnWidth = 18.dp
+private val RailWidth = 2.dp
+private val MarkerSize = 12.dp
+private val MarkerTop = 14.dp
+
+/** Where a row sits in the day. Decides its colour and its marker. */
+enum class RowState {
+    /** Settled and done. Greyed, marker filled grey. */
+    DONE,
+
+    /** Settled and not done. Greyed, marker hollow. */
+    MISSED,
+
+    /** The one the day has reached. Accent time and marker. */
+    NEXT,
+
+    /** Still to come. Ink, hollow marker. */
+    UPCOMING,
+}
 
 /**
  * One line of the day.
  *
- * The layout is a fixed time column, a marker, and the title. That order matters
- * more than it looks: the eye runs down the times, and a title that started at a
- * different x on every row would make the column unreadable, which is why the
- * time width is fixed rather than wrapped.
+ * A fixed time column, a rail with a square marker, and the body. The rail is
+ * continuous down the list, which is what turns a list of rows into a timeline:
+ * the eye runs down the line and the markers sit on it like stations.
  *
- * **Salience is shown by weight, not by colour.** An alarm gets a filled dot, a
- * reminder an outlined one, a quiet item a small faint one. Colour is left alone
- * so the single rust element on the screen keeps meaning something.
+ * **State is shown by weight and position, not by colour, except for one row.**
+ * The next thing to happen gets the accent on its time and its marker. Done
+ * rows go grey and keep their place, because the day is a record of what
+ * happened and a list that empties as it goes gives back no sense of a morning
+ * actually done.
  */
 @Composable
 fun TimelineRow(
     time: String,
     title: String,
-    salience: Salience,
+    state: RowState,
     modifier: Modifier = Modifier,
-    detail: String? = null,
-    isDone: Boolean = false,
-    isMissed: Boolean = false,
-    isNext: Boolean = false,
-    isPinned: Boolean = false,
-    isDegraded: Boolean = false,
+    badge: String? = null,
+    note: String? = null,
+    noteAccent: Boolean = false,
+    last: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
-    val spacing = Theme.spacing
-    val settled = isDone || isMissed
+    val settled = state == RowState.DONE || state == RowState.MISSED
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            // The next thing to happen is lifted rather than tinted. On a list
-            // where everything else is flat, a slightly raised surface is enough
-            // to find without adding another colour to the screen.
-            .background(if (isNext) Theme.colours.lifted else Color.Transparent)
-            .padding(horizontal = spacing.medium, vertical = spacing.small),
-        verticalAlignment = Alignment.Top,
+            // Intrinsic height so the rail can fill the row: without it a
+            // fillMaxHeight child of a Row measures as zero.
+            .height(IntrinsicSize.Min),
     ) {
         Text(
             text = time,
             style = TimeStyle,
-            color = timeColour(settled, isNext),
-            modifier = Modifier.width(TimeColumnWidth),
+            color = timeColour(state),
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .width(TimeColumnWidth)
+                .padding(top = 13.dp, end = Theme.spacing.small),
         )
 
-        Box(
-            modifier = Modifier
-                .padding(horizontal = spacing.small)
-                // Nudged down so the dot sits on the first line of the title
-                // rather than above it when a row wraps to two lines.
-                .padding(top = 6.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            SalienceDot(salience = salience, muted = settled)
-        }
+        Rail(state = state)
 
         RowBody(
             title = title,
-            detail = detail,
-            isDone = isDone,
-            isMissed = isMissed,
-            isPinned = isPinned,
-            isDegraded = isDegraded,
+            settled = settled,
+            badge = badge,
+            note = note,
+            accentBadge = state == RowState.NEXT,
+            noteAccent = noteAccent,
+            last = last,
             modifier = Modifier.weight(1f),
         )
     }
@@ -104,92 +112,107 @@ fun TimelineRow(
 @Composable
 private fun RowBody(
     title: String,
-    detail: String?,
-    isDone: Boolean,
-    isMissed: Boolean,
-    isPinned: Boolean,
-    isDegraded: Boolean,
+    settled: Boolean,
+    badge: String?,
+    note: String?,
+    accentBadge: Boolean,
+    noteAccent: Boolean,
+    last: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Theme.spacing.tight),
-    ) {
+    Column(modifier = modifier.padding(start = 12.dp, top = 11.dp, bottom = 13.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = titleColour(isDone, isMissed),
-            // A completed item is struck through rather than removed. The day is
-            // a record of what happened, and a list that empties as it goes gives
-            // back no sense of a morning actually done.
-            textDecoration = if (isDone) TextDecoration.LineThrough else null,
+            color = if (settled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
 
-        detail?.takeIf { it.isNotBlank() }?.let {
+        RowMeta(badge = badge, note = note, accentBadge = accentBadge, noteAccent = noteAccent)
+
+        if (!last) {
+            HairlineRule(Modifier.padding(top = 13.dp))
+        }
+    }
+}
+
+/** The vertical line and the marker that sits on it. */
+@Composable
+private fun Rail(state: RowState) {
+    val marker by animateColorAsState(markerFill(state), label = "marker")
+    val border = markerBorder(state)
+
+    Box(
+        modifier = Modifier
+            .width(RailColumnWidth)
+            .fillMaxHeight(),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(RailWidth)
+                .fillMaxHeight()
+                .background(Theme.colours.rail),
+        )
+
+        Box(
+            modifier = Modifier
+                .padding(top = MarkerTop)
+                .size(MarkerSize)
+                .background(marker)
+                .border(Theme.spacing.rule, border),
+        )
+    }
+}
+
+@Composable
+private fun RowMeta(
+    badge: String?,
+    note: String?,
+    accentBadge: Boolean,
+    noteAccent: Boolean,
+) {
+    if (badge == null && note == null) return
+
+    Row(
+        modifier = Modifier.padding(top = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (badge != null) {
+            Badge(text = badge, accent = accentBadge)
+        }
+
+        if (note != null) {
             Text(
-                text = it,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Theme.colours.faint,
+                text = note,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (noteAccent) MaterialTheme.colorScheme.onPrimaryContainer else Theme.colours.faint,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-
-        RowNotes(isPinned = isPinned, isDegraded = isDegraded)
     }
 }
 
-/**
- * The two things about a row a user may need to be told.
- *
- * Both are rare, which is the point of putting them here rather than in the
- * title: a note that appears on every row is noise, and one that appears twice a
- * month is information.
- */
 @Composable
-private fun RowNotes(isPinned: Boolean, isDegraded: Boolean) {
-    if (!isPinned && !isDegraded) return
-
-    val notes = buildList {
-        if (isPinned) add(stringResource(R.string.row_note_pinned))
-        if (isDegraded) add(stringResource(R.string.row_note_degraded))
-    }
-
-    Text(
-        text = notes.joinToString(stringResource(R.string.row_note_separator)),
-        style = MaterialTheme.typography.labelMedium,
-        color = if (isDegraded) Theme.colours.warning else Theme.colours.faint,
-    )
+private fun timeColour(state: RowState): Color = when (state) {
+    RowState.DONE, RowState.MISSED -> Theme.colours.faint
+    RowState.NEXT -> MaterialTheme.colorScheme.primary
+    RowState.UPCOMING -> MaterialTheme.colorScheme.onSurface
 }
 
 @Composable
-private fun SalienceDot(salience: Salience, muted: Boolean) {
-    val colour = when {
-        muted -> Theme.colours.faint
-        salience == Salience.ALARM -> MaterialTheme.colorScheme.primary
-        salience == Salience.NOTIFY -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> Theme.colours.faint
-    }
-
-    Box(
-        modifier = Modifier
-            .size(if (salience == Salience.ALARM) AlarmDotSize else DotSize)
-            .background(colour, CircleShape),
-    )
+private fun markerFill(state: RowState): Color = when (state) {
+    RowState.DONE -> Theme.colours.faint
+    RowState.MISSED -> MaterialTheme.colorScheme.surface
+    RowState.NEXT -> MaterialTheme.colorScheme.primary
+    RowState.UPCOMING -> MaterialTheme.colorScheme.surface
 }
 
 @Composable
-private fun timeColour(settled: Boolean, isNext: Boolean) = when {
-    settled -> Theme.colours.faint
-    isNext -> MaterialTheme.colorScheme.primary
-    else -> MaterialTheme.colorScheme.onSurfaceVariant
-}
-
-@Composable
-private fun titleColour(isDone: Boolean, isMissed: Boolean) = when {
-    isDone -> Theme.colours.faint
-    isMissed -> MaterialTheme.colorScheme.onSurfaceVariant
-    else -> MaterialTheme.colorScheme.onSurface
+private fun markerBorder(state: RowState): Color = when (state) {
+    RowState.NEXT -> MaterialTheme.colorScheme.primary
+    else -> Theme.colours.faint
 }

@@ -41,6 +41,15 @@ interface OccurrenceRepository {
 
     /** Drives the reconcile pass: anything that should have fired and did not. */
     suspend fun pendingBefore(instant: Instant): List<Occurrence>
+
+    /**
+     * Every occurrence in a date range, oldest first. Both ends inclusive.
+     *
+     * A one shot read rather than a flow, because the screens that need a range
+     * (insights, export) read it once when they open. Observing four weeks of
+     * rows would re emit the whole set on every completion for no reader.
+     */
+    suspend fun between(from: LocalDate, to: LocalDate): List<Occurrence>
 }
 
 interface DayLogRepository {

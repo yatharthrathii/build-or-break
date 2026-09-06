@@ -214,3 +214,6 @@ enum class ReviewStory {
     /** No clear signal. */
     MIXED,
 }
+
+/** Which palette the app draws in. `SYSTEM` follows the phone. */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }

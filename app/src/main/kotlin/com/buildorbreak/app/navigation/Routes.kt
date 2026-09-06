@@ -13,13 +13,22 @@ import kotlinx.serialization.Serializable
  * death, which on a phone with an aggressive battery manager is not rare.
  */
 @Serializable
+data object OnboardingRoute : NavKey
+
+@Serializable
 data object TodayRoute : NavKey
 
 @Serializable
-data object ReliabilityRoute : NavKey
+data object PlanRoute : NavKey
 
 @Serializable
-data object PlanRoute : NavKey
+data object InsightsRoute : NavKey
+
+@Serializable
+data object SettingsRoute : NavKey
+
+@Serializable
+data object ReliabilityRoute : NavKey
 
 @Serializable
 data object ImportRoute : NavKey
@@ -31,3 +40,12 @@ data class ItemEditorRoute(val itemId: Long) : NavKey {
         const val NEW_ITEM = 0L
     }
 }
+
+/**
+ * The four screens on the bottom bar, in bar order.
+ *
+ * Today is the root. Every other tab sits on top of it in the back stack, so
+ * the back gesture from Plan lands on Today and the back gesture from Today
+ * leaves the app, which is what Android users expect a home tab to do.
+ */
+val TopLevelRoutes: List<NavKey> = listOf(TodayRoute, PlanRoute, InsightsRoute, SettingsRoute)

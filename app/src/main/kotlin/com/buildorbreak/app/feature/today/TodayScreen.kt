@@ -1,48 +1,59 @@
 package com.buildorbreak.app.feature.today
 
-import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.R
+import com.buildorbreak.app.feature.settings.tierShortText
+import com.buildorbreak.core.designsystem.component.AccentMark
+import com.buildorbreak.core.designsystem.component.BlockButton
 import com.buildorbreak.core.designsystem.component.EmptyState
-import com.buildorbreak.core.designsystem.component.InlineNotice
-import com.buildorbreak.core.designsystem.component.Rule
+import com.buildorbreak.core.designsystem.component.NoticeBar
+import com.buildorbreak.core.designsystem.component.OutlineButton
+import com.buildorbreak.core.designsystem.component.RowState
+import com.buildorbreak.core.designsystem.component.ScreenHeader
+import com.buildorbreak.core.designsystem.component.SectionLabel
 import com.buildorbreak.core.designsystem.component.TimelineRow
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
-import com.buildorbreak.core.designsystem.theme.Theme
+import com.buildorbreak.core.designsystem.theme.TimeStyle
 import com.buildorbreak.core.model.enums.DeliveryTier
-import com.buildorbreak.core.model.enums.Salience
 import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The day, as it stands.
  *
- * The screen is a list and a header, and that restraint is the design. Anything
- * added here competes with the one thing somebody opened the app to see, which
- * is what happens next.
+ * The screen is a ring, a card and a list, and that restraint is the design.
+ * Anything added here competes with the one thing somebody opened the app to
+ * see, which is what happens next.
  */
 @Composable
 fun TodayScreen(
     onOpenReliability: () -> Unit,
     onOpenPlan: () -> Unit,
+    onImport: () -> Unit,
+    onAddStep: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
@@ -50,13 +61,36 @@ fun TodayScreen(
 
     TodayContent(
         state = state,
-        onDone = viewModel::onDone,
-        onSnooze = viewModel::onSnooze,
-        onSkip = viewModel::onSkip,
-        onOpenReliability = onOpenReliability,
-        onOpenPlan = onOpenPlan,
+        actions = TodayActions(
+            onDone = viewModel::onDone,
+            onDoneMinimum = viewModel::onDoneMinimum,
+            onSnooze = viewModel::onSnooze,
+            onSkip = viewModel::onSkip,
+            onShiftDay = viewModel::onShiftDay,
+            onOpenReliability = onOpenReliability,
+            onOpenPlan = onOpenPlan,
+            onImport = onImport,
+            onAddStep = onAddStep,
+        ),
         modifier = modifier,
     )
+}
+
+/** Everything the screen can do, in one bag, so the leaves take one parameter. */
+data class TodayActions(
+    val onDone: (Long) -> Unit,
+    val onDoneMinimum: (Long) -> Unit,
+    val onSnooze: (Long) -> Unit,
+    val onSkip: (Long) -> Unit,
+    val onShiftDay: (Int) -> Unit,
+    val onOpenReliability: () -> Unit,
+    val onOpenPlan: () -> Unit,
+    val onImport: () -> Unit,
+    val onAddStep: () -> Unit,
+) {
+    companion object {
+        val None = TodayActions({}, {}, {}, {}, {}, {}, {}, {}, {})
+    }
 }
 
 /**
@@ -64,211 +98,128 @@ fun TodayScreen(
  * tested against a fixed state rather than a live database.
  */
 @Composable
-fun TodayContent(
-    state: TodayUiState,
-    onDone: (Long) -> Unit,
-    onSnooze: (Long) -> Unit,
-    onSkip: (Long) -> Unit,
-    onOpenReliability: () -> Unit,
-    onOpenPlan: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Scaffold(modifier = modifier.fillMaxSize()) { insets ->
-        when {
-            !state.hasPlan -> NoPlan(onOpenPlan = onOpenPlan, modifier = Modifier.padding(insets))
+fun TodayContent(state: TodayUiState, actions: TodayActions, modifier: Modifier = Modifier) {
+    var choosingShift by rememberSaveable { mutableStateOf(false) }
 
-            state.isEmptyDay -> EmptyState(
-                title = stringResource(R.string.today_empty_title),
-                body = stringResource(R.string.today_empty_body),
-                actionLabel = stringResource(R.string.today_open_plan),
-                onAction = onOpenPlan,
-                modifier = Modifier.padding(insets),
-            )
-
-            else -> Timeline(
-                state = state,
-                onDone = onDone,
-                onSnooze = onSnooze,
-                onSkip = onSkip,
-                onOpenReliability = onOpenReliability,
-                onOpenPlan = onOpenPlan,
-                modifier = Modifier.padding(insets),
-            )
-        }
-    }
-}
-
-@Composable
-private fun Timeline(
-    state: TodayUiState,
-    onDone: (Long) -> Unit,
-    onSnooze: (Long) -> Unit,
-    onSkip: (Long) -> Unit,
-    onOpenReliability: () -> Unit,
-    onOpenPlan: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(Theme.spacing.tight),
-    ) {
-        item { Header(header = state.header, onOpenPlan = onOpenPlan) }
-
-        state.degradedTier?.let { tier ->
-            item {
-                InlineNotice(
-                    text = stringResource(tierNoticeText(tier)),
-                    actionLabel = stringResource(R.string.today_notice_fix),
-                    onAction = onOpenReliability,
-                    modifier = Modifier.padding(horizontal = Theme.spacing.medium),
-                )
-            }
-        }
-
-        state.budget?.let { notice ->
-            item {
-                InlineNotice(
-                    text = budgetText(notice),
-                    modifier = Modifier.padding(horizontal = Theme.spacing.medium),
-                )
-            }
-        }
-
-        item { Rule(Modifier.padding(vertical = Theme.spacing.small)) }
-
-        // Keyed by item and repeat rather than by index, so an interval item
-        // gaining a repeat does not make every row below it recompose.
-        items(
-            items = state.entries,
-            key = { "${it.itemId}:${it.occurrenceId}:${it.time}" },
-        ) { entry ->
-            EntryRow(
-                entry = entry,
-                isNext = state.entries.indexOf(entry) == state.nowIndex,
-                onDone = onDone,
-                onSnooze = onSnooze,
-                onSkip = onSkip,
-            )
-        }
-    }
-}
-
-/**
- * One row and the actions that belong to it.
- *
- * The entry is passed rather than the whole state. architecture.md section 9:
- * handing a leaf the entire `UiState` makes every row recompose when anything
- * anywhere on the screen changes.
- */
-@Composable
-private fun EntryRow(
-    entry: TimelineEntry,
-    isNext: Boolean,
-    onDone: (Long) -> Unit,
-    onSnooze: (Long) -> Unit,
-    onSkip: (Long) -> Unit,
-) {
-    Column {
-        TimelineRow(
-            time = entry.time,
-            title = entry.title,
-            salience = entry.salience,
-            detail = entry.detail,
-            isDone = entry.isDone,
-            isMissed = entry.isMissed,
-            isNext = isNext,
-            isPinned = entry.isPinned,
-            isDegraded = entry.isDegraded,
-        )
-
-        // Actions appear on the next thing only. A list where every row carries
-        // three buttons is a wall of buttons, and the row that matters is the
-        // one the day has actually reached.
-        if (isNext && entry.isActionable) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = Theme.spacing.section, bottom = Theme.spacing.small),
-                horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small),
-            ) {
-                TextButton(onClick = { onDone(entry.occurrenceId) }) {
-                    Text(stringResource(R.string.today_action_done))
-                }
-                TextButton(onClick = { onSnooze(entry.occurrenceId) }) {
-                    Text(stringResource(R.string.today_action_snooze))
-                }
-                TextButton(onClick = { onSkip(entry.occurrenceId) }) {
-                    Text(stringResource(R.string.today_action_skip))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Header(header: DayHeader, onOpenPlan: () -> Unit) {
     Column(
-        modifier = Modifier.padding(
-            start = Theme.spacing.medium,
-            end = Theme.spacing.medium,
-            top = Theme.spacing.large,
-            bottom = Theme.spacing.small,
-        ),
-        verticalArrangement = Arrangement.spacedBy(Theme.spacing.tight),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .statusBarsPadding(),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+        ScreenHeader(
+            kicker = stringResource(R.string.today_kicker, state.header.dateLine, state.header.templateName),
+            title = stringResource(R.string.today_title),
         ) {
-            Text(text = header.date, style = MaterialTheme.typography.headlineMedium)
-
-            // The only way off this screen, and deliberately quiet. Today is for
-            // running the day; editing it is a different mood.
-            TextButton(onClick = onOpenPlan) { Text(stringResource(R.string.today_open_plan)) }
+            Text(text = state.header.clock, style = TimeStyle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            AccentMark()
         }
 
-        Text(
-            // Counts rather than a percentage. "4 of 11" can be checked against
-            // the list below it; a percentage has to be taken on trust.
-            text = stringResource(
-                R.string.today_subtitle,
-                header.subtitle,
-                pluralStringResource(
-                    R.plurals.today_done_count,
-                    header.total,
-                    header.doneCount,
-                    header.total,
-                ),
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        when {
+            !state.hasPlan -> NoPlan(actions = actions)
+            state.isEmptyDay -> EmptyDay(onAddStep = actions.onAddStep)
+            else -> Day(state = state, actions = actions, onRunningLate = { choosingShift = true })
+        }
+    }
+
+    if (choosingShift) {
+        RunningLateSheet(
+            onPick = { minutes ->
+                choosingShift = false
+                actions.onShiftDay(minutes)
+            },
+            onDismiss = { choosingShift = false },
         )
     }
 }
 
 @Composable
-private fun NoPlan(onOpenPlan: () -> Unit, modifier: Modifier = Modifier) {
+private fun Day(state: TodayUiState, actions: TodayActions, onRunningLate: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
+
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item { RingRow(header = state.header, runDays = state.runDays) }
+
+        item { ShiftBar(state = state, onRunningLate = onRunningLate, onReset = { actions.onShiftDay(0) }) }
+
+        notices(state = state, onOpenReliability = actions.onOpenReliability)
+
+        item {
+            NextUpCard(
+                next = state.next,
+                allDone = state.isAllDone,
+                onDone = {
+                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    actions.onDone(it)
+                },
+                onDoneMinimum = actions.onDoneMinimum,
+                onSnooze = actions.onSnooze,
+                onSkip = actions.onSkip,
+            )
+        }
+
+        item { SectionLabel(text = stringResource(R.string.today_the_day)) }
+
+        // Keyed by item and occurrence rather than by index, so an interval
+        // item gaining a repeat does not make every row below it recompose.
+        itemsIndexed(items = state.entries, key = { _, entry ->
+            "${entry.itemId}:${entry.occurrenceId}:${entry.time}"
+        }) { index, entry ->
+            TimelineRow(
+                time = entry.time,
+                title = entry.title,
+                state = rowState(entry, isNext = index == state.nowIndex),
+                badge = kindText(entry.kind),
+                note = entry.note?.let { noteText(it) },
+                noteAccent = entry.note is EntryNote.Moved,
+                last = index == state.entries.lastIndex,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+
+        item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+/** The one or two lines about delivery, only when there is something to say. */
+private fun LazyListScope.notices(state: TodayUiState, onOpenReliability: () -> Unit) {
+    state.degradedTier?.let { tier ->
+        item {
+            NoticeBar(text = stringResource(tierShortText(tier)), tinted = false) {
+                OutlineButton(text = stringResource(R.string.today_notice_fix), onClick = onOpenReliability)
+            }
+        }
+    }
+
+    state.budget?.let { notice -> item { NoticeBar(text = budgetText(notice), tinted = false) } }
+}
+
+private fun rowState(entry: TimelineEntry, isNext: Boolean): RowState = when {
+    entry.isDone -> RowState.DONE
+    entry.isMissed -> RowState.MISSED
+    isNext -> RowState.NEXT
+    else -> RowState.UPCOMING
+}
+
+@Composable
+private fun NoPlan(actions: TodayActions) {
     EmptyState(
         title = stringResource(R.string.today_no_plan_title),
         body = stringResource(R.string.today_no_plan_body),
-        actionLabel = stringResource(R.string.today_import),
-        onAction = onOpenPlan,
-        modifier = modifier,
-    )
+    ) {
+        BlockButton(text = stringResource(R.string.today_paste), onClick = actions.onImport)
+        OutlineButton(text = stringResource(R.string.today_write), onClick = actions.onAddStep)
+    }
 }
 
-/**
- * The one line the timeline shows about a degraded tier.
- *
- * The full explanation lives on the Reliability screen. A banner that tries to
- * explain Doze batching above somebody's morning is a banner in the way.
- */
-@StringRes
-private fun tierNoticeText(tier: DeliveryTier): Int = when (tier) {
-    DeliveryTier.FULL_SCREEN_ALARM -> R.string.tier_full_screen_body
-    DeliveryTier.EXACT_HEADS_UP -> R.string.tier_heads_up_short
-    DeliveryTier.INEXACT_NOTIFICATION -> R.string.tier_inexact_short
-    DeliveryTier.IN_APP_ONLY -> R.string.tier_in_app_short
+@Composable
+private fun EmptyDay(onAddStep: () -> Unit) {
+    EmptyState(
+        title = stringResource(R.string.today_empty_title),
+        body = stringResource(R.string.today_empty_body),
+    ) {
+        OutlineButton(text = stringResource(R.string.plan_add_step), onClick = onAddStep)
+    }
 }
 
 /** Whichever limit was actually broken. Naming both would say neither clearly. */
@@ -284,80 +235,88 @@ private fun budgetText(notice: BudgetNotice): String = if (notice.alarmsOverBudg
 @Preview(name = "Today", showBackground = true)
 @Composable
 private fun TodayPreview() {
-    BuildOrBreakTheme {
-        TodayContent(
-            state = previewState(),
-            onDone = {},
-            onSnooze = {},
-            onSkip = {},
-            onOpenReliability = {},
-            onOpenPlan = {},
-        )
-    }
+    BuildOrBreakTheme { TodayContent(state = previewState(), actions = TodayActions.None) }
 }
 
 @Preview(name = "Today dark", showBackground = true)
 @Composable
 private fun TodayDarkPreview() {
-    BuildOrBreakTheme(darkTheme = true) {
-        TodayContent(
-            state = previewState(),
-            onDone = {},
-            onSnooze = {},
-            onSkip = {},
-            onOpenReliability = {},
-            onOpenPlan = {},
-        )
-    }
+    BuildOrBreakTheme(darkTheme = true) { TodayContent(state = previewState(), actions = TodayActions.None) }
 }
 
-private fun previewState(): TodayUiState {
-    val sample = listOf(
-        PreviewEntry("06:30", "Wake up", Salience.ALARM, done = true),
-        PreviewEntry("06:40", "Drink water", Salience.SILENT, done = true),
-        PreviewEntry("07:00", "Medicine", Salience.NOTIFY),
-        PreviewEntry("07:30", "Study block", Salience.NOTIFY, detail = "the hard one first"),
-        PreviewEntry("11:00", "Stand and stretch", Salience.SILENT),
-        PreviewEntry("18:00", "Gym class", Salience.ALARM, pinned = true),
+@Preview(name = "Today, no plan", showBackground = true)
+@Composable
+private fun TodayNoPlanPreview() {
+    BuildOrBreakTheme { TodayContent(state = TodayUiState.Empty, actions = TodayActions.None) }
+}
+
+// Fixture data for previews and screen tests. Literal on purpose: a preview
+// built from named constants is a preview nobody can read at a glance.
+@Suppress("MagicNumber", "LongMethod")
+internal fun previewState(): TodayUiState {
+    val entries = listOf(
+        TimelineEntry(
+            1,
+            1,
+            "07:30",
+            "Gym",
+            EntryKind.Fixed,
+            EntryNote.DoneAt("09:05", 20),
+            isDone = true,
+            isMissed = false,
+        ),
+        TimelineEntry(
+            2,
+            2,
+            "09:20",
+            "Protein + shower",
+            EntryKind.After("Gym", 15),
+            EntryNote.DoneAt("09:20", 0),
+            true,
+            false,
+        ),
+        TimelineEntry(
+            3,
+            3,
+            "09:50",
+            "Deep work block 1",
+            EntryKind.Window("09:30", "10:20"),
+            EntryNote.Moved(20),
+            false,
+            false,
+        ),
+        TimelineEntry(4, 4, "12:30", "Lunch + walk", EntryKind.Fixed, EntryNote.Pinned, false, false),
+        TimelineEntry(
+            5,
+            5,
+            "18:00",
+            "Language drill",
+            EntryKind.Window("18:00", "20:00"),
+            EntryNote.Ends("20:00"),
+            false,
+            false,
+        ),
     )
 
-    val entries = sample.mapIndexed { index, preview ->
-        val id = index + 1L
-        TimelineEntry(
-            occurrenceId = id,
-            itemId = id,
-            time = preview.time,
-            title = preview.title,
-            detail = preview.detail,
-            salience = preview.salience,
-            isDone = preview.done,
-            isMissed = false,
-            isPinned = preview.pinned,
-            isDegraded = false,
-            hasMinimum = false,
-        )
-    }
-
     return TodayUiState(
-        header = DayHeader(
-            date = "Monday 5 January",
-            subtitle = "Weekday",
-            doneCount = sample.count { it.done },
-            total = sample.size,
+        header = DayHeader(dateLine = "Mon 7 Sep", templateName = "Weekday", clock = "09:12", doneCount = 4, total = 9),
+        runDays = 3,
+        shiftMinutes = 20,
+        movedCount = 5,
+        next = NextUp(
+            3,
+            3,
+            "09:50",
+            "Deep work block 1",
+            EntryKind.Window("09:30", "10:20"),
+            EntryNote.Moved(20),
+            50,
+            true,
         ),
         entries = entries.toImmutableList(),
-        nowIndex = sample.indexOfFirst { !it.done },
+        nowIndex = 2,
         budget = null,
-        degradedTier = null,
+        degradedTier = DeliveryTier.EXACT_HEADS_UP,
         hasPlan = true,
     )
 }
-
-private data class PreviewEntry(
-    val time: String,
-    val title: String,
-    val salience: Salience,
-    val detail: String? = null,
-    val done: Boolean = false,
-    val pinned: Boolean = false,
-)

@@ -1,31 +1,42 @@
 package com.buildorbreak.app.feature.settings
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.R
-import com.buildorbreak.core.designsystem.component.QuietCard
-import com.buildorbreak.core.designsystem.component.Rule
+import com.buildorbreak.core.designsystem.component.FillButton
+import com.buildorbreak.core.designsystem.component.HairlineRule
+import com.buildorbreak.core.designsystem.component.HeavyRule
+import com.buildorbreak.core.designsystem.component.Kicker
+import com.buildorbreak.core.designsystem.component.SectionLabel
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
-import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.scheduler.alarm.TierBlocker
+import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
 /**
@@ -40,6 +51,7 @@ import kotlinx.collections.immutable.persistentListOf
 fun ReliabilityScreen(
     onFix: (TierBlocker) -> Unit,
     onOpenAutostart: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReliabilityViewModel = hiltViewModel(),
 ) {
@@ -56,6 +68,7 @@ fun ReliabilityScreen(
         state = state,
         onFix = onFix,
         onOpenAutostart = onOpenAutostart,
+        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -65,116 +78,125 @@ fun ReliabilityContent(
     state: ReliabilityUiState,
     onFix: (TierBlocker) -> Unit,
     onOpenAutostart: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(modifier = modifier.fillMaxSize()) { insets ->
-        Column(
-            modifier = Modifier
-                .padding(insets)
-                .verticalScroll(rememberScrollState())
-                .padding(Theme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Theme.spacing.medium),
-        ) {
-            Text(
-                text = stringResource(headlineFor(state.tier)),
-                style = MaterialTheme.typography.headlineMedium,
-            )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .statusBarsPadding(),
+    ) {
+        BackHeader(title = stringResource(R.string.reliability_title), onBack = onBack)
 
-            Text(
-                text = stringResource(bodyFor(state.tier)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            TierSummary(tier = state.tier)
 
-            if (state.blockers.isNotEmpty()) {
-                Rule()
-
-                Text(
-                    text = stringResource(R.string.reliability_what_would_change),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+            if (state.blockers.isNotEmpty() || state.needsAutostart) {
+                SectionLabel(text = stringResource(R.string.reliability_what_would_change), underlined = true)
             }
 
             state.blockers.forEach { blocker ->
-                FixCard(blocker = blocker, onFix = onFix)
+                FixRow(
+                    what = whatFor(blocker),
+                    why = whyFor(blocker),
+                    action = actionFor(blocker),
+                    onAction = { onFix(blocker) },
+                )
             }
 
             if (state.needsAutostart) {
-                AutostartCard(onOpenAutostart = onOpenAutostart)
+                // The switch no API can see the state of. The row offers the
+                // screen and says plainly that the app cannot check it.
+                FixRow(
+                    what = R.string.autostart_title,
+                    why = R.string.autostart_body,
+                    action = R.string.autostart_action,
+                    onAction = onOpenAutostart,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun FixCard(blocker: TierBlocker, onFix: (TierBlocker) -> Unit) {
-    QuietCard {
-        Column(
-            modifier = Modifier.padding(Theme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Theme.spacing.small),
-        ) {
-            Text(text = stringResource(whatFor(blocker)), style = MaterialTheme.typography.titleMedium)
+private fun TierSummary(tier: DeliveryTier) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)) {
+        Kicker(text = stringResource(R.string.reliability_kicker), color = MaterialTheme.colorScheme.primary)
 
-            Text(
-                text = stringResource(whyFor(blocker)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Text(
+            text = stringResource(tierHeadline(tier)).uppercase(Locale.getDefault()),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 8.dp),
+        )
 
-            Button(onClick = { onFix(blocker) }) { Text(stringResource(actionFor(blocker))) }
-        }
+        Text(
+            text = stringResource(tierBody(tier)),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 10.dp),
+        )
     }
 }
 
-/**
- * The switch no API can see the state of.
- *
- * Every vendor battery manager keeps its own autostart list, none of them are
- * reachable through the framework, and `PowerManager` knows nothing about them.
- * So this card offers the screen and says plainly that the app cannot check
- * whether it was done. Claiming to know would be worse than admitting the gap.
- */
+/** A back arrow and a title, on a heavy rule. Shared by the screens that stack. */
 @Composable
-private fun AutostartCard(onOpenAutostart: () -> Unit) {
-    QuietCard {
-        Column(
-            modifier = Modifier.padding(Theme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Theme.spacing.small),
+internal fun BackHeader(title: String, onBack: () -> Unit) {
+    Column {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = stringResource(R.string.autostart_title), style = MaterialTheme.typography.titleMedium)
-
-            Text(
-                text = stringResource(R.string.autostart_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = stringResource(R.string.action_back),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable(role = Role.Button, onClick = onBack),
             )
 
-            Button(onClick = onOpenAutostart) { Text(stringResource(R.string.autostart_action)) }
+            Text(
+                text = title.uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 14.dp),
+            )
         }
+
+        HeavyRule()
     }
+}
+
+@Composable
+private fun FixRow(
+    @StringRes what: Int,
+    @StringRes why: Int,
+    @StringRes action: Int,
+    onAction: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp)) {
+        Text(
+            text = stringResource(what),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        Text(
+            text = stringResource(why),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 11.dp),
+        )
+
+        FillButton(text = stringResource(action), onClick = onAction)
+    }
+
+    HairlineRule(Modifier.padding(horizontal = 16.dp))
 }
 
 // Copy lookups -----------------------------------------------------------------
-//
-// Kept as small mappings rather than fields on the state, so the ViewModel stays
-// free of user visible words and the whole screen can be translated by editing
-// one resource file.
-
-@StringRes
-private fun headlineFor(tier: DeliveryTier): Int = when (tier) {
-    DeliveryTier.FULL_SCREEN_ALARM -> R.string.tier_full_screen_headline
-    DeliveryTier.EXACT_HEADS_UP -> R.string.tier_heads_up_headline
-    DeliveryTier.INEXACT_NOTIFICATION -> R.string.tier_inexact_headline
-    DeliveryTier.IN_APP_ONLY -> R.string.tier_in_app_headline
-}
-
-@StringRes
-private fun bodyFor(tier: DeliveryTier): Int = when (tier) {
-    DeliveryTier.FULL_SCREEN_ALARM -> R.string.tier_full_screen_body
-    DeliveryTier.EXACT_HEADS_UP -> R.string.tier_heads_up_body
-    DeliveryTier.INEXACT_NOTIFICATION -> R.string.tier_inexact_body
-    DeliveryTier.IN_APP_ONLY -> R.string.tier_in_app_body
-}
 
 @StringRes
 private fun whatFor(blocker: TierBlocker): Int = when (blocker) {
@@ -216,22 +238,7 @@ private fun ReliabilityPreview() {
             ),
             onFix = {},
             onOpenAutostart = {},
-        )
-    }
-}
-
-@Preview(name = "Reliability, all good", showBackground = true)
-@Composable
-private fun ReliabilityHealthyPreview() {
-    BuildOrBreakTheme {
-        ReliabilityContent(
-            state = ReliabilityUiState(
-                tier = DeliveryTier.FULL_SCREEN_ALARM,
-                blockers = persistentListOf(),
-                needsAutostart = false,
-            ),
-            onFix = {},
-            onOpenAutostart = {},
+            onBack = {},
         )
     }
 }

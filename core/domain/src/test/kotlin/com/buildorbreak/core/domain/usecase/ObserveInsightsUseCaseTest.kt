@@ -1,0 +1,152 @@
+package com.buildorbreak.core.domain.usecase
+
+import com.buildorbreak.core.common.coroutines.AppDispatchers
+import com.buildorbreak.core.domain.fake.FakeDayCloseRepository
+import com.buildorbreak.core.domain.fake.FakeItemRepository
+import com.buildorbreak.core.domain.fake.FakeOccurrenceRepository
+import com.buildorbreak.core.domain.fake.FakePlanRepository
+import com.buildorbreak.core.domain.fake.FakeSettingsRepository
+import com.buildorbreak.core.domain.fake.FakeTemplateRepository
+import com.buildorbreak.core.domain.review.DefaultWeeklyReviewBuilder
+import com.buildorbreak.core.domain.review.InsightsPeriod
+import com.buildorbreak.core.model.enums.OccurrenceState
+import com.buildorbreak.core.model.plan.Plan
+import com.buildorbreak.core.testing.fixtures.ExecutionFixtures
+import com.buildorbreak.core.testing.fixtures.PlanFixtures
+import com.buildorbreak.core.testing.time.FakeTimeProvider
+import com.google.common.truth.Truth.assertThat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Test
+
+class ObserveInsightsUseCaseTest {
+
+    private val plans = FakePlanRepository()
+    private val templates = FakeTemplateRepository()
+    private val items = FakeItemRepository()
+    private val occurrences = FakeOccurrenceRepository()
+    private val closes = FakeDayCloseRepository()
+    private val settings = FakeSettingsRepository()
+
+    /** A Sunday, so the whole week Monday to Sunday is behind it. */
+    private val today: LocalDate = LocalDate.of(2026, 9, 13)
+    private val monday: LocalDate = LocalDate.of(2026, 9, 7)
+    private val zone: ZoneId = ZoneId.of("Asia/Kolkata")
+
+    private val time = FakeTimeProvider(
+        initial = today.atTime(20, 0).atZone(zone).toInstant(),
+        currentZone = zone,
+    )
+
+    private val dispatchers = object : AppDispatchers {
+        override val default = Dispatchers.Unconfined
+        override val io = Dispatchers.Unconfined
+        override val main = Dispatchers.Unconfined
+    }
+
+    private val observeInsights = ObserveInsightsUseCase(
+        plans = plans,
+        templates = templates,
+        items = items,
+        occurrences = occurrences,
+        closes = closes,
+        settings = settings,
+        reviews = DefaultWeeklyReviewBuilder(),
+        time = time,
+        dispatchers = dispatchers,
+    )
+
+    private suspend fun seedPlan() {
+        plans.upsert(Plan(id = 0, name = "Plan", isActive = true, zone = zone, createdAt = Instant.EPOCH))
+        templates.upsert(PlanFixtures.template(id = 0, planId = 1))
+        items.upsert(PlanFixtures.item(id = 0, templateId = 1, title = "Walk"))
+        items.upsert(PlanFixtures.item(id = 0, templateId = 1, title = "Read"))
+    }
+
+    @Test
+    fun `no plan means nothing to show`() = runTest {
+        assertThat(observeInsights(InsightsPeriod.WEEK).first()).isNull()
+    }
+
+    @Test
+    fun `kept and total count only what was settled this week`() = runTest {
+        seedPlan()
+        occurrences.occurrences.value = listOf(
+            ExecutionFixtures.done(itemId = 1, date = monday, id = 1, zone = zone),
+            ExecutionFixtures.missed(itemId = 2, date = monday, id = 2),
+            ExecutionFixtures.done(itemId = 1, date = monday.plusDays(1), id = 3, zone = zone),
+            // Still open. Not settled, so not counted either way.
+            ExecutionFixtures.occurrence(itemId = 2, date = today, id = 4, state = OccurrenceState.PENDING),
+            // Last week. Feeds the comparison, not this week.
+            ExecutionFixtures.done(itemId = 1, date = monday.minusDays(2), id = 5, zone = zone),
+        )
+
+        val insights = observeInsights(InsightsPeriod.WEEK).first()!!
+
+        assertThat(insights.kept).isEqualTo(2)
+        assertThat(insights.total).isEqualTo(3)
+        assertThat(insights.previousKept).isEqualTo(1)
+        assertThat(insights.previousTotal).isEqualTo(1)
+    }
+
+    @Test
+    fun `a week has seven bars and a day with nothing settled is empty, not zero`() = runTest {
+        seedPlan()
+        occurrences.occurrences.value = listOf(ExecutionFixtures.done(itemId = 1, date = monday, id = 1, zone = zone))
+
+        val bars = observeInsights(InsightsPeriod.WEEK).first()!!.bars
+
+        assertThat(bars).hasSize(7)
+        assertThat(bars.first().fraction).isEqualTo(1f)
+        assertThat(bars.last().fraction).isNull()
+        assertThat(bars.last().isWeekend).isTrue()
+    }
+
+    @Test
+    fun `a month has four bars, one per week`() = runTest {
+        seedPlan()
+
+        val insights = observeInsights(InsightsPeriod.MONTH).first()!!
+
+        assertThat(insights.bars).hasSize(4)
+        assertThat(insights.from).isEqualTo(monday.minusWeeks(3))
+        assertThat(insights.to).isEqualTo(monday.plusDays(6))
+    }
+
+    @Test
+    fun `the step table lists only steps that had a chance this period`() = runTest {
+        seedPlan()
+        occurrences.occurrences.value = listOf(
+            ExecutionFixtures.done(itemId = 1, date = monday, id = 1, zone = zone),
+            ExecutionFixtures.missed(itemId = 1, date = monday.plusDays(1), id = 2),
+        )
+
+        val steps = observeInsights(InsightsPeriod.WEEK).first()!!.steps
+
+        assertThat(steps.map { it.title }).containsExactly("Walk")
+        assertThat(steps.single().kept).isEqualTo(1)
+        assertThat(steps.single().outOf).isEqualTo(2)
+    }
+
+    @Test
+    fun `a dismissed week hides the suggestion until next week`() = runTest {
+        seedPlan()
+        // Enough misses on one weekday, across weeks, for the pattern detector.
+        occurrences.occurrences.value = (0 until 4).map { weeksAgo ->
+            ExecutionFixtures.missed(itemId = 2, date = monday.minusWeeks(weeksAgo.toLong()), id = 10L + weeksAgo)
+        }
+
+        val before = observeInsights(InsightsPeriod.WEEK).first()!!
+        settings.setDismissedReviewWeek(monday)
+        val after = observeInsights(InsightsPeriod.WEEK).first()!!
+
+        // Whether or not the detector found a pattern, dismissal must never
+        // leave a suggestion standing for the dismissed week.
+        assertThat(after.suggestion).isNull()
+        if (before.suggestion != null) assertThat(before.suggestion!!.weekStart).isEqualTo(monday)
+    }
+}

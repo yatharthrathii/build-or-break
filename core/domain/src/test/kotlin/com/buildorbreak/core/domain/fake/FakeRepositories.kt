@@ -6,16 +6,21 @@ import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.gateway.AlarmGateway
 import com.buildorbreak.core.domain.gateway.NotificationGateway
 import com.buildorbreak.core.domain.gateway.WidgetGateway
+import com.buildorbreak.core.domain.repository.DayCloseRepository
 import com.buildorbreak.core.domain.repository.DayLogRepository
 import com.buildorbreak.core.domain.repository.ItemRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
+import com.buildorbreak.core.domain.repository.ResetRepository
+import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.OccurrenceState
+import com.buildorbreak.core.model.enums.ThemeMode
 import com.buildorbreak.core.model.execution.DayLog
 import com.buildorbreak.core.model.execution.Occurrence
+import com.buildorbreak.core.model.goal.DayClose
 import com.buildorbreak.core.model.plan.Block
 import com.buildorbreak.core.model.plan.DayTemplate
 import com.buildorbreak.core.model.plan.Item
@@ -167,6 +172,9 @@ class FakeOccurrenceRepository : OccurrenceRepository {
     }
 
     override suspend fun pendingBefore(instant: Instant): List<Occurrence> = emptyList()
+
+    override suspend fun between(from: LocalDate, to: LocalDate): List<Occurrence> =
+        occurrences.value.filter { it.date in from..to }.sortedWith(compareBy({ it.date }, { it.plannedAt }))
 }
 
 class FakeDayLogRepository : DayLogRepository {
@@ -245,5 +253,53 @@ class RecordingWidgetGateway : WidgetGateway {
 
     override suspend fun refresh() {
         refreshes++
+    }
+}
+
+class FakeDayCloseRepository : DayCloseRepository {
+    val closes = MutableStateFlow<List<DayClose>>(emptyList())
+
+    override fun observeRange(from: LocalDate, to: LocalDate): Flow<List<DayClose>> =
+        closes.map { list -> list.filter { it.date in from..to }.sortedBy { it.date } }
+
+    override suspend fun upsert(close: DayClose): Outcome<Unit, DataError> {
+        closes.value = closes.value.filterNot { it.date == close.date } + close
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun lastClosedDate(): LocalDate? = closes.value.maxOfOrNull { it.date }
+}
+
+class FakeSettingsRepository : SettingsRepository {
+    private val onboarding = MutableStateFlow(false)
+    private val theme = MutableStateFlow(ThemeMode.SYSTEM)
+    private val dismissed = MutableStateFlow<LocalDate?>(null)
+
+    override val onboardingComplete: Flow<Boolean> = onboarding
+    override val themeMode: Flow<ThemeMode> = theme
+    override val dismissedReviewWeek: Flow<LocalDate?> = dismissed
+
+    override suspend fun setOnboardingComplete(complete: Boolean) {
+        onboarding.value = complete
+    }
+
+    override suspend fun setThemeMode(mode: ThemeMode) {
+        theme.value = mode
+    }
+
+    override suspend fun setDismissedReviewWeek(week: LocalDate) {
+        dismissed.value = week
+    }
+}
+
+class RecordingResetRepository : ResetRepository {
+    var wipes = 0
+        private set
+
+    override suspend fun wipeEverything(): Outcome<Unit, DataError> {
+        wipes++
+
+        return Outcome.Success(Unit)
     }
 }
