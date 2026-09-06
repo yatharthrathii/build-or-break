@@ -60,6 +60,11 @@ dependencies {
     implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.startup)
 
+    // Named by SchedulerStartup so androidx.startup runs WorkManager's own
+    // initializer first. Without it this app's initializer can run before
+    // WorkManager exists, and getInstance throws during process start.
+    implementation(libs.androidx.work.runtime.ktx)
+
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)

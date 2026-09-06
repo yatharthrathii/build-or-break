@@ -31,7 +31,9 @@
     <string name="today_empty_body">This template has no steps that run on this weekday.</string>
 
     <string name="today_no_plan_title">No plan yet</string>
-    <string name="today_no_plan_body">Paste in the routine you already have and this will run it. Importing arrives in the next milestone.</string>
+    <string name="today_no_plan_body">Paste in the routine you already have and this will run it.</string>
+    <string name="today_import">Import a routine</string>
+    <string name="today_open_plan">Plan</string>
 
     <!--
         Budget. Counts rather than a percentage, because "4 of 11" can be checked
@@ -96,4 +98,99 @@
     <string name="autostart_title">Allow autostart</string>
     <string name="autostart_body">Your phone keeps its own list of apps allowed to start on their own. This app cannot see that list, so it cannot tell you whether this is already done. If alarms go missing overnight, this is usually why.</string>
     <string name="autostart_action">Open autostart settings</string>
+
+    <!-- Plan editor -->
+    <string name="plan_none_title">No plan yet</string>
+    <string name="plan_none_body">Bring in the routine you already have. Whatever you wrote, or whatever an AI tool wrote for you.</string>
+    <string name="plan_import">Import a routine</string>
+
+    <string name="plan_empty_title">No steps yet</string>
+    <string name="plan_empty_body">Add the first thing your day starts with.</string>
+
+    <string name="plan_add_step">Add step</string>
+    <string name="plan_remove">Remove</string>
+    <string name="plan_note_pinned">pinned</string>
+    <string name="plan_note_minimum">has a smaller version</string>
+    <string name="plan_note_separator">" · "</string>
+
+    <!--
+        Import. The first thing anybody does, and the reason the app hands out a
+        prompt rather than trying to parse every shape of prose.
+    -->
+    <string name="import_title">Bring in your routine</string>
+    <string name="import_body">This app runs a plan you already have. It does not write one for you.</string>
+
+    <string name="import_prompt_title">Easiest way</string>
+    <string name="import_prompt_body">Copy this and give it to whichever tool wrote your routine. Paste back what it returns and every line will be read correctly.</string>
+    <string name="import_copy_prompt">Copy the prompt</string>
+    <!-- Shown in the system clipboard preview on Android 13 and above. -->
+    <string name="import_clip_label">Routine format prompt</string>
+
+    <string name="import_paste_label">Your routine</string>
+    <string name="import_paste_placeholder">06:30 Wake up
++10m Drink water
+07:30-09:30 Study block</string>
+    <string name="import_review">Read it</string>
+
+    <string name="import_review_title">Check this is right</string>
+    <string name="import_nothing_understood">Nothing here looked like a step. Go back and check the times are on each line.</string>
+    <string name="import_note_pinned">pinned</string>
+    <string name="import_note_minimum">has a smaller version</string>
+    <string name="import_note_separator">" · "</string>
+    <string name="import_name_label">Name this routine</string>
+    <string name="import_back">Back</string>
+    <string name="import_confirm">Save it</string>
+    <string name="import_failed">That could not be saved. Try again.</string>
+
+    <plurals name="import_understood_count">
+        <item quantity="one">%1$d step understood. Check it before saving.</item>
+        <item quantity="other">%1$d steps understood. Check them before saving.</item>
+    </plurals>
+
+    <!--
+        Never dropped silently. A line the parser could not read is shown, so a
+        misread is caught here rather than at six in the morning.
+    -->
+    <plurals name="import_not_understood_count">
+        <item quantity="one">%1$d line was not understood</item>
+        <item quantity="other">%1$d lines were not understood</item>
+    </plurals>
+
+    <!-- Item editor -->
+    <string name="editor_title_label">What is this step</string>
+    <string name="editor_when">When</string>
+    <string name="editor_at">At</string>
+    <string name="editor_from">From</string>
+    <string name="editor_to">To</string>
+    <string name="editor_every_minutes">Repeat every, minutes</string>
+    <string name="editor_offset_minutes">Minutes after</string>
+    <string name="editor_after_which">After which step</string>
+    <string name="editor_no_parents">There is nothing above this to hang it off. Pick another kind of time.</string>
+    <string name="editor_window_backwards">The end is before the start.</string>
+
+    <string name="editor_how_loud">How loud</string>
+    <string name="editor_which_days">Which days</string>
+    <string name="editor_no_days">On no days, this step will never run.</string>
+
+    <string name="editor_minimum_title">Smaller version</string>
+    <string name="editor_minimum_body">Decided now, offered on a bad day. Nobody having one is in a state to work out what a fair smaller version would be.</string>
+    <string name="editor_minimum_label">For example, ten minutes</string>
+
+    <string name="editor_pinned_title">Keep this where it is</string>
+    <string name="editor_pinned_body">A pinned step does not move when the whole day is shifted.</string>
+
+    <string name="editor_save">Save</string>
+    <string name="editor_cancel">Cancel</string>
+    <string name="editor_set">Set</string>
+
+    <!-- The four anchor kinds. The one idea this app has that others do not. -->
+    <string name="anchor_fixed">At a time</string>
+    <string name="anchor_relative">After another step</string>
+    <string name="anchor_window">Any time in a window</string>
+    <string name="anchor_interval">Repeating</string>
+
+    <string name="salience_alarm">Alarm</string>
+    <string name="salience_notify">Notify</string>
+    <string name="salience_silent">Silent</string>
+    <string name="salience_timeline">Timeline only</string>
 </resources>

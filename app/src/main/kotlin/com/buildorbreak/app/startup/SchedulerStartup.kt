@@ -2,6 +2,7 @@ package com.buildorbreak.app.startup
 
 import android.content.Context
 import androidx.startup.Initializer
+import androidx.work.WorkManagerInitializer
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.usecase.RescheduleAllUseCase
 import com.buildorbreak.scheduler.notification.Channels
@@ -53,9 +54,13 @@ class SchedulerStartup : Initializer<Unit> {
     }
 
     /**
-     * Nothing to wait for. WorkManager initialises itself on the first call to
-     * `getInstance`, so naming its initializer here would only add a compile
-     * time dependency on a class this module has no other reason to see.
+     * WorkManager first, and this is load bearing rather than tidy.
+     *
+     * androidx.startup runs initializers in dependency order, and with nothing
+     * declared this one can run before WorkManager has been set up. The very
+     * next line calls `WorkManager.getInstance`, which throws when that has not
+     * happened, and the throw is inside a ContentProvider during process start,
+     * so it takes the whole app down before a single frame is drawn.
      */
-    override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
+    override fun dependencies(): List<Class<out Initializer<*>>> = listOf(WorkManagerInitializer::class.java)
 }

@@ -42,6 +42,7 @@ import kotlinx.collections.immutable.toImmutableList
 @Composable
 fun TodayScreen(
     onOpenReliability: () -> Unit,
+    onOpenPlan: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
@@ -53,6 +54,7 @@ fun TodayScreen(
         onSnooze = viewModel::onSnooze,
         onSkip = viewModel::onSkip,
         onOpenReliability = onOpenReliability,
+        onOpenPlan = onOpenPlan,
         modifier = modifier,
     )
 }
@@ -68,15 +70,18 @@ fun TodayContent(
     onSnooze: (Long) -> Unit,
     onSkip: (Long) -> Unit,
     onOpenReliability: () -> Unit,
+    onOpenPlan: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier = modifier.fillMaxSize()) { insets ->
         when {
-            !state.hasPlan -> NoPlan(Modifier.padding(insets))
+            !state.hasPlan -> NoPlan(onOpenPlan = onOpenPlan, modifier = Modifier.padding(insets))
 
             state.isEmptyDay -> EmptyState(
                 title = stringResource(R.string.today_empty_title),
                 body = stringResource(R.string.today_empty_body),
+                actionLabel = stringResource(R.string.today_open_plan),
+                onAction = onOpenPlan,
                 modifier = Modifier.padding(insets),
             )
 
@@ -86,6 +91,7 @@ fun TodayContent(
                 onSnooze = onSnooze,
                 onSkip = onSkip,
                 onOpenReliability = onOpenReliability,
+                onOpenPlan = onOpenPlan,
                 modifier = Modifier.padding(insets),
             )
         }
@@ -99,13 +105,14 @@ private fun Timeline(
     onSnooze: (Long) -> Unit,
     onSkip: (Long) -> Unit,
     onOpenReliability: () -> Unit,
+    onOpenPlan: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(Theme.spacing.tight),
     ) {
-        item { Header(state.header) }
+        item { Header(header = state.header, onOpenPlan = onOpenPlan) }
 
         state.degradedTier?.let { tier ->
             item {
@@ -199,7 +206,7 @@ private fun EntryRow(
 }
 
 @Composable
-private fun Header(header: DayHeader) {
+private fun Header(header: DayHeader, onOpenPlan: () -> Unit) {
     Column(
         modifier = Modifier.padding(
             start = Theme.spacing.medium,
@@ -209,7 +216,16 @@ private fun Header(header: DayHeader) {
         ),
         verticalArrangement = Arrangement.spacedBy(Theme.spacing.tight),
     ) {
-        Text(text = header.date, style = MaterialTheme.typography.headlineMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(text = header.date, style = MaterialTheme.typography.headlineMedium)
+
+            // The only way off this screen, and deliberately quiet. Today is for
+            // running the day; editing it is a different mood.
+            TextButton(onClick = onOpenPlan) { Text(stringResource(R.string.today_open_plan)) }
+        }
 
         Text(
             // Counts rather than a percentage. "4 of 11" can be checked against
@@ -231,10 +247,12 @@ private fun Header(header: DayHeader) {
 }
 
 @Composable
-private fun NoPlan(modifier: Modifier = Modifier) {
+private fun NoPlan(onOpenPlan: () -> Unit, modifier: Modifier = Modifier) {
     EmptyState(
         title = stringResource(R.string.today_no_plan_title),
         body = stringResource(R.string.today_no_plan_body),
+        actionLabel = stringResource(R.string.today_import),
+        onAction = onOpenPlan,
         modifier = modifier,
     )
 }
@@ -273,6 +291,7 @@ private fun TodayPreview() {
             onSnooze = {},
             onSkip = {},
             onOpenReliability = {},
+            onOpenPlan = {},
         )
     }
 }
@@ -287,6 +306,7 @@ private fun TodayDarkPreview() {
             onSnooze = {},
             onSkip = {},
             onOpenReliability = {},
+            onOpenPlan = {},
         )
     }
 }

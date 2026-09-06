@@ -79,6 +79,7 @@ class TodayContentTest {
                     onSnooze = {},
                     onSkip = {},
                     onOpenReliability = onOpenReliability,
+                    onOpenPlan = {},
                 )
             }
         }

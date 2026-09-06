@@ -6,16 +6,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.buildorbreak.app.feature.plan.ImportScreen
+import com.buildorbreak.app.feature.plan.ItemEditorScreen
+import com.buildorbreak.app.feature.plan.PlanScreen
 import com.buildorbreak.app.feature.settings.ReliabilityScreen
 import com.buildorbreak.app.feature.today.TodayScreen
 import com.buildorbreak.scheduler.alarm.TierBlocker
 
 /**
- * Two screens, and the back stack between them.
- *
- * Small on purpose. The plan editor, insights and onboarding arrive in later
- * milestones and will be added as entries here; nothing about this file has to
- * change shape to take them.
+ * Five screens, and the back stack between them.
  *
  * [openSettings] is passed in rather than resolved here. Turning a blocker into
  * a settings screen needs `OemGuide` and a `Context`, and neither belongs in a
@@ -35,11 +34,38 @@ fun BuildOrBreakNavGraph(
         onBack = { backStack.removeLastOrNull() },
         entryProvider = entryProvider {
             entry<TodayRoute> {
-                TodayScreen(onOpenReliability = { backStack.add(ReliabilityRoute) })
+                TodayScreen(
+                    onOpenReliability = { backStack.add(ReliabilityRoute) },
+                    onOpenPlan = { backStack.add(PlanRoute) },
+                )
             }
 
             entry<ReliabilityRoute> {
                 ReliabilityScreen(onFix = openSettings, onOpenAutostart = openAutostart)
+            }
+
+            entry<PlanRoute> {
+                PlanScreen(
+                    onEditItem = { backStack.add(ItemEditorRoute(it)) },
+                    onAddItem = { backStack.add(ItemEditorRoute(ItemEditorRoute.NEW_ITEM)) },
+                    onImport = { backStack.add(ImportRoute) },
+                )
+            }
+
+            entry<ImportRoute> {
+                // Straight back to Today once a plan exists. Landing on the plan
+                // editor after an import would show the same list somebody has
+                // just approved on the review screen.
+                ImportScreen(
+                    onImported = {
+                        backStack.clear()
+                        backStack.add(TodayRoute)
+                    },
+                )
+            }
+
+            entry<ItemEditorRoute> { route ->
+                ItemEditorScreen(itemId = route.itemId, onDone = { backStack.removeLastOrNull() })
             }
         },
     )
