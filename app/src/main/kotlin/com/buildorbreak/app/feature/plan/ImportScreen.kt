@@ -76,7 +76,10 @@ fun ImportScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(state.stage) {
-        if (state.stage == ImportStage.SAVED) onImported()
+        if (state.stage == ImportStage.SAVED) {
+            onImported()
+            viewModel.onLeave()
+        }
     }
 
     ImportContent(

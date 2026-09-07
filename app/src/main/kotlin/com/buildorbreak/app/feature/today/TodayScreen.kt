@@ -160,11 +160,10 @@ private fun Day(state: TodayUiState, actions: TodayActions, onRunningLate: () ->
 
         item { SectionLabel(text = stringResource(R.string.today_the_day)) }
 
-        // Keyed by item and occurrence rather than by index, so an interval
-        // item gaining a repeat does not make every row below it recompose.
-        itemsIndexed(items = state.entries, key = { _, entry ->
-            "${entry.itemId}:${entry.occurrenceId}:${entry.time}"
-        }) { index, entry ->
+        // Keyed by item and repeat, never by time: a step whose time moves
+        // after the one above it is done must keep its row rather than be
+        // torn down and rebuilt mid animation.
+        itemsIndexed(items = state.entries, key = { _, entry -> "${entry.itemId}:${entry.sequence}" }) { index, entry ->
             TimelineRow(
                 time = entry.time,
                 title = entry.title,

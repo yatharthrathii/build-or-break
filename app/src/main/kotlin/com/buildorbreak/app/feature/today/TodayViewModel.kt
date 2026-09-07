@@ -28,11 +28,13 @@ import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -86,8 +88,19 @@ class TodayViewModel @Inject constructor(
         }
     }
 
-    val state: StateFlow<TodayUiState> = combine(observeToday(), observeRun(), ticks) { day, run, now ->
-        day?.let { toUiState(it, run, now) } ?: TodayUiState.Empty
+    /**
+     * What the user has just done, before the database has said so.
+     *
+     * A tap on Done settles the row, cancels the alarm, reschedules the rest
+     * of the day and refreshes the widget before the day flow re emits. On a
+     * mid range phone that is long enough to wonder whether the tap landed.
+     * So the tapped occurrence is treated as settled from the moment of the
+     * tap, and dropped from here once the database agrees.
+     */
+    private val pending = MutableStateFlow<Map<Long, OccurrenceState>>(emptyMap())
+
+    val state: StateFlow<TodayUiState> = combine(observeToday(), observeRun(), ticks, pending) { day, run, now, ahead ->
+        day?.let { toUiState(it, run, now, ahead) } ?: TodayUiState.Empty
     }.stateIn(
         scope = viewModelScope,
         // Kept for five seconds so a rotation does not throw the day away and
@@ -97,37 +110,59 @@ class TodayViewModel @Inject constructor(
         initialValue = TodayUiState.Empty,
     )
 
-    fun onDone(occurrenceId: Long) = viewModelScope.launch { complete(occurrenceId) }
+    fun onDone(occurrenceId: Long) = viewModelScope.launch {
+        expect(occurrenceId, OccurrenceState.DONE)
+        complete(occurrenceId)
+    }
 
     /** The smaller version counts. Scaling down is not failing. */
-    fun onDoneMinimum(occurrenceId: Long) = viewModelScope.launch { complete(occurrenceId, minimum = true) }
+    fun onDoneMinimum(occurrenceId: Long) = viewModelScope.launch {
+        expect(occurrenceId, OccurrenceState.DONE_MINIMUM)
+        complete(occurrenceId, minimum = true)
+    }
 
     fun onSnooze(occurrenceId: Long) = viewModelScope.launch { snooze(occurrenceId, DEFAULT_SNOOZE) }
 
-    fun onSkip(occurrenceId: Long) = viewModelScope.launch { skip(occurrenceId) }
+    fun onSkip(occurrenceId: Long) = viewModelScope.launch {
+        expect(occurrenceId, OccurrenceState.SKIPPED)
+        skip(occurrenceId)
+    }
+
+    private fun expect(occurrenceId: Long, state: OccurrenceState) {
+        if (occurrenceId > 0) pending.update { it + (occurrenceId to state) }
+    }
 
     /** Moves the whole day. Zero puts it back. */
     fun onShiftDay(minutes: Int) = viewModelScope.launch { shiftDay(minutes.minutes) }
 
     // Mapping -----------------------------------------------------------------
 
-    private fun toUiState(day: ResolvedDay, run: Int, now: LocalDateTime): TodayUiState {
+    private fun toUiState(
+        day: ResolvedDay,
+        run: Int,
+        now: LocalDateTime,
+        ahead: Map<Long, OccurrenceState>,
+    ): TodayUiState {
         val titles = day.entries.associate { it.item.id to it.item.title }
-        val next = day.next(now)
+        val states = day.entries.associate { it.item.id to it.sequenceInDay to stateOf(it, ahead) }
+        val settled = { entry: ResolvedEntry -> states[entry.item.id to entry.sequenceInDay]?.isSettled == true }
+        val next = day.entries.firstOrNull { it.at >= now && !settled(it) }
+
+        forgetCaughtUp(day, ahead)
 
         return TodayUiState(
             header = DayHeader(
                 dateLine = day.date.format(DATE),
                 templateName = day.template.name,
                 clock = now.format(CLOCK),
-                doneCount = day.doneCount,
+                doneCount = day.entries.count { states[it.item.id to it.sequenceInDay]?.isDone == true },
                 total = day.total,
             ),
             runDays = run,
             shiftMinutes = day.dayShift.inWholeMinutes.toInt(),
-            movedCount = day.entries.count { !it.item.pinned && it.occurrence?.isSettled != true },
+            movedCount = day.entries.count { !it.item.pinned && !settled(it) },
             next = next?.let { toNextUp(it, titles) },
-            entries = day.entries.map { toEntry(it, titles) }.toImmutableList(),
+            entries = day.entries.map { toEntry(it, titles, stateOf(it, ahead)) }.toImmutableList(),
             nowIndex = next?.let { day.entries.indexOf(it) } ?: -1,
             budget = day.budgetWarning?.let(::toBudgetNotice),
             degradedTier = degradedTier(),
@@ -146,16 +181,28 @@ class TodayViewModel @Inject constructor(
         hasMinimum = entry.item.hasMinimum,
     )
 
-    private fun toEntry(entry: ResolvedEntry, titles: Map<Long, String>) = TimelineEntry(
+    private fun toEntry(entry: ResolvedEntry, titles: Map<Long, String>, state: OccurrenceState?) = TimelineEntry(
         occurrenceId = entry.occurrence?.id ?: 0,
         itemId = entry.item.id,
         time = entry.at.format(CLOCK),
         title = entry.item.title,
         kind = kindOf(entry, titles),
         note = noteOf(entry),
-        isDone = entry.occurrence?.isDone == true,
-        isMissed = entry.occurrence?.isSettled == true && entry.occurrence?.isDone != true,
+        isDone = state?.isDone == true,
+        isMissed = state?.isSettled == true && state.isDone != true,
+        sequence = entry.sequenceInDay,
     )
+
+    /** The tap wins over the row until the row catches up. */
+    private fun stateOf(entry: ResolvedEntry, ahead: Map<Long, OccurrenceState>): OccurrenceState? =
+        entry.occurrence?.let { ahead[it.id] ?: it.state }
+
+    private fun forgetCaughtUp(day: ResolvedDay, ahead: Map<Long, OccurrenceState>) {
+        if (ahead.isEmpty()) return
+
+        val caughtUp = day.entries.mapNotNull { it.occurrence }.filter { it.isSettled }.map { it.id }
+        if (caughtUp.any { it in ahead }) pending.update { it - caughtUp.toSet() }
+    }
 
     private fun kindOf(entry: ResolvedEntry, titles: Map<Long, String>): EntryKind =
         when (val anchor = entry.item.anchor) {

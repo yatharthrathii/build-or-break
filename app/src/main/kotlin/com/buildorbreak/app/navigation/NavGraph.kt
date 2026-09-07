@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
@@ -17,10 +18,10 @@ import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -75,15 +76,24 @@ fun BuildOrBreakNavGraph(startRoute: NavKey, actions: ShellActions, modifier: Mo
     val current = backStack.lastOrNull()
     val tabIndex = TopLevelRoutes.indexOf(current)
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // The ground colour under the nav host, so a cross fade between two
+    // screens never shows the window behind them.
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
         NavDisplay(
             backStack = backStack,
             modifier = Modifier.weight(1f),
             onBack = { backStack.removeLastOrNull() },
-            entryDecorators = listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
+            // Saveable state per entry, so scroll positions survive a tab
+            // switch. No per entry ViewModel store on purpose: a tab tap
+            // clears the stack, and a ViewModel scoped to the entry would be
+            // destroyed and rebuilt on every switch, re resolving the whole
+            // day and showing an empty frame first. Scoped to the activity,
+            // Today and Insights come back exactly as they were left.
+            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
             transitionSpec = { forward() },
             popTransitionSpec = { backward() },
             predictivePopTransitionSpec = { backward() },

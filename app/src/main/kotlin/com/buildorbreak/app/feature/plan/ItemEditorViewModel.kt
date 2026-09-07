@@ -153,6 +153,10 @@ class ItemEditorViewModel @Inject constructor(
 
     /** [itemId] of zero means a new step. */
     fun load(itemId: Long) = viewModelScope.launch {
+        // The ViewModel outlives the screen. Blank first, so the step edited
+        // last time is never on screen for a frame while this one loads.
+        _state.value = ItemEditorUiState.Empty
+
         val loaded = observePlan().first() as? PlanContents.Loaded
         val siblings = loaded?.items.orEmpty()
 

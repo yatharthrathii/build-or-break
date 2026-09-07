@@ -107,6 +107,8 @@ data class TimelineEntry(
     val note: EntryNote?,
     val isDone: Boolean,
     val isMissed: Boolean,
+    /** Which repeat of the item this is. Zero for anything that runs once. */
+    val sequence: Int = 0,
 ) {
     val isSettled: Boolean get() = isDone || isMissed
 }

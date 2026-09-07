@@ -146,6 +146,17 @@ class ImportViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Back to blank once the saved plan has been handed on.
+     *
+     * The ViewModel outlives the screen, so without this a second visit would
+     * open on a stage that immediately navigates away again.
+     */
+    fun onLeave() {
+        parsed = emptyList()
+        _state.value = ImportUiState.Empty
+    }
+
     private fun toPreview(item: ParsedItem) = ParsedPreview(
         title = item.title,
         whenText = describe(item.anchor),

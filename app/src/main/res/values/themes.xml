@@ -13,7 +13,15 @@
         <item name="postSplashScreenTheme">@style/Theme.BuildOrBreak</item>
     </style>
 
+    <!--
+        The window painted in the ground colour; values-night swaps the parent
+        and the colour. Compose draws every screen, but the window itself
+        shows through during a cross fade between two screens and behind a
+        sheet as it opens, and a white window under a dark app is a flash of
+        light on every tab switch.
+    -->
     <style name="Theme.BuildOrBreak" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/ground</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>

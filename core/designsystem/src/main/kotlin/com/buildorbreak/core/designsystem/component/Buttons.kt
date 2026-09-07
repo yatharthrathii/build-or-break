@@ -33,7 +33,14 @@ import java.util.Locale
 
 private val BlockHeight = 56.dp
 private val BlockIconSize = 20.dp
-private const val PRESSED_SCALE = 0.97f
+private const val PRESSED_SCALE = 0.96f
+
+/** Whether a finger is on this control right now. */
+@Composable
+private fun MutableInteractionSource.isPressed(): Boolean {
+    val pressed by collectIsPressedAsState()
+    return pressed
+}
 
 /**
  * The primary action: a full width block of accent with a black label.
@@ -52,18 +59,14 @@ fun BlockButton(
     icon: ImageVector? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed && enabled) PRESSED_SCALE else 1f, spring(), label = "press")
-
-    val ground by animateColorAsState(
-        when {
-            !enabled -> Theme.colours.badge
-            pressed -> Theme.colours.pressed
-            else -> MaterialTheme.colorScheme.primary
-        },
-        label = "ground",
-    )
-    val ink = if (enabled) MaterialTheme.colorScheme.onPrimary else Theme.colours.faint
+    val pressed = interaction.isPressed() && enabled
+    val scale by animateFloatAsState(if (pressed) PRESSED_SCALE else 1f, spring(), label = "press")
+    val ground by animateColorAsState(blockGround(enabled, pressed), spring(stiffness = 1200f), label = "ground")
+    val ink = when {
+        !enabled -> Theme.colours.faint
+        pressed -> MaterialTheme.colorScheme.surface
+        else -> MaterialTheme.colorScheme.onPrimary
+    }
 
     Row(
         modifier = modifier
@@ -91,6 +94,17 @@ fun BlockButton(
 }
 
 /**
+ * Pressed goes to ink, not to a darker red. A darker red is invisible on a
+ * phone in daylight; ink on the accent block is unmistakable.
+ */
+@Composable
+private fun blockGround(enabled: Boolean, pressed: Boolean): Color = when {
+    !enabled -> Theme.colours.badge
+    pressed -> MaterialTheme.colorScheme.onSurface
+    else -> MaterialTheme.colorScheme.primary
+}
+
+/**
  * A small bordered action: UNDO, NOT NOW, RUNNING LATE.
  *
  * Two pixel border in ink, no fill. [muted] draws it in the secondary colour
@@ -104,8 +118,12 @@ fun OutlineButton(
     muted: Boolean = false,
     enabled: Boolean = true,
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed = interaction.isPressed() && enabled
+
     val ink = when {
         !enabled -> Theme.colours.faint
+        pressed -> MaterialTheme.colorScheme.surface
         muted -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.onSurface
     }
@@ -117,7 +135,16 @@ fun OutlineButton(
         color = ink,
         modifier = modifier
             .border(Theme.spacing.rule, border)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            // Filled in ink while pressed. The outline is the quiet control,
+            // so its press has to be the loud moment.
+            .background(if (pressed) MaterialTheme.colorScheme.onSurface else Color.Transparent)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            )
             .padding(horizontal = 12.dp, vertical = 10.dp),
     )
 }
@@ -130,8 +157,19 @@ fun FillButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    val ground = if (enabled) MaterialTheme.colorScheme.primary else Theme.colours.badge
-    val ink = if (enabled) MaterialTheme.colorScheme.onPrimary else Theme.colours.faint
+    val interaction = remember { MutableInteractionSource() }
+    val pressed = interaction.isPressed() && enabled
+
+    val ground = when {
+        !enabled -> Theme.colours.badge
+        pressed -> MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val ink = when {
+        !enabled -> Theme.colours.faint
+        pressed -> MaterialTheme.colorScheme.surface
+        else -> MaterialTheme.colorScheme.onPrimary
+    }
 
     Text(
         text = text.uppercase(Locale.getDefault()),
@@ -139,7 +177,13 @@ fun FillButton(
         color = ink,
         modifier = modifier
             .background(ground)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            )
             .padding(horizontal = 14.dp, vertical = 10.dp),
     )
 }
