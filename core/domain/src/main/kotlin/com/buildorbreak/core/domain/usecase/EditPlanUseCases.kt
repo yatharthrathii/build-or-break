@@ -97,7 +97,13 @@ class ObservePlanUseCase @Inject constructor(
                 ?: return@flatMapLatest flowOf(PlanContents.None)
 
             items.observeForTemplate(template.id).map { list ->
-                PlanContents.Loaded(planName = plan.name, template = template, templates = available, items = list)
+                PlanContents.Loaded(
+                    planId = plan.id,
+                    planName = plan.name,
+                    template = template,
+                    templates = available,
+                    items = list,
+                )
             }
         }
     }
@@ -133,6 +139,7 @@ sealed interface PlanContents {
     data object None : PlanContents
 
     data class Loaded(
+        val planId: Long,
         val planName: String,
         /** The template being edited. */
         val template: DayTemplate,

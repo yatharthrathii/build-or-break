@@ -65,6 +65,9 @@ class OccurrenceRepositoryImpl @Inject constructor(
     override suspend fun settle(id: Long, state: OccurrenceState, at: Instant): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { occurrences.settle(id, state.name, at) }
 
+    override suspend fun unsettle(id: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { occurrences.settle(id, OccurrenceState.PENDING.name, at = null) }
+
     /**
      * Returns the row as it now stands rather than Unit.
      *

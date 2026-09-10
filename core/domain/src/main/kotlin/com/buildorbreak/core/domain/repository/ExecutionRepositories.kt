@@ -37,6 +37,16 @@ interface OccurrenceRepository {
 
     suspend fun settle(id: Long, state: OccurrenceState, at: Instant): Outcome<Unit, DataError>
 
+    /**
+     * Returns a settled row to PENDING.
+     *
+     * Only ever called from an undo the user asked for. Nothing schedules
+     * itself off the back of this: the reschedule pass that follows decides
+     * whether the step still has a future, which on an overdue step it does
+     * not, and that is correct.
+     */
+    suspend fun unsettle(id: Long): Outcome<Unit, DataError>
+
     suspend fun shift(id: Long, by: Duration): Outcome<Occurrence, DataError>
 
     /** Drives the reconcile pass: anything that should have fired and did not. */
@@ -71,4 +81,16 @@ interface MeasurementRepository {
 
     /** Always optional, always after the fact. Never required to settle a day. */
     suspend fun recordSkipReason(reason: SkipReason): Outcome<Unit, DataError>
+
+    /** Removes whatever was said about one skip. Used when the skip itself is undone. */
+    suspend fun clearSkipReason(occurrenceId: Long): Outcome<Unit, DataError>
+
+    /**
+     * The reasons given for a set of skips.
+     *
+     * Read by occurrence rather than by date because the reason has no date of
+     * its own: it belongs to the skip, and the skip already knows which day it
+     * was. Two sources of truth for one date is one too many.
+     */
+    suspend fun skipReasonsFor(occurrenceIds: List<Long>): List<SkipReason>
 }

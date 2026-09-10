@@ -25,6 +25,15 @@ data class ResolvedDay(
     val mode: DayMode,
     val budgetWarning: BudgetWarning?,
     val issues: List<ResolveIssue>,
+    /**
+     * How many steps were left out because the plan did not exist yet.
+     *
+     * Only ever non zero on the day the plan was made. Kept because an empty
+     * day for this reason and an empty day because the template has nothing on
+     * this weekday are different things, and telling somebody the second when
+     * the first is true reads as the app having lost their routine.
+     */
+    val hiddenBeforeStart: Int = 0,
 ) {
     val doneCount: Int get() = entries.count { it.occurrence?.isDone == true }
 
@@ -50,6 +59,13 @@ data class ResolvedEntry(
     val sequenceInDay: Int = 0,
     /** True when this entry was resolved from a fallback because of an issue. */
     val degraded: Boolean = false,
+    /**
+     * True on a reduced day for an item that has a smaller version.
+     *
+     * The smaller version is what the day asks for; completing the entry
+     * counts as the minimum, not as a partial failure.
+     */
+    val reduced: Boolean = false,
 ) {
     val salience: Salience get() = block?.salience ?: item.salience
 

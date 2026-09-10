@@ -7,6 +7,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
 
 /** The last minute of a day. A resolved entry never spills onto the next date. */
 private val LAST_MINUTE_OF_DAY = LocalTime.of(23, 59)
@@ -46,6 +48,8 @@ data class AnchorContext(
     val placed: Map<Long, Placement>,
     /** Today's occurrences, keyed by item id. */
     val occurrences: Map<Long, Occurrence> = emptyMap(),
+    /** See `ResolveInput.lateTolerance`. Zero means every slip moves the children. */
+    val lateTolerance: Duration = Duration.ZERO,
 )
 
 /**
@@ -119,10 +123,12 @@ class AnchorResolver {
     private fun baseTimeOf(parentId: Long, context: AnchorContext): LocalDateTime? {
         val placed = context.placed[parentId] ?: return null
         val occurrence = context.occurrences[parentId]
+        val planned = placed.at.plusMinutes(occurrence?.shiftMinutes?.toLong() ?: 0L)
 
-        occurrence?.learnableInstant?.let { return LocalDateTime.ofInstant(it, context.zone) }
+        val actual = occurrence?.learnableInstant?.let { LocalDateTime.ofInstant(it, context.zone) } ?: return planned
+        val slip = java.time.Duration.between(planned, actual).abs()
 
-        return placed.at.plusMinutes(occurrence?.shiftMinutes?.toLong() ?: 0L)
+        return if (slip <= context.lateTolerance.toJavaDuration()) planned else actual
     }
 
     /**

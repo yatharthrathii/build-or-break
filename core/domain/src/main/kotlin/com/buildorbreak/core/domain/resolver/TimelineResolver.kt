@@ -7,8 +7,10 @@ import com.buildorbreak.core.model.plan.DayTemplate
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.resolved.ResolvedDay
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * The whole day, computed from the plan and what has happened so far.
@@ -41,4 +43,24 @@ data class ResolveInput(
     /** How far the whole day was moved. Pinned items ignore it. */
     val dayShift: Duration,
     val mode: DayMode,
-)
+    /**
+     * How late a parent may finish before its relative children move.
+     *
+     * Under this, a child keeps its planned time. Ten minutes late on the gym
+     * is ordinary life, and having the shower move by ten minutes for it would
+     * make the whole day twitch. Zero turns the tolerance off.
+     */
+    val lateTolerance: Duration = DEFAULT_LATE_TOLERANCE,
+    /**
+     * When the plan came into being, in its own zone.
+     *
+     * On that one day the steps before it are not part of the day. A routine
+     * pasted at nine in the evening did not miss its morning; it had not
+     * started yet. Null means no cut off.
+     */
+    val startedAt: LocalDateTime? = null,
+) {
+    companion object {
+        val DEFAULT_LATE_TOLERANCE: Duration = 15.minutes
+    }
+}

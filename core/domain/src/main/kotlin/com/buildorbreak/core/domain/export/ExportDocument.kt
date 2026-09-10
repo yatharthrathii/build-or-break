@@ -82,6 +82,7 @@ data class ExportItem(
     @SerialName("value_kind") val valueKind: String,
     @SerialName("sort_order") val sortOrder: Int,
     @SerialName("archived_at") val archivedAt: String? = null,
+    val catchable: Boolean = true,
 )
 
 @Serializable

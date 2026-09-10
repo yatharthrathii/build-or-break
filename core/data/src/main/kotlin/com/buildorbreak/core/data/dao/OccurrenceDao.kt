@@ -31,13 +31,21 @@ interface OccurrenceDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnoringExisting(occurrences: List<OccurrenceEntity>)
 
+    /**
+     * Sets the state, and the moment it was reached.
+     *
+     * [at] is null for an undo, which puts the row back to PENDING and clears
+     * the time it claims to have been settled at. `shift_minutes` and
+     * `snooze_count` are deliberately untouched either way: taking back a
+     * completion should not also take back a snooze made an hour earlier.
+     */
     @Query(
         """
         UPDATE occurrence SET state = :state, settled_at = :at
         WHERE id = :id
         """,
     )
-    suspend fun settle(id: Long, state: String, at: Instant)
+    suspend fun settle(id: Long, state: String, at: Instant?)
 
     @Query(
         """

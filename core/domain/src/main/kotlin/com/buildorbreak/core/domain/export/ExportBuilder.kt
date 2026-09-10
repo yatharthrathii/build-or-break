@@ -130,6 +130,7 @@ private fun Item.toExport() = ExportItem(
     valueKind = valueKind.name,
     sortOrder = sortOrder,
     archivedAt = archivedAt?.toString(),
+    catchable = catchable,
 )
 
 private fun MinimumVersion.toExport() = ExportMinimum(title = title, durationMinutes = duration?.wholeMinutes())

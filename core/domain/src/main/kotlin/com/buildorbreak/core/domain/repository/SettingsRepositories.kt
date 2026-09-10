@@ -4,6 +4,7 @@ import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.model.enums.ThemeMode
 import java.time.LocalDate
+import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -33,11 +34,32 @@ interface SettingsRepository {
      */
     val dismissedReviewWeek: Flow<LocalDate?>
 
+    /** How late a parent may run before its relative children move. */
+    val lateTolerance: Flow<Duration>
+
+    /**
+     * Whether the user has said they dealt with the phone's autostart list.
+     *
+     * The app cannot read that list, so this is their word for it rather than a
+     * detected fact, and it is treated as such: it silences a row, it never
+     * raises the tier the app claims.
+     */
+    val autostartDone: Flow<Boolean>
+
+    /** The user's word that this phone will let an alarm show on the lock screen. */
+    val lockScreenDone: Flow<Boolean>
+
     suspend fun setOnboardingComplete(complete: Boolean)
 
     suspend fun setThemeMode(mode: ThemeMode)
 
     suspend fun setDismissedReviewWeek(week: LocalDate)
+
+    suspend fun setLateTolerance(tolerance: Duration)
+
+    suspend fun setAutostartDone(done: Boolean)
+
+    suspend fun setLockScreenDone(done: Boolean)
 }
 
 /**

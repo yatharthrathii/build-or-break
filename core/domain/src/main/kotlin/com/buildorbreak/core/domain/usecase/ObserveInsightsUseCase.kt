@@ -4,6 +4,7 @@ import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.repository.DayCloseRepository
 import com.buildorbreak.core.domain.repository.ItemRepository
+import com.buildorbreak.core.domain.repository.MeasurementRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
@@ -12,11 +13,14 @@ import com.buildorbreak.core.domain.review.InsightBar
 import com.buildorbreak.core.domain.review.Insights
 import com.buildorbreak.core.domain.review.InsightsPeriod
 import com.buildorbreak.core.domain.review.ReviewInput
+import com.buildorbreak.core.domain.review.SkipCount
 import com.buildorbreak.core.domain.review.StepStat
 import com.buildorbreak.core.domain.review.Suggestion
 import com.buildorbreak.core.domain.review.TimeShiftDetector
 import com.buildorbreak.core.domain.review.WeeklyReviewBuilder
+import com.buildorbreak.core.model.enums.OccurrenceState
 import com.buildorbreak.core.model.execution.Occurrence
+import com.buildorbreak.core.model.execution.SkipReason
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.plan.Plan
 import com.buildorbreak.core.model.review.WeeklyReview
@@ -46,17 +50,35 @@ private const val PATTERN_WINDOW_DAYS = 28L
  * rebuilds on either. A settle on Today shows up here on the next open without
  * a four week query being held open in between.
  */
+/**
+ * The six tables a review reads, in one injectable bag.
+ *
+ * They always travel together and none of them is interesting on its own here.
+ * Injecting them one by one gave this class a constructor nobody could read.
+ */
+class InsightsSources @Inject constructor(
+    val plans: PlanRepository,
+    val templates: TemplateRepository,
+    val items: ItemRepository,
+    val occurrences: OccurrenceRepository,
+    val closes: DayCloseRepository,
+    val measurements: MeasurementRepository,
+)
+
 class ObserveInsightsUseCase @Inject constructor(
-    private val plans: PlanRepository,
-    private val templates: TemplateRepository,
-    private val items: ItemRepository,
-    private val occurrences: OccurrenceRepository,
-    private val closes: DayCloseRepository,
+    private val sources: InsightsSources,
     private val settings: SettingsRepository,
     private val reviews: WeeklyReviewBuilder,
     private val time: TimeProvider,
     private val dispatchers: AppDispatchers,
 ) {
+
+    private val plans get() = sources.plans
+    private val templates get() = sources.templates
+    private val items get() = sources.items
+    private val occurrences get() = sources.occurrences
+    private val closes get() = sources.closes
+    private val measurements get() = sources.measurements
 
     /**
      * Two samples and no threshold, unlike the detector the weekly review uses.
@@ -108,9 +130,23 @@ class ObserveInsightsUseCase @Inject constructor(
             averageSlip = averageSlip(stats),
             bars = barsFor(period, from, current),
             steps = stats,
+            skipReasons = skipReasonsIn(current),
             suggestion = suggestionFor(review, stats, weekStart).takeIf { dismissed != weekStart },
             story = review.story,
         )
+    }
+
+    /** Counted, commonest first, and only the ones somebody actually gave. */
+    private suspend fun skipReasonsIn(period: List<Occurrence>): List<SkipCount> {
+        val skipped = period.filter { it.state == OccurrenceState.SKIPPED }.map { it.id }
+        if (skipped.isEmpty()) return emptyList()
+
+        return measurements.skipReasonsFor(skipped)
+            .mapNotNull { it.chip }
+            .groupingBy { it }
+            .eachCount()
+            .map { (chip, count) -> SkipCount(chip, count) }
+            .sortedByDescending { it.count }
     }
 
     private suspend fun itemsOn(plan: Plan): List<Item> =
@@ -133,8 +169,21 @@ class ObserveInsightsUseCase @Inject constructor(
                 items = planItems,
                 previousCloses = closes.observeRange(lastWeekStart, weekStart.minusDays(1)).first(),
                 recentOccurrences = recent,
+                // Without these the detector sees counts and nothing else, so
+                // every cause comes back UNKNOWN and the same fix is offered
+                // whether a step was forgotten, crowded out or dreaded. Asking
+                // why and then not reading the answer is the worst of both:
+                // the user is interrupted and the report learns nothing.
+                reasons = reasonsFor(recent),
             ),
         )
+    }
+
+    /** Every reason given in the trailing window, whatever the current view is. */
+    private suspend fun reasonsFor(recent: List<Occurrence>): List<SkipReason> {
+        val skipped = recent.filter { it.state == OccurrenceState.SKIPPED }.map { it.id }
+
+        return if (skipped.isEmpty()) emptyList() else measurements.skipReasonsFor(skipped)
     }
 
     /** One row per step on the plan, in plan order, only when it had a chance. */

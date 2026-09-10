@@ -1,5 +1,6 @@
 package com.buildorbreak.core.domain.resolver
 
+import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.plan.Anchor
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.resolved.ResolveIssue
@@ -48,7 +49,8 @@ class DefaultTimelineResolver(
         val shifted = shifter.apply(applicable, input.dayShift)
         val graph = graphBuilder.build(shifted.items)
         val placements = placeAndExpand(shifted.items, graph, input)
-        val entries = buildEntries(placements, shifted.items, input)
+        val all = buildEntries(placements, shifted.items, input)
+        val entries = all.filter { input.startedAt?.isAfter(it.at) != true }
 
         return ResolvedDay(
             date = input.date,
@@ -58,6 +60,7 @@ class DefaultTimelineResolver(
             mode = input.mode,
             budgetWarning = budget.evaluate(entries),
             issues = collectIssues(graph, shifted, placements),
+            hiddenBeforeStart = all.size - entries.size,
         )
     }
 
@@ -93,7 +96,15 @@ class DefaultTimelineResolver(
             val item = byId[id] ?: return@forEach
             placed[id] = anchors.resolve(
                 item,
-                AnchorContext(input.date, input.zone, dayStart, graph, placed, anchorOccurrences),
+                AnchorContext(
+                    date = input.date,
+                    zone = input.zone,
+                    dayStart = dayStart,
+                    graph = graph,
+                    placed = placed,
+                    occurrences = anchorOccurrences,
+                    lateTolerance = input.lateTolerance,
+                ),
             )
         }
 
@@ -118,14 +129,21 @@ class DefaultTimelineResolver(
 
         return placements.mapNotNull { placement ->
             val item = byId[placement.itemId] ?: return@mapNotNull null
+            val occurrence = occurrences[OccurrenceKey(item.id, placement.sequenceInDay)]
 
             ResolvedEntry(
                 item = item,
                 block = item.blockId?.let(blocksById::get),
-                at = placement.at,
-                occurrence = occurrences[OccurrenceKey(item.id, placement.sequenceInDay)],
+                // The anchor says where the step was planned; a snooze says
+                // where it actually is now. Leaving the snooze out here left a
+                // snoozed step drawn at its old time and, worse, filtered out
+                // of the rescheduling pass as already past, so it never rang
+                // again and nothing said so.
+                at = placement.at.plusMinutes(occurrence?.shiftMinutes?.toLong() ?: 0),
+                occurrence = occurrence,
                 sequenceInDay = placement.sequenceInDay,
                 degraded = placement.degraded,
+                reduced = input.mode == DayMode.REDUCED && item.hasMinimum,
             )
         }.sortedWith(ENTRY_ORDER)
     }

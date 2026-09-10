@@ -118,6 +118,8 @@ data class ItemEntity(
     /** Archived rather than deleted, so past occurrences keep their meaning. */
     @ColumnInfo(name = "archived_at") val archivedAt: Instant?,
     @Embedded val anchor: AnchorColumns,
+    /** Added in version 2. Existing rows default to true, which was the old behaviour. */
+    @ColumnInfo(defaultValue = "1") val catchable: Boolean = true,
 )
 
 /**

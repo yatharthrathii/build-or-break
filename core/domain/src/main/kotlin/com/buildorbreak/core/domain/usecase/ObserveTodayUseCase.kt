@@ -6,20 +6,25 @@ import com.buildorbreak.core.domain.repository.DayLogRepository
 import com.buildorbreak.core.domain.repository.ItemRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
+import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
 import com.buildorbreak.core.domain.resolver.ResolveInput
 import com.buildorbreak.core.domain.resolver.TimelineResolver
 import com.buildorbreak.core.model.plan.DayTemplate
+import com.buildorbreak.core.model.plan.Plan
 import com.buildorbreak.core.model.resolved.ResolvedDay
 import java.time.LocalDate
+import java.time.LocalDateTime
 import javax.inject.Inject
 import kotlin.time.Duration
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 
 /**
  * The whole day, recomputed whenever anything it depends on changes.
@@ -39,6 +44,7 @@ class ObserveTodayUseCase @Inject constructor(
     private val items: ItemRepository,
     private val occurrences: OccurrenceRepository,
     private val dayLogs: DayLogRepository,
+    private val settings: SettingsRepository,
     private val resolver: TimelineResolver,
     private val time: TimeProvider,
     private val dispatchers: AppDispatchers,
@@ -46,6 +52,21 @@ class ObserveTodayUseCase @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(date: LocalDate = time.today()): Flow<ResolvedDay?> =
+        inputs(date).map { input -> input?.let(resolver::resolve) }
+            // The resolver is CPU work, not IO, and it runs on every emission.
+            .flowOn(dispatchers.default)
+
+    /**
+     * The inputs the day is resolved from, once.
+     *
+     * For the callers that need to run the resolver themselves, such as the
+     * cascade preview, which resolves the same day twice with one thing moved.
+     * Built by the same code as the live day so the two can never disagree.
+     */
+    suspend fun inputFor(date: LocalDate = time.today()): ResolveInput? = inputs(date).first()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun inputs(date: LocalDate): Flow<ResolveInput?> =
         combine(plans.observeActive(), dayLogs.observe(date)) { plan, log -> plan to log }
             .flatMapLatest { (plan, log) ->
                 if (plan == null) {
@@ -54,12 +75,10 @@ class ObserveTodayUseCase @Inject constructor(
                     templates.observeForPlan(plan.id).flatMapLatest { available ->
                         val template = chooseTemplate(available, log?.templateId, date)
 
-                        if (template == null) flowOf(null) else resolveWith(template, log, date)
+                        if (template == null) flowOf(null) else inputsWith(plan, template, log, date)
                     }
                 }
             }
-            // The resolver is CPU work, not IO, and it runs on every emission.
-            .flowOn(dispatchers.default)
 
     /**
      * What the user chose, then what the weekday says, then the plan default.
@@ -74,26 +93,28 @@ class ObserveTodayUseCase @Inject constructor(
             ?: available.firstOrNull { date.dayOfWeek in it.weekdays }
             ?: available.firstOrNull { it.isDefault }
 
-    private fun resolveWith(
+    private fun inputsWith(
+        plan: Plan,
         template: DayTemplate,
         log: com.buildorbreak.core.model.execution.DayLog?,
         date: LocalDate,
-    ): Flow<ResolvedDay> = combine(
+    ): Flow<ResolveInput> = combine(
         items.observeForTemplate(template.id),
         items.observeBlocksForTemplate(template.id),
         occurrences.observeForDate(date),
-    ) { todaysItems, blocks, todaysOccurrences ->
-        resolver.resolve(
-            ResolveInput(
-                template = template,
-                blocks = blocks,
-                items = todaysItems,
-                occurrences = todaysOccurrences,
-                date = date,
-                zone = time.zone(),
-                dayShift = log?.dayShift ?: Duration.ZERO,
-                mode = log?.mode ?: template.mode,
-            ),
+        settings.lateTolerance,
+    ) { todaysItems, blocks, todaysOccurrences, tolerance ->
+        ResolveInput(
+            template = template,
+            blocks = blocks,
+            items = todaysItems,
+            occurrences = todaysOccurrences,
+            date = date,
+            zone = time.zone(),
+            dayShift = log?.dayShift ?: Duration.ZERO,
+            mode = log?.mode ?: template.mode,
+            lateTolerance = tolerance,
+            startedAt = LocalDateTime.ofInstant(plan.createdAt, time.zone()),
         )
     }
 }

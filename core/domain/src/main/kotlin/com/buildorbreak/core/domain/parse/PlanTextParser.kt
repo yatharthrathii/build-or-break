@@ -65,8 +65,9 @@ private val TRAILING_JUNK = Regex("""[\s|,;.\-–—]+$""")
  * Morning:                               a section heading
  * ```
  *
- * Times may be 24 hour or 12 hour with am/pm. Bullets, dashes and numbering are
- * stripped. Duration, `min:` and `pinned` are picked out of the rest of the line
+ * Times may be 24 hour or 12 hour with am/pm. Twelve hour times without am or
+ * pm are read forwards: "1:30" under "11:00" is the afternoon. Bullets, dashes
+ * and numbering are stripped. Duration, `min:` and `pinned` are picked out of the rest of the line
  * wherever they appear.
  */
 class PlanTextParser(
@@ -79,6 +80,7 @@ class PlanTextParser(
         val unrecognised = mutableListOf<String>()
         var section: String? = null
         var previousTitle: String? = null
+        var lastStart: LocalTime? = null
 
         text.lineSequence().forEach { rawLine ->
             val line = rawLine.trim()
@@ -89,23 +91,29 @@ class PlanTextParser(
                 return@forEach
             }
 
-            val parsed = parseLine(line, section, previousTitle)
+            val parsed = parseLine(line, section, previousTitle, lastStart)
             if (parsed == null) {
                 unrecognised += line
             } else {
                 items += parsed
                 previousTitle = parsed.title
+                lastStart = startOf(parsed.anchor) ?: lastStart
             }
         }
 
         return ParseResult(items, unrecognised)
     }
 
-    private fun parseLine(line: String, section: String?, previousTitle: String?): ParsedItem? {
+    private fun parseLine(
+        line: String,
+        section: String?,
+        previousTitle: String?,
+        after: LocalTime?,
+    ): ParsedItem? {
         val body = line.replace(LEADING_MARKER, "").trim()
         if (body.isEmpty()) return null
 
-        val anchored = readAnchor(body, previousTitle) ?: return null
+        val anchored = readAnchor(body, previousTitle, after) ?: return null
         val details = readDetails(anchored.remainder)
         if (details.title.isEmpty()) return null
 
@@ -130,28 +138,31 @@ class PlanTextParser(
      * range also contains a time, so the loosest pattern has to be last or it
      * would claim every line before the right one saw it.
      */
-    private fun readAnchor(body: String, previousTitle: String?): Anchored? =
-        readInterval(body) ?: readWindow(body) ?: readRelative(body, previousTitle) ?: readFixed(body)
+    private fun readAnchor(body: String, previousTitle: String?, after: LocalTime?): Anchored? =
+        readInterval(body, after)
+            ?: readWindow(body, after)
+            ?: readRelative(body, previousTitle)
+            ?: readFixed(body, after)
 
-    private fun readInterval(body: String): Anchored? {
+    private fun readInterval(body: String, after: LocalTime?): Anchored? {
         val every = EVERY.find(body) ?: return null
         val step = parseDuration(every.groupValues[1])?.takeIf { it > Duration.ZERO } ?: return null
 
-        val window = readWindow(body.substring(every.range.last + 1))
+        val window = readWindow(body.substring(every.range.last + 1), after)
         val range = window?.anchor as? Anchor.Window ?: return null
 
         return Anchored(Anchor.Interval(step, range.from, range.to), window.remainder)
     }
 
-    private fun readWindow(body: String): Anchored? {
-        val first = findTime(body) ?: return null
+    private fun readWindow(body: String, after: LocalTime?): Anchored? {
+        val first = findTime(body, after) ?: return null
         val afterFirst = body.substring(first.end)
 
         val separator = RANGE_SEPARATOR.find(afterFirst)?.takeIf { it.range.first == 0 } ?: return null
         val rest = afterFirst.substring(separator.range.last + 1)
 
         // A range has to move forwards. "09:30-07:30" is a typo, not a window.
-        val second = findTime(rest)?.takeIf { it.start == 0 && it.time.isAfter(first.time) } ?: return null
+        val second = findTime(rest, first.time)?.takeIf { it.start == 0 && it.time.isAfter(first.time) } ?: return null
 
         return Anchored(Anchor.Window(first.time, second.time), rest.substring(second.end))
     }
@@ -173,8 +184,8 @@ class PlanTextParser(
         )
     }
 
-    private fun readFixed(body: String): Anchored? {
-        val time = findTime(body)?.takeIf { it.start <= LEADING_TIME_SLACK } ?: return null
+    private fun readFixed(body: String, after: LocalTime?): Anchored? {
+        val time = findTime(body, after)?.takeIf { it.start <= LEADING_TIME_SLACK } ?: return null
 
         return Anchored(Anchor.Fixed(time.time), body.substring(time.end))
     }
@@ -183,7 +194,15 @@ class PlanTextParser(
 
     private data class FoundTime(val time: LocalTime, val start: Int, val end: Int)
 
-    private fun findTime(text: String): FoundTime? {
+    /**
+     * [after] is the last start already read. A bare "1:30" on the line
+     * below "11:00" is half past one in the afternoon: a routine runs
+     * forwards through the day, and people writing one in twelve hour time
+     * leave the pm off. Only hours one to eleven are moved, and only when
+     * they would otherwise go backwards. An explicit am or pm is never
+     * second guessed.
+     */
+    private fun findTime(text: String, after: LocalTime? = null): FoundTime? {
         TIME.find(text)?.let { match ->
             val hour = match.groupValues[1].toIntOrNull() ?: return@let
             val minute = match.groupValues[2].toIntOrNull() ?: 0
@@ -194,12 +213,26 @@ class PlanTextParser(
         }
 
         TIME_24.find(text)?.let { match ->
-            toTime(match.groupValues[1].toInt(), match.groupValues[2].toInt())?.let {
-                return FoundTime(it, match.range.first, match.range.last + 1)
+            val hour = match.groupValues[1].toInt()
+            toTime(hour, match.groupValues[2].toInt())?.let { plain ->
+                val time = if (after != null && hour in 1 until NOON && plain.isBefore(after)) {
+                    plain.plusHours(NOON.toLong())
+                } else {
+                    plain
+                }
+                return FoundTime(time, match.range.first, match.range.last + 1)
             }
         }
 
         return null
+    }
+
+    /** Where a line starts, for the running clock. A relative line has no time of its own. */
+    private fun startOf(anchor: Anchor): LocalTime? = when (anchor) {
+        is Anchor.Fixed -> anchor.at
+        is Anchor.Window -> anchor.from
+        is Anchor.Interval -> anchor.from
+        is Anchor.Relative -> null
     }
 
     private fun twelveHourToTwentyFour(hour: Int, isPm: Boolean): Int = when {

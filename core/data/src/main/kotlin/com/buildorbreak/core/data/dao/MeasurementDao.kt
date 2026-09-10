@@ -39,6 +39,10 @@ interface MeasurementDao {
     @Upsert
     suspend fun upsertSkipReason(reason: SkipReasonEntity): Long
 
+    /** Undoing a skip has to take its reason with it, or the review counts a skip that no longer exists. */
+    @Query("DELETE FROM skip_reason WHERE occurrence_id = :occurrenceId")
+    suspend fun deleteSkipReasonFor(occurrenceId: Long)
+
     @Query("SELECT * FROM skip_reason WHERE occurrence_id IN (:occurrenceIds)")
     suspend fun skipReasonsFor(occurrenceIds: List<Long>): List<SkipReasonEntity>
 }

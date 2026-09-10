@@ -112,6 +112,7 @@ internal fun ItemEntity.toModel(): Item = Item(
     trackId = trackId,
     sortOrder = sortOrder,
     archivedAt = archivedAt,
+    catchable = catchable,
 )
 
 internal fun Item.toEntity(): ItemEntity = ItemEntity(
@@ -133,6 +134,7 @@ internal fun Item.toEntity(): ItemEntity = ItemEntity(
     sortOrder = sortOrder,
     archivedAt = archivedAt,
     anchor = anchor.toColumns(),
+    catchable = catchable,
 )
 
 // Anchors ---------------------------------------------------------------------

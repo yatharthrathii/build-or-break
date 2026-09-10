@@ -4,14 +4,13 @@ import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.gateway.NotificationGateway
 import com.buildorbreak.core.domain.goal.DayQualityClassifier
-import com.buildorbreak.core.domain.goal.ItemRun
+import com.buildorbreak.core.domain.goal.ItemRuns
 import com.buildorbreak.core.domain.goal.MilestoneContext
 import com.buildorbreak.core.domain.goal.MilestoneEvaluator
 import com.buildorbreak.core.domain.repository.DayCloseRepository
 import com.buildorbreak.core.domain.repository.MilestoneRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
-import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.OccurrenceState
 import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.goal.DayClose
@@ -26,6 +25,9 @@ private const val MAX_CATCH_UP_DAYS = 30L
 
 /** The window the consistency figure and the run length are read from. */
 private const val HISTORY_DAYS = 60L
+
+/** Wide enough for the thirty day run, with room to prove it broke before that. */
+private const val RUN_WINDOW_DAYS = 40L
 
 /**
  * Ends a day and writes down how it went.
@@ -131,7 +133,10 @@ class CloseDayUseCase @Inject constructor(
                 date = close.date,
                 today = close,
                 history = history,
-                longestRun = longestRun(history, close),
+                longestRun = ItemRuns.longest(
+                    occurrences.between(close.date.minusDays(RUN_WINDOW_DAYS), close.date),
+                    close.date,
+                ),
                 awarded = milestones.awarded(),
             ),
         ) ?: return
@@ -140,19 +145,5 @@ class CloseDayUseCase @Inject constructor(
             MilestoneAward(milestone = earned, goalId = null, itemId = null, awardedOn = close.date, seenAt = null),
         )
         notifications.showMilestone(earned)
-    }
-
-    /**
-     * How many days in a row have gone well, as a stand in for a per item run.
-     *
-     * A true per item run needs occurrence history for every item and is worth
-     * the query once there are screens that show it. Until then this feeds
-     * [Milestone.ITEM_THIRTY_DAY_RUN] with the closest honest number available
-     * rather than leaving the milestone unreachable.
-     */
-    private fun longestRun(history: List<DayClose>, today: DayClose): ItemRun? {
-        val run = (history + today).reversed().takeWhile { it.isFullDay }.count()
-
-        return if (run == 0) null else ItemRun(itemId = 0, days = run)
     }
 }

@@ -42,6 +42,12 @@ class MeasurementRepositoryImpl @Inject constructor(
 
     override suspend fun recordSkipReason(reason: SkipReason): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { measurements.upsertSkipReason(reason.toEntity()) }
+
+    override suspend fun clearSkipReason(occurrenceId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { measurements.deleteSkipReasonFor(occurrenceId) }
+
+    override suspend fun skipReasonsFor(occurrenceIds: List<Long>): List<SkipReason> =
+        withContext(dispatchers.io) { measurements.skipReasonsFor(occurrenceIds).map { it.toModel() } }
 }
 
 class DayLogRepositoryImpl @Inject constructor(

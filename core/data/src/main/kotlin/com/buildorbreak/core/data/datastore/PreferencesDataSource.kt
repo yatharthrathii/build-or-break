@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.buildorbreak.core.model.enums.ThemeMode
@@ -58,6 +59,21 @@ class PreferencesDataSource @Inject constructor(
         prefs[DISMISSED_REVIEW_WEEK]?.let(LocalDate::ofEpochDay)
     }
 
+    /** Minutes. Absent means the resolver's own default. */
+    val lateToleranceMinutes: Flow<Int?> = store.data.map { it[LATE_TOLERANCE_MINUTES] }
+
+    /**
+     * Whether the user says they have dealt with the phone's own autostart list.
+     *
+     * Kept because there is nothing to read. No API exposes that list, so the
+     * only source of truth for it is the person who went and looked, and a row
+     * that can never turn green is a row that nags forever.
+     */
+    val autostartDone: Flow<Boolean> = store.data.map { it[AUTOSTART_DONE] ?: false }
+
+    /** The same, for the vendor switch that lets an alarm show on the lock screen. */
+    val lockScreenDone: Flow<Boolean> = store.data.map { it[LOCK_SCREEN_DONE] ?: false }
+
     suspend fun setOnboardingComplete(complete: Boolean) {
         store.edit { it[ONBOARDING_COMPLETE] = complete }
     }
@@ -78,6 +94,18 @@ class PreferencesDataSource @Inject constructor(
         store.edit { it[DISMISSED_REVIEW_WEEK] = week.toEpochDay() }
     }
 
+    suspend fun setAutostartDone(done: Boolean) {
+        store.edit { it[AUTOSTART_DONE] = done }
+    }
+
+    suspend fun setLockScreenDone(done: Boolean) {
+        store.edit { it[LOCK_SCREEN_DONE] = done }
+    }
+
+    suspend fun setLateToleranceMinutes(minutes: Int) {
+        store.edit { it[LATE_TOLERANCE_MINUTES] = minutes }
+    }
+
     /** Everything, including whether the first run was seen. Part of a full wipe. */
     suspend fun clear() {
         store.edit { it.clear() }
@@ -89,5 +117,8 @@ class PreferencesDataSource @Inject constructor(
         val RELIABILITY_EXPLAINED = booleanPreferencesKey("reliability_explained")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DISMISSED_REVIEW_WEEK = longPreferencesKey("dismissed_review_week")
+        val LATE_TOLERANCE_MINUTES = intPreferencesKey("late_tolerance_minutes")
+        val AUTOSTART_DONE = booleanPreferencesKey("autostart_done")
+        val LOCK_SCREEN_DONE = booleanPreferencesKey("lock_screen_done")
     }
 }

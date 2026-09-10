@@ -127,15 +127,14 @@ class DefaultCascadeCalculator(
 
     private companion object {
         /**
-         * Where an entry actually sits once its own snooze is counted.
+         * Where an entry actually sits.
          *
-         * [ResolvedEntry.at] is the freshly resolved planned time, which already
-         * carries any shift inherited from a parent. An item's own shift lives on
-         * its occurrence, and adding it here is what lets the diff see the
-         * snoozed item move rather than only its children.
+         * [ResolvedEntry.at] already counts the item's own snooze: the resolver
+         * adds it, so that a snoozed step is drawn where it now is and is not
+         * mistaken for one already in the past. Adding it again here would
+         * double every snooze in the preview.
          */
-        fun positionOf(entry: ResolvedEntry): LocalDateTime =
-            entry.at.plusMinutes(entry.occurrence?.shiftMinutes?.toLong() ?: 0L)
+        fun positionOf(entry: ResolvedEntry): LocalDateTime = entry.at
 
         fun keyOf(entry: ResolvedEntry): Pair<Long, Int> = entry.item.id to entry.sequenceInDay
     }

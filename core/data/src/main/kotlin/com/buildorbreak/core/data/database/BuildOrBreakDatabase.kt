@@ -89,7 +89,7 @@ abstract class BuildOrBreakDatabase : RoomDatabase() {
     abstract fun deliveryAuditDao(): DeliveryAuditDao
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
 
         const val NAME = "buildorbreak.db"
     }

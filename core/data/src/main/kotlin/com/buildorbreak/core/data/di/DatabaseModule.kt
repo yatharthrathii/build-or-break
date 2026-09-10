@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import com.buildorbreak.core.data.database.BuildOrBreakDatabase
+import com.buildorbreak.core.data.database.Migrations
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,7 +34,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): BuildOrBreakDatabase =
-        Room.databaseBuilder(context, BuildOrBreakDatabase::class.java, BuildOrBreakDatabase.NAME).build()
+        Room.databaseBuilder(context, BuildOrBreakDatabase::class.java, BuildOrBreakDatabase.NAME)
+            .addMigrations(Migrations.FROM_1_TO_2)
+            .build()
 
     @Provides
     @Singleton

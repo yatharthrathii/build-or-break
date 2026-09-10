@@ -73,6 +73,15 @@ data class Item(
     val trackId: Long?,
     val sortOrder: Int,
     val archivedAt: Instant? = null,
+    /**
+     * Whether a missed step is worth doing later in the day.
+     *
+     * True for almost everything. False for the things that only make sense
+     * at their own time: waking up, a morning walk, a medicine that must not
+     * be taken at night. The catch up planner leaves those alone rather than
+     * suggesting "Wake up" at eight in the evening.
+     */
+    val catchable: Boolean = true,
 ) {
     val isArchived: Boolean get() = archivedAt != null
 

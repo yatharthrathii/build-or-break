@@ -11,6 +11,7 @@ import com.buildorbreak.core.model.execution.DayLog
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.time.Duration
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
@@ -23,6 +24,7 @@ import kotlinx.coroutines.withContext
  */
 class ShiftDayUseCase @Inject constructor(
     private val dayLogs: DayLogRepository,
+    private val today: ObserveTodayUseCase,
     private val reschedule: RescheduleAllUseCase,
     private val widget: WidgetGateway,
     private val time: TimeProvider,
@@ -31,13 +33,42 @@ class ShiftDayUseCase @Inject constructor(
 
     suspend operator fun invoke(shift: Duration, date: LocalDate = time.today()): Outcome<Unit, DataError> =
         withContext(dispatchers.io) {
-            val written = dayLogs.setShift(date, shift)
+            val existing = dayLogs.observe(date).first()
+            val written = if (existing == null) startDay(date, shift) else dayLogs.setShift(date, shift)
 
             reschedule(date)
             widget.refresh()
 
             written
         }
+
+    /**
+     * The first thing to happen to a day has to write the row it is kept in.
+     *
+     * Most days never get one: the template comes from the weekday and there is
+     * nothing to store. So the first "running late" of the morning has no row to
+     * update, and an update that matches nothing succeeds while changing
+     * nothing, which is how a button ends up moving no steps at all.
+     *
+     * The template written is the one the day was already running, read back
+     * from the resolver rather than guessed, so recording a shift cannot
+     * quietly change which routine is on.
+     */
+    private suspend fun startDay(date: LocalDate, shift: Duration): Outcome<Unit, DataError> {
+        val template = today.inputFor(date)?.template ?: return Outcome.Failure(DataError.NotFound)
+        val minutes = shift.inWholeMinutes.toInt()
+
+        return dayLogs.upsert(
+            DayLog(
+                date = date,
+                planId = template.planId,
+                templateId = template.id,
+                dayShiftMinutes = minutes,
+                mode = if (minutes == 0) DayMode.NORMAL else DayMode.SHIFTED,
+                chosenAt = time.now(),
+            ),
+        )
+    }
 }
 
 /**

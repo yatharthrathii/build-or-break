@@ -122,3 +122,39 @@ class SkipItemUseCase @Inject constructor(
             settled
         }
 }
+
+/**
+ * Takes back the last thing that was settled.
+ *
+ * The tap that needs this is the one nobody plans for: Done pressed on the row
+ * above the one meant, on a phone held in one hand on a bus. Without an undo the
+ * only way out is the editor, and the honest user ends up with a day that says
+ * they did something they did not. A history that quietly drifts from the truth
+ * is worse than no history, because every figure in the app is built on it.
+ *
+ * The reason goes with the skip. A reason left attached to a step that was
+ * never skipped would be counted by the weekly review, and next Sunday's report
+ * would explain something that did not happen.
+ *
+ * Nothing is re notified. The reschedule pass decides whether the step still has
+ * a future, and for one whose time has passed the answer is no, which is right:
+ * putting the row back is not the same as pretending the morning is still ahead.
+ */
+class UndoSettleUseCase @Inject constructor(
+    private val occurrences: OccurrenceRepository,
+    private val measurements: MeasurementRepository,
+    private val reschedule: RescheduleAllUseCase,
+    private val widget: WidgetGateway,
+    private val dispatchers: AppDispatchers,
+) {
+
+    suspend operator fun invoke(occurrenceId: Long): Outcome<Unit, DataError> = withContext(dispatchers.io) {
+        val restored = occurrences.unsettle(occurrenceId)
+
+        measurements.clearSkipReason(occurrenceId)
+        reschedule()
+        widget.refresh()
+
+        restored
+    }
+}

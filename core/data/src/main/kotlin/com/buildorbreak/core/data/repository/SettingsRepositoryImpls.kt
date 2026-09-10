@@ -7,10 +7,14 @@ import com.buildorbreak.core.data.datastore.PreferencesDataSource
 import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.repository.ResetRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
+import com.buildorbreak.core.domain.resolver.ResolveInput
 import com.buildorbreak.core.model.enums.ThemeMode
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
@@ -30,11 +34,26 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override val dismissedReviewWeek: Flow<LocalDate?> = preferences.dismissedReviewWeek
 
+    override val lateTolerance: Flow<Duration> = preferences.lateToleranceMinutes.map { minutes ->
+        minutes?.minutes ?: ResolveInput.DEFAULT_LATE_TOLERANCE
+    }
+
+    override val autostartDone: Flow<Boolean> = preferences.autostartDone
+
+    override val lockScreenDone: Flow<Boolean> = preferences.lockScreenDone
+
     override suspend fun setOnboardingComplete(complete: Boolean) = preferences.setOnboardingComplete(complete)
 
     override suspend fun setThemeMode(mode: ThemeMode) = preferences.setThemeMode(mode)
 
     override suspend fun setDismissedReviewWeek(week: LocalDate) = preferences.setDismissedReviewWeek(week)
+
+    override suspend fun setLateTolerance(tolerance: Duration) =
+        preferences.setLateToleranceMinutes(tolerance.inWholeMinutes.toInt())
+
+    override suspend fun setAutostartDone(done: Boolean) = preferences.setAutostartDone(done)
+
+    override suspend fun setLockScreenDone(done: Boolean) = preferences.setLockScreenDone(done)
 }
 
 /**
