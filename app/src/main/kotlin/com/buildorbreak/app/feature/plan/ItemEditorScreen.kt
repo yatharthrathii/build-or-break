@@ -148,6 +148,13 @@ private fun EditorBody(state: ItemEditorUiState, onChange: (ItemEditorUiState) -
     )
 
     PinnedRow(state = state, onChange = onChange)
+
+    ToggleRow(
+        title = stringResource(R.string.editor_catchable_title),
+        body = stringResource(R.string.editor_catchable_body),
+        checked = state.catchable,
+        onCheckedChange = { onChange(state.copy(catchable = it)) },
+    )
 }
 
 /** Back, the title, and Save. Under it, the reason Save is off, when it is. */
@@ -184,8 +191,29 @@ private fun EditorHeader(state: ItemEditorUiState, onSave: () -> Unit, onCancel:
 
         HeavyRule()
 
-        state.saveBlocker?.let { BlockerLine(blocker = it) }
+        // Why it is off comes first. A screen showing both at once is a screen
+        // asking the user to work out which one to believe.
+        val blocker = state.saveBlocker
+
+        when {
+            blocker != null -> BlockerLine(blocker = blocker)
+            state.saveFailed -> FailureLine()
+        }
     }
+}
+
+/** A write that did not land, said plainly rather than swallowed. */
+@Composable
+private fun FailureLine() {
+    Text(
+        text = stringResource(R.string.editor_save_failed),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onError,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.error)
+            .padding(horizontal = 16.dp, vertical = 9.dp),
+    )
 }
 
 /** Why Save is off, on a tint, in one sentence. */
@@ -276,19 +304,34 @@ private fun DurationSection(state: ItemEditorUiState, onChange: (ItemEditorUiSta
 
 @Composable
 private fun PinnedRow(state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
+    ToggleRow(
+        title = stringResource(R.string.editor_pinned_title),
+        body = stringResource(R.string.editor_pinned_body),
+        checked = state.pinned,
+        onCheckedChange = { onChange(state.copy(pinned = it)) },
+    )
+}
+
+@Composable
+private fun ToggleRow(
+    title: String,
+    body: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.editor_pinned_title),
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
             Text(
-                text = stringResource(R.string.editor_pinned_body),
+                text = body,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 3.dp),
@@ -296,8 +339,8 @@ private fun PinnedRow(state: ItemEditorUiState, onChange: (ItemEditorUiState) ->
         }
 
         SquareToggle(
-            checked = state.pinned,
-            onCheckedChange = { onChange(state.copy(pinned = it)) },
+            checked = checked,
+            onCheckedChange = onCheckedChange,
             modifier = Modifier.padding(start = Theme.spacing.medium),
         )
     }

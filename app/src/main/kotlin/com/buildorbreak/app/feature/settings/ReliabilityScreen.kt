@@ -3,6 +3,7 @@ package com.buildorbreak.app.feature.settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ import com.buildorbreak.core.designsystem.component.FillButton
 import com.buildorbreak.core.designsystem.component.HairlineRule
 import com.buildorbreak.core.designsystem.component.HeavyRule
 import com.buildorbreak.core.designsystem.component.Kicker
+import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.SectionLabel
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.model.enums.DeliveryTier
@@ -51,6 +53,7 @@ import kotlinx.collections.immutable.persistentListOf
 fun ReliabilityScreen(
     onFix: (TierBlocker) -> Unit,
     onOpenAutostart: () -> Unit,
+    onOpenLockScreen: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReliabilityViewModel = hiltViewModel(),
@@ -68,6 +71,9 @@ fun ReliabilityScreen(
         state = state,
         onFix = onFix,
         onOpenAutostart = onOpenAutostart,
+        onOpenLockScreen = onOpenLockScreen,
+        onAutostartDone = viewModel::onAutostartDone,
+        onLockScreenDone = viewModel::onLockScreenDone,
         onBack = onBack,
         modifier = modifier,
     )
@@ -78,6 +84,9 @@ fun ReliabilityContent(
     state: ReliabilityUiState,
     onFix: (TierBlocker) -> Unit,
     onOpenAutostart: () -> Unit,
+    onOpenLockScreen: () -> Unit,
+    onAutostartDone: () -> Unit,
+    onLockScreenDone: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -92,7 +101,7 @@ fun ReliabilityContent(
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             TierSummary(tier = state.tier)
 
-            if (state.blockers.isNotEmpty() || state.needsAutostart) {
+            if (state.blockers.isNotEmpty() || state.needsAutostart || state.needsLockScreen) {
                 SectionLabel(text = stringResource(R.string.reliability_what_would_change), underlined = true)
             }
 
@@ -105,17 +114,58 @@ fun ReliabilityContent(
                 )
             }
 
-            if (state.needsAutostart) {
-                // The switch no API can see the state of. The row offers the
-                // screen and says plainly that the app cannot check it.
-                FixRow(
-                    what = R.string.autostart_title,
-                    why = R.string.autostart_body,
-                    action = R.string.autostart_action,
-                    onAction = onOpenAutostart,
-                )
-            }
+            VendorRows(
+                state = state,
+                onOpenLockScreen = onOpenLockScreen,
+                onOpenAutostart = onOpenAutostart,
+                onLockScreenDone = onLockScreenDone,
+                onAutostartDone = onAutostartDone,
+            )
         }
+    }
+}
+
+/**
+ * The two switches no API can read.
+ *
+ * Both live on a vendor screen, both decide whether an alarm arrives, and
+ * neither can be checked from code. So each offers the screen and a way for
+ * the user to say they have done it, which is the only source of truth there
+ * is for either.
+ */
+@Composable
+private fun VendorRows(
+    state: ReliabilityUiState,
+    onOpenLockScreen: () -> Unit,
+    onOpenAutostart: () -> Unit,
+    onLockScreenDone: () -> Unit,
+    onAutostartDone: () -> Unit,
+) {
+    if (state.needsLockScreen) {
+        // The one that decides whether an alarm can be answered
+        // without unlocking. Above autostart because a missed alarm
+        // is worse than a late one.
+        FixRow(
+            what = R.string.lock_screen_title,
+            why = R.string.lock_screen_body,
+            action = R.string.lock_screen_action,
+            onAction = onOpenLockScreen,
+            secondary = R.string.perm_autostart_done,
+            onSecondary = onLockScreenDone,
+        )
+    }
+
+    if (state.needsAutostart) {
+        // The switch no API can see the state of. The app cannot tick
+        // it off, so the user is given the way to.
+        FixRow(
+            what = R.string.autostart_title,
+            why = R.string.autostart_body,
+            action = R.string.autostart_action,
+            onAction = onOpenAutostart,
+            secondary = R.string.perm_autostart_done,
+            onSecondary = onAutostartDone,
+        )
     }
 }
 
@@ -175,6 +225,8 @@ private fun FixRow(
     @StringRes why: Int,
     @StringRes action: Int,
     onAction: () -> Unit,
+    @StringRes secondary: Int? = null,
+    onSecondary: () -> Unit = {},
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp)) {
         Text(
@@ -190,7 +242,11 @@ private fun FixRow(
             modifier = Modifier.padding(top = 4.dp, bottom = 11.dp),
         )
 
-        FillButton(text = stringResource(action), onClick = onAction)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FillButton(text = stringResource(action), onClick = onAction)
+
+            secondary?.let { OutlineButton(text = stringResource(it), onClick = onSecondary, muted = true) }
+        }
     }
 
     HairlineRule(Modifier.padding(horizontal = 16.dp))
@@ -238,6 +294,9 @@ private fun ReliabilityPreview() {
             ),
             onFix = {},
             onOpenAutostart = {},
+            onOpenLockScreen = {},
+            onAutostartDone = {},
+            onLockScreenDone = {},
             onBack = {},
         )
     }

@@ -2,18 +2,24 @@ package com.buildorbreak.app.feature.settings
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.scheduler.alarm.TierBlocker
 import com.buildorbreak.scheduler.alarm.TierDetector
 import com.buildorbreak.scheduler.oem.OemGuide
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * What the app can promise, and what would change that.
@@ -29,12 +35,19 @@ data class ReliabilityUiState(
     /** At most two. A list of six settings gets closed; two get done. */
     val blockers: ImmutableList<TierBlocker>,
     val needsAutostart: Boolean,
+    /**
+     * Whether this phone still has to be told to let an alarm show on the lock
+     * screen. The one that decides whether an alarm can be answered without
+     * unlocking, and the one no API can read.
+     */
+    val needsLockScreen: Boolean = false,
 ) {
     companion object {
         val Unknown = ReliabilityUiState(
             tier = DeliveryTier.IN_APP_ONLY,
             blockers = persistentListOf(),
             needsAutostart = false,
+            needsLockScreen = false,
         )
     }
 }
@@ -55,6 +68,7 @@ data class ReliabilityUiState(
 class ReliabilityViewModel @Inject constructor(
     private val tiers: TierDetector,
     private val guide: OemGuide,
+    private val settings: SettingsRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ReliabilityUiState.Unknown)
@@ -64,13 +78,47 @@ class ReliabilityViewModel @Inject constructor(
         refresh()
     }
 
-    fun refresh() {
+    /**
+     * Re reads now, and again a moment later.
+     *
+     * Granting a permission and the system recording it are not the same
+     * instant. Battery optimisation is the clear case: the dialog closes, this
+     * screen resumes, and the answer changes a second or two afterwards, which
+     * the user sees as a screen that did not notice what they just did. Two
+     * cheap re reads cover it without polling forever.
+     */
+    fun refresh() = viewModelScope.launch {
+        read()
+
+        RECHECKS.forEach { wait ->
+            delay(wait)
+            read()
+        }
+    }
+
+    /** The user's word that the autostart list is dealt with. Nothing can verify it. */
+    fun onAutostartDone() = viewModelScope.launch {
+        settings.setAutostartDone(true)
+        read()
+    }
+
+    fun onLockScreenDone() = viewModelScope.launch {
+        settings.setLockScreenDone(true)
+        read()
+    }
+
+    private suspend fun read() {
         val status = tiers.detect()
 
         _state.value = ReliabilityUiState(
             tier = status.tier,
             blockers = status.topBlockers().toImmutableList(),
-            needsAutostart = guide.needsAutostartGuidance(),
+            needsAutostart = guide.needsAutostartGuidance() && !settings.autostartDone.first(),
+            needsLockScreen = guide.needsLockScreenGuidance() && !settings.lockScreenDone.first(),
         )
+    }
+
+    private companion object {
+        val RECHECKS = listOf(1200.milliseconds, 3000.milliseconds)
     }
 }

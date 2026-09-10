@@ -3,15 +3,21 @@ package com.buildorbreak.app.feature.plan
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.buildorbreak.app.format.ClockFormat
+import com.buildorbreak.core.common.result.Outcome
+import com.buildorbreak.core.common.result.getOrNull
+import com.buildorbreak.core.domain.usecase.DeleteTemplateUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
+import com.buildorbreak.core.domain.usecase.SaveTemplateUseCase
+import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.plan.Anchor
+import com.buildorbreak.core.model.plan.DayTemplate
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.plan.Weekdays
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import javax.inject.Inject
@@ -25,15 +31,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-
-private val CLOCK: DateTimeFormatter
-    get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+import kotlinx.coroutines.launch
 
 @Immutable
-data class TemplateTab(val id: Long, val name: String)
+data class TemplateTab(val id: Long, val name: String, val weekdays: Weekdays, val isDefault: Boolean)
 
 @Immutable
 data class PlanUiState(
+    val planId: Long,
     val planName: String,
     val templates: ImmutableList<TemplateTab>,
     val selectedIndex: Int,
@@ -47,6 +52,7 @@ data class PlanUiState(
 
     companion object {
         val Empty = PlanUiState(
+            planId = 0,
             planName = "",
             templates = persistentListOf(),
             selectedIndex = 0,
@@ -99,9 +105,15 @@ data class PlanItemRow(
 @HiltViewModel
 class PlanViewModel @Inject constructor(
     observePlan: ObservePlanUseCase,
+    private val saveTemplate: SaveTemplateUseCase,
+    private val deleteTemplate: DeleteTemplateUseCase,
+    private val clock: ClockFormat,
 ) : ViewModel() {
 
     private val selectedTemplate = MutableStateFlow<Long?>(null)
+
+    /** The last thing observed, so a save can copy the fields the dialog does not edit. */
+    private var latest: PlanContents.Loaded? = null
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<PlanUiState> = selectedTemplate
@@ -117,20 +129,53 @@ class PlanViewModel @Inject constructor(
         selectedTemplate.value = id
     }
 
+    /**
+     * Writes a template. [id] null makes a new one and selects it.
+     *
+     * A new template is never the default; the plan already has one and two
+     * defaults would be a coin toss every morning. Its order is last.
+     */
+    fun onSaveTemplate(id: Long?, name: String, weekdays: Weekdays) = viewModelScope.launch {
+        val loaded = latest ?: return@launch
+        val existing = loaded.templates.firstOrNull { it.id == id }
+
+        val template = existing?.copy(name = name.trim(), weekdays = weekdays) ?: DayTemplate(
+            id = 0,
+            planId = loaded.planId,
+            name = name.trim(),
+            weekdays = weekdays,
+            isDefault = loaded.templates.isEmpty(),
+            mode = DayMode.NORMAL,
+            sortOrder = loaded.templates.size,
+        )
+
+        saveTemplate(template).getOrNull()?.let { selectedTemplate.value = it }
+    }
+
+    /** Refused by the use case when it is the last one. The screen never offers that. */
+    fun onDeleteTemplate(id: Long) = viewModelScope.launch {
+        val loaded = latest ?: return@launch
+        if (deleteTemplate(loaded.planId, id) is Outcome.Success) selectedTemplate.value = null
+    }
+
     private fun toUiState(contents: PlanContents): PlanUiState = when (contents) {
         PlanContents.None -> PlanUiState.Empty
 
         is PlanContents.Loaded -> {
+            latest = contents
             val titles = contents.items.associate { it.id to it.title }
             val starts = contents.items.mapNotNull { startOf(it.anchor) }
 
             PlanUiState(
+                planId = contents.planId,
                 planName = contents.planName,
-                templates = contents.templates.map { TemplateTab(it.id, it.name) }.toImmutableList(),
+                templates = contents.templates
+                    .map { TemplateTab(it.id, it.name, it.weekdays, it.isDefault) }
+                    .toImmutableList(),
                 selectedIndex = contents.templates.indexOfFirst { it.id == contents.template.id }.coerceAtLeast(0),
                 rows = contents.items.map { toRow(it, titles, contents.items) }.toImmutableList(),
-                firstTime = starts.minOrNull()?.format(CLOCK),
-                lastTime = starts.maxOrNull()?.format(CLOCK),
+                firstTime = starts.minOrNull()?.let(clock::format),
+                lastTime = starts.maxOrNull()?.let(clock::format),
                 hasPlan = true,
             )
         }
@@ -147,7 +192,7 @@ class PlanViewModel @Inject constructor(
     )
 
     private fun kindOf(anchor: Anchor, titles: Map<Long, String>): PlanKind = when (anchor) {
-        is Anchor.Fixed -> PlanKind.Fixed(anchor.at.format(CLOCK))
+        is Anchor.Fixed -> PlanKind.Fixed(clock.format(anchor.at))
 
         is Anchor.Relative -> PlanKind.After(
             parentTitle = titles[anchor.parentItemId].orEmpty(),
@@ -155,15 +200,15 @@ class PlanViewModel @Inject constructor(
         )
 
         is Anchor.Window -> PlanKind.Window(
-            from = anchor.from.format(CLOCK),
-            to = anchor.to.format(CLOCK),
+            from = clock.format(anchor.from),
+            to = clock.format(anchor.to),
             minutesWide = java.time.Duration.between(anchor.from, anchor.to).toMinutes().toInt(),
         )
 
         is Anchor.Interval -> PlanKind.Every(
             minutes = anchor.every.inWholeMinutes.toInt(),
-            from = anchor.from.format(CLOCK),
-            to = anchor.to.format(CLOCK),
+            from = clock.format(anchor.from),
+            to = clock.format(anchor.to),
         )
     }
 

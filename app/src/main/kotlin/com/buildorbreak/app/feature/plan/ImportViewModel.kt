@@ -3,6 +3,7 @@ package com.buildorbreak.app.feature.plan
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.domain.parse.ParsedItem
 import com.buildorbreak.core.domain.parse.PlanFormat
@@ -11,8 +12,7 @@ import com.buildorbreak.core.domain.usecase.ImportPlanUseCase
 import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.plan.Anchor
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.time.LocalTime
 import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -22,9 +22,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-private val CLOCK: DateTimeFormatter
-    get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
 
 /** Where the import has got to. Three stages, and the middle one is the point. */
 enum class ImportStage {
@@ -57,6 +54,8 @@ data class ParsedPreview(
     val salience: Salience,
     val hasMinimum: Boolean,
     val pinned: Boolean,
+    /** What will be written, so the row can be corrected before it is. */
+    val anchor: Anchor,
 )
 
 @Immutable
@@ -94,10 +93,12 @@ data class ImportUiState(
 @HiltViewModel
 class ImportViewModel @Inject constructor(
     private val importPlan: ImportPlanUseCase,
+    private val clock: ClockFormat,
 ) : ViewModel() {
 
     private val parser = PlanTextParser()
     private var parsed: List<ParsedItem> = emptyList()
+    private var unrecognised: List<String> = emptyList()
 
     private val _state = MutableStateFlow(ImportUiState.Empty)
     val state: StateFlow<ImportUiState> = _state.asStateFlow()
@@ -112,6 +113,7 @@ class ImportViewModel @Inject constructor(
     fun onReview() {
         val result = parser.parse(_state.value.text)
         parsed = result.items
+        unrecognised = result.unrecognised
 
         _state.update {
             it.copy(
@@ -121,6 +123,56 @@ class ImportViewModel @Inject constructor(
                 failed = false,
             )
         }
+    }
+
+    /**
+     * A row corrected by hand. The title and the time are what a best effort
+     * parser most often gets wrong, and both are cheaper to fix here than in
+     * the step editor after the plan exists.
+     */
+    fun onEditItem(index: Int, title: String, anchor: Anchor) {
+        val item = parsed.getOrNull(index) ?: return
+
+        replaceParsed(parsed.toMutableList().apply { set(index, item.copy(title = title, anchor = anchor)) })
+    }
+
+    fun onRemoveItem(index: Int) {
+        if (index !in parsed.indices) return
+
+        replaceParsed(parsed.filterIndexed { i, _ -> i != index })
+    }
+
+    /**
+     * A line the parser could not read, given a time by the person who wrote
+     * it. Slotted in by time so the plan comes out in day order.
+     */
+    fun onAddLine(index: Int, title: String, anchor: Anchor) {
+        val line = unrecognised.getOrNull(index) ?: return
+        unrecognised = unrecognised.filterIndexed { i, _ -> i != index }
+
+        val start = startOf(anchor)
+        val at = parsed.indexOfFirst { existing -> start != null && startOf(existing.anchor)?.isAfter(start) == true }
+        val item = ParsedItem(title = title, anchor = anchor, sourceLine = line)
+
+        replaceParsed(parsed.toMutableList().apply { add(if (at < 0) size else at, item) })
+    }
+
+    private fun replaceParsed(items: List<ParsedItem>) {
+        parsed = items
+
+        _state.update {
+            it.copy(
+                understood = items.map(::toPreview).toImmutableList(),
+                notUnderstood = unrecognised.toImmutableList(),
+            )
+        }
+    }
+
+    private fun startOf(anchor: Anchor): LocalTime? = when (anchor) {
+        is Anchor.Fixed -> anchor.at
+        is Anchor.Window -> anchor.from
+        is Anchor.Interval -> anchor.from
+        is Anchor.Relative -> null
     }
 
     fun onBackToEditing() {
@@ -154,6 +206,7 @@ class ImportViewModel @Inject constructor(
      */
     fun onLeave() {
         parsed = emptyList()
+        unrecognised = emptyList()
         _state.value = ImportUiState.Empty
     }
 
@@ -163,6 +216,7 @@ class ImportViewModel @Inject constructor(
         salience = item.salience ?: Salience.NOTIFY,
         hasMinimum = item.minimumTitle != null,
         pinned = item.pinned,
+        anchor = item.anchor,
     )
 
     /**
@@ -173,15 +227,15 @@ class ImportViewModel @Inject constructor(
      * looking at a list where "the step above" is literally true.
      */
     private fun describe(anchor: Anchor): String = when (anchor) {
-        is Anchor.Fixed -> anchor.at.format(CLOCK)
+        is Anchor.Fixed -> clock.format(anchor.at)
 
         is Anchor.Relative -> "+${anchor.offset.inWholeMinutes}m"
 
-        is Anchor.Window -> "${anchor.from.format(CLOCK)} to ${anchor.to.format(CLOCK)}"
+        is Anchor.Window -> "${clock.format(anchor.from)} to ${clock.format(anchor.to)}"
 
         is Anchor.Interval ->
             "every ${anchor.every.inWholeMinutes}m, " +
-                "${anchor.from.format(CLOCK)} to ${anchor.to.format(CLOCK)}"
+                "${clock.format(anchor.from)} to ${clock.format(anchor.to)}"
     }
 
     private companion object {

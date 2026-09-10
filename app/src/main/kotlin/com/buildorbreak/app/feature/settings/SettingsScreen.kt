@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,9 +45,14 @@ import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.component.ScreenHeader
 import com.buildorbreak.core.designsystem.component.SectionLabel
 import com.buildorbreak.core.designsystem.component.SegmentedTabs
+import com.buildorbreak.core.designsystem.component.Stepper
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.enums.ThemeMode
+
+private const val TOLERANCE_STEP = 5
+private const val MAX_TOLERANCE = 60
+private val ToleranceWidth = 150.dp
 
 /**
  * Plain rows, no chrome.
@@ -61,6 +67,7 @@ fun SettingsScreen(
     onOpenReliability: () -> Unit,
     onImport: () -> Unit,
     onShare: (String) -> Unit,
+    onOpenAlarmChannel: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -75,9 +82,13 @@ fun SettingsScreen(
         state = state,
         onOpenReliability = onOpenReliability,
         onThemeMode = viewModel::onThemeMode,
+        onLateTolerance = viewModel::onLateTolerance,
+        onOpenAlarmChannel = onOpenAlarmChannel,
         onExport = { viewModel.onExport(onShare) },
         onImport = onImport,
         onWipe = { viewModel.onWipe { } },
+        onSeedDemo = viewModel::onSeedDemo,
+        onClearDemo = viewModel::onClearDemo,
         modifier = modifier,
     )
 }
@@ -87,9 +98,13 @@ fun SettingsContent(
     state: SettingsUiState,
     onOpenReliability: () -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
+    onLateTolerance: (Int) -> Unit,
+    onOpenAlarmChannel: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onWipe: () -> Unit,
+    onSeedDemo: () -> Unit,
+    onClearDemo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var confirmingWipe by rememberSaveable { mutableStateOf(false) }
@@ -108,6 +123,7 @@ fun SettingsContent(
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             SectionLabel(text = stringResource(R.string.settings_section_alarms), underlined = true)
             ReliabilityRow(state = state, onClick = onOpenReliability)
+            AlarmRows(state = state, onOpenAlarmChannel = onOpenAlarmChannel, onLateTolerance = onLateTolerance)
 
             SectionLabel(text = stringResource(R.string.settings_section_day), underlined = true)
             ThemeRow(mode = state.themeMode, onThemeMode = onThemeMode)
@@ -119,6 +135,8 @@ fun SettingsContent(
                 onImport = onImport,
                 onDelete = { confirmingWipe = true },
             )
+
+            DemoRows(state = state, onSeedDemo = onSeedDemo, onClearDemo = onClearDemo)
 
             Footer()
         }
@@ -133,6 +151,34 @@ fun SettingsContent(
             onDismiss = { confirmingWipe = false },
         )
     }
+}
+
+/**
+ * Temporary. Goes with `DemoHistory`, and both are meant to be deleted.
+ *
+ * Six weeks of invented history so the review screens can be judged before six
+ * weeks have passed. Marked as clearly as the design allows so nobody mistakes
+ * it for a feature, and it only ever writes to dates before today.
+ */
+@Composable
+private fun DemoRows(state: SettingsUiState, onSeedDemo: () -> Unit, onClearDemo: () -> Unit) {
+    SectionLabel(text = stringResource(R.string.settings_section_demo), underlined = true)
+
+    SettingsRow(
+        title = stringResource(R.string.settings_demo_seed),
+        body = state.demoMessage?.let { stringResource(R.string.settings_demo_written, it) }
+            ?: stringResource(R.string.settings_demo_seed_body),
+        enabled = !state.demoBusy,
+        onClick = onSeedDemo,
+    ) { Chevron() }
+
+    SettingsRow(
+        title = stringResource(R.string.settings_demo_clear),
+        body = stringResource(R.string.settings_demo_clear_body),
+        enabled = !state.demoBusy,
+        onClick = onClearDemo,
+        last = true,
+    )
 }
 
 @Composable
@@ -160,6 +206,68 @@ private fun DataRows(
     )
 }
 
+/**
+ * Sound and do not disturb live in the system's channel settings, so both rows
+ * open that page rather than keeping a copy the app cannot enforce. The late
+ * tolerance is the app's own, and the stepper writes it straight through.
+ */
+@Composable
+private fun AlarmRows(state: SettingsUiState, onOpenAlarmChannel: () -> Unit, onLateTolerance: (Int) -> Unit) {
+    SettingsRow(
+        title = stringResource(R.string.settings_alarm_sound),
+        body = stringResource(R.string.settings_alarm_sound_body),
+        onClick = onOpenAlarmChannel,
+    ) { Chevron() }
+
+    SettingsRow(
+        title = stringResource(R.string.settings_dnd),
+        body = stringResource(R.string.settings_dnd_body),
+        onClick = onOpenAlarmChannel,
+    ) { Chevron() }
+
+    ToleranceRow(minutes = state.lateToleranceMinutes, onLateTolerance = onLateTolerance)
+}
+
+@Composable
+private fun ToleranceRow(minutes: Int, onLateTolerance: (Int) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.settings_tolerance),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Text(
+                text = stringResource(R.string.settings_tolerance_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 3.dp),
+            )
+        }
+
+        Stepper(
+            value = if (minutes == 0) {
+                stringResource(R.string.settings_tolerance_off)
+            } else {
+                stringResource(R.string.editor_minutes_value, minutes)
+            },
+            onDecrement = { onLateTolerance((minutes - TOLERANCE_STEP).coerceAtLeast(0)) },
+            onIncrement = {
+                onLateTolerance((minutes + TOLERANCE_STEP).coerceAtMost(MAX_TOLERANCE))
+            },
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .width(ToleranceWidth),
+        )
+    }
+}
+
 /** The tier in a line, and how many things the next screen would change. */
 @Composable
 private fun ReliabilityRow(state: SettingsUiState, onClick: () -> Unit) {
@@ -167,7 +275,6 @@ private fun ReliabilityRow(state: SettingsUiState, onClick: () -> Unit) {
         title = stringResource(R.string.settings_reliability),
         body = stringResource(tierHeadline(state.tier)),
         onClick = onClick,
-        last = true,
     ) {
         if (state.fixCount > 0) {
             Badge(text = pluralStringResource(R.plurals.settings_fixes, state.fixCount, state.fixCount), accent = true)
@@ -309,9 +416,13 @@ private fun SettingsPreview() {
             state = SettingsUiState.Initial.copy(fixCount = 1),
             onOpenReliability = {},
             onThemeMode = {},
+            onLateTolerance = {},
+            onOpenAlarmChannel = {},
             onExport = {},
             onImport = {},
             onWipe = {},
+            onSeedDemo = {},
+            onClearDemo = {},
         )
     }
 }

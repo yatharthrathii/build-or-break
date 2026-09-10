@@ -3,6 +3,7 @@ package com.buildorbreak.app.feature.plan
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.domain.usecase.ArchiveItemUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
@@ -19,8 +20,6 @@ import com.buildorbreak.core.model.plan.MinimumVersion
 import com.buildorbreak.core.model.plan.Weekdays
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.ImmutableList
@@ -34,9 +33,6 @@ import kotlinx.coroutines.launch
 
 private const val DEFAULT_INTERVAL_MINUTES = 45
 private const val DEFAULT_OFFSET_MINUTES = 15
-
-private val CLOCK: DateTimeFormatter
-    get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
 
 /**
  * Where a new step starts before anybody has said otherwise.
@@ -85,12 +81,23 @@ data class ItemEditorUiState(
     val weekdays: Weekdays,
     val pinned: Boolean,
     val minimumTitle: String,
+    /** Whether a missed step is worth doing later in the day. */
+    val catchable: Boolean,
     val parents: ImmutableList<ParentChoice>,
     val isNew: Boolean,
     /** Where this step lands today, when it is on today's timeline. */
     val landsAtToday: String?,
     /** How many relative steps hang off this one. Worth knowing before a move. */
     val childCount: Int,
+    /**
+     * The last write did not land.
+     *
+     * Save used to navigate on success and do nothing at all on failure, so a
+     * write that failed looked exactly like a button that had not registered
+     * the tap. People press it again, then harder, then decide the app is
+     * broken, and they are not wrong.
+     */
+    val saveFailed: Boolean = false,
 ) {
     /**
      * A window that ends before it starts is the one input the editor refuses.
@@ -121,6 +128,7 @@ data class ItemEditorUiState(
             weekdays = Weekdays.EveryDay,
             pinned = false,
             minimumTitle = "",
+            catchable = true,
             parents = persistentListOf(),
             isNew = true,
             landsAtToday = null,
@@ -143,6 +151,7 @@ class ItemEditorViewModel @Inject constructor(
     private val observeToday: ObserveTodayUseCase,
     private val saveItem: SaveItemUseCase,
     private val archiveItem: ArchiveItemUseCase,
+    private val clock: ClockFormat,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ItemEditorUiState.Empty)
@@ -171,27 +180,38 @@ class ItemEditorViewModel @Inject constructor(
             .filter { it.id != itemId }
             .map { ParentChoice(it.id, it.title) }
 
-        val landsAt = observeToday().first()?.entryFor(itemId)?.at?.format(CLOCK)
+        val landsAt = observeToday().first()?.entryFor(itemId)?.at?.let(clock::format)
         val children = siblings.count { (it.anchor as? Anchor.Relative)?.parentItemId == itemId }
 
         _state.value = existing?.let { toState(it, parents, landsAt, children) } ?: newState(parents)
     }
 
+    /** Any edit clears the failure. The next Save is a fresh attempt, not the old one. */
     fun onChange(state: ItemEditorUiState) {
-        _state.value = state
+        _state.value = state.copy(saveFailed = false)
     }
 
     fun onSave(onDone: () -> Unit) = viewModelScope.launch {
         val current = _state.value
         if (!current.canSave) return@launch
 
-        if (saveItem(toItem(current)) is Outcome.Success) onDone()
+        if (saveItem(toItem(current)) is Outcome.Success) {
+            onDone()
+        } else {
+            _state.value = current.copy(saveFailed = true)
+        }
     }
 
     /** Archived rather than deleted, so past occurrences keep their meaning. */
     fun onArchive(onDone: () -> Unit) = viewModelScope.launch {
         val id = _state.value.itemId
-        if (id > 0 && archiveItem(id) is Outcome.Success) onDone()
+        if (id <= 0) return@launch
+
+        if (archiveItem(id) is Outcome.Success) {
+            onDone()
+        } else {
+            _state.value = _state.value.copy(saveFailed = true)
+        }
     }
 
     // Mapping ------------------------------------------------------------------
@@ -215,6 +235,7 @@ class ItemEditorViewModel @Inject constructor(
         weekdays = item.weekdays,
         pinned = item.pinned,
         minimumTitle = item.minimum?.title.orEmpty(),
+        catchable = item.catchable,
         parents = parents.toImmutableList(),
         isNew = false,
         landsAtToday = landsAt,
@@ -282,5 +303,6 @@ class ItemEditorViewModel @Inject constructor(
         trackId = null,
         sortOrder = sortOrder,
         archivedAt = null,
+        catchable = state.catchable,
     )
 }

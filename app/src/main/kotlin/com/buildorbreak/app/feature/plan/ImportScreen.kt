@@ -21,8 +21,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -48,10 +51,20 @@ import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.Theme
+import com.buildorbreak.core.domain.parse.PlanTextParser
 import com.buildorbreak.core.model.enums.Salience
+import com.buildorbreak.core.model.plan.Anchor
+import java.time.LocalTime
 import java.util.Locale
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
+
+/** No row open for editing. */
+private const val NONE = -1
+
+/** Where a line added by hand starts until its time is set. */
+private val DEFAULT_NEW_TIME: LocalTime = LocalTime.of(8, 0)
 
 /**
  * Bringing in a routine that already exists.
@@ -85,24 +98,42 @@ fun ImportScreen(
     ImportContent(
         state = state,
         prompt = viewModel.promptToCopy,
-        onTextChanged = viewModel::onTextChanged,
-        onReview = viewModel::onReview,
-        onBackToEditing = viewModel::onBackToEditing,
-        onConfirm = viewModel::onConfirm,
-        onBack = onBack,
+        actions = ImportActions(
+            onTextChanged = viewModel::onTextChanged,
+            onReview = viewModel::onReview,
+            onBackToEditing = viewModel::onBackToEditing,
+            onConfirm = viewModel::onConfirm,
+            onBack = onBack,
+            onEdit = viewModel::onEditItem,
+            onRemove = viewModel::onRemoveItem,
+            onAdd = viewModel::onAddLine,
+        ),
         modifier = modifier,
     )
+}
+
+/** Everything the screen can do, in one handle. */
+@Immutable
+data class ImportActions(
+    val onTextChanged: (String) -> Unit,
+    val onReview: () -> Unit,
+    val onBackToEditing: () -> Unit,
+    val onConfirm: (String) -> Unit,
+    val onBack: () -> Unit,
+    val onEdit: (Int, String, Anchor) -> Unit,
+    val onRemove: (Int) -> Unit,
+    val onAdd: (Int, String, Anchor) -> Unit,
+) {
+    companion object {
+        val None = ImportActions({}, {}, {}, {}, {}, { _, _, _ -> }, {}, { _, _, _ -> })
+    }
 }
 
 @Composable
 fun ImportContent(
     state: ImportUiState,
     prompt: String,
-    onTextChanged: (String) -> Unit,
-    onReview: () -> Unit,
-    onBackToEditing: () -> Unit,
-    onConfirm: (String) -> Unit,
-    onBack: () -> Unit,
+    actions: ImportActions,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -122,7 +153,7 @@ fun ImportContent(
                     R.string.import_review_title
                 },
             ),
-            onBack = if (state.stage == ImportStage.EDITING) onBack else onBackToEditing,
+            onBack = if (state.stage == ImportStage.EDITING) actions.onBack else actions.onBackToEditing,
         )
 
         Column(
@@ -133,8 +164,8 @@ fun ImportContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             when (state.stage) {
-                ImportStage.EDITING -> Editing(state, prompt, onTextChanged, onReview)
-                else -> Reviewing(state, onConfirm)
+                ImportStage.EDITING -> Editing(state, prompt, actions.onTextChanged, actions.onReview)
+                else -> Reviewing(state, actions)
             }
         }
     }
@@ -241,18 +272,47 @@ private fun PromptCard(onCopy: () -> Unit) {
 }
 
 @Composable
-private fun Reviewing(state: ImportUiState, onConfirm: (String) -> Unit) {
+private fun Reviewing(state: ImportUiState, actions: ImportActions) {
     var templateName by rememberSaveable { mutableStateOf("") }
+    var editing by rememberSaveable { mutableIntStateOf(NONE) }
+    var adding by rememberSaveable { mutableIntStateOf(NONE) }
 
     ReviewSummary(state)
 
     Column {
         HeavyRule()
-        state.understood.forEach { preview -> UnderstoodRow(preview) }
+        state.understood.forEachIndexed { index, preview -> UnderstoodRow(preview, onClick = { editing = index }) }
     }
 
-    NotUnderstood(lines = state.notUnderstood)
+    NotUnderstood(lines = state.notUnderstood, onPick = { adding = it })
 
+    ConfirmBlock(
+        state = state,
+        templateName = templateName,
+        onTemplateName = { templateName = it },
+        onConfirm = { actions.onConfirm(templateName) },
+    )
+
+    ReviewSheets(
+        state = state,
+        editing = editing,
+        adding = adding,
+        actions = actions,
+        onClose = {
+            editing = NONE
+            adding = NONE
+        },
+    )
+}
+
+/** The name box and the save button, with the failure line above them when there is one. */
+@Composable
+private fun ConfirmBlock(
+    state: ImportUiState,
+    templateName: String,
+    onTemplateName: (String) -> Unit,
+    onConfirm: () -> Unit,
+) {
     if (state.failed) {
         Text(
             text = stringResource(R.string.import_failed),
@@ -264,16 +324,64 @@ private fun Reviewing(state: ImportUiState, onConfirm: (String) -> Unit) {
     TextBox(
         label = stringResource(R.string.import_name_label),
         value = templateName,
-        onValueChange = { templateName = it },
+        onValueChange = onTemplateName,
         placeholder = stringResource(R.string.import_name_hint),
     )
 
     BlockButton(
         text = stringResource(R.string.import_confirm),
-        onClick = { onConfirm(templateName) },
+        onClick = onConfirm,
         enabled = state.understood.isNotEmpty(),
         icon = Icons.AutoMirrored.Outlined.ArrowForward,
     )
+}
+
+/**
+ * The sheet for the row being corrected, or the line being added. One at a
+ * time; both indexes are [NONE] when neither is open.
+ */
+@Composable
+private fun ReviewSheets(
+    state: ImportUiState,
+    editing: Int,
+    adding: Int,
+    actions: ImportActions,
+    onClose: () -> Unit,
+) {
+    state.understood.getOrNull(editing)?.let { preview ->
+        key(editing) {
+            ImportEditSheet(
+                kicker = stringResource(R.string.import_edit_kicker),
+                title = preview.title,
+                anchor = preview.anchor,
+                onSave = { title, anchor ->
+                    actions.onEdit(editing, title, anchor)
+                    onClose()
+                },
+                onRemove = {
+                    actions.onRemove(editing)
+                    onClose()
+                },
+                onDismiss = onClose,
+            )
+        }
+    }
+
+    state.notUnderstood.getOrNull(adding)?.let { line ->
+        key(adding) {
+            ImportEditSheet(
+                kicker = stringResource(R.string.import_add_kicker),
+                title = line,
+                anchor = Anchor.Fixed(DEFAULT_NEW_TIME),
+                onSave = { title, anchor ->
+                    actions.onAdd(adding, title, anchor)
+                    onClose()
+                },
+                onRemove = null,
+                onDismiss = onClose,
+            )
+        }
+    }
 }
 
 /** What was read, or the fact that nothing was. */
@@ -286,6 +394,14 @@ private fun ReviewSummary(state: ImportUiState) {
     }
 
     Text(text = text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+    if (!state.nothingUnderstood) {
+        Text(
+            text = stringResource(R.string.import_tap_to_fix),
+            style = MaterialTheme.typography.bodySmall,
+            color = Theme.colours.faint,
+        )
+    }
 }
 
 /**
@@ -295,7 +411,7 @@ private fun ReviewSummary(state: ImportUiState) {
  * complete and is missing the two steps that mattered.
  */
 @Composable
-private fun NotUnderstood(lines: kotlinx.collections.immutable.ImmutableList<String>) {
+private fun NotUnderstood(lines: kotlinx.collections.immutable.ImmutableList<String>, onPick: (Int) -> Unit) {
     if (lines.isEmpty()) return
 
     Column(
@@ -309,20 +425,35 @@ private fun NotUnderstood(lines: kotlinx.collections.immutable.ImmutableList<Str
             color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
 
-        lines.forEach { line ->
+        Text(
+            text = stringResource(R.string.import_tap_to_add),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+
+        lines.forEachIndexed { index, line ->
             Text(
                 text = line,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .clickable(role = Role.Button) { onPick(index) },
             )
         }
     }
 }
 
 @Composable
-private fun UnderstoodRow(preview: ParsedPreview) {
-    Column(modifier = Modifier.padding(vertical = 11.dp)) {
+private fun UnderstoodRow(preview: ParsedPreview, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 11.dp),
+    ) {
         Text(
             text = preview.title,
             style = MaterialTheme.typography.titleMedium,
@@ -361,7 +492,7 @@ private fun UnderstoodRow(preview: ParsedPreview) {
 @Composable
 private fun ImportEditingPreview() {
     BuildOrBreakTheme {
-        ImportContent(ImportUiState.Empty, "", {}, {}, {}, {}, {})
+        ImportContent(ImportUiState.Empty, "", ImportActions.None)
     }
 }
 
@@ -373,18 +504,35 @@ private fun ImportReviewPreview() {
             state = ImportUiState.Empty.copy(
                 stage = ImportStage.REVIEWING,
                 understood = persistentListOf(
-                    ParsedPreview("Wake up", "06:30", Salience.ALARM, hasMinimum = false, pinned = false),
-                    ParsedPreview("Drink water", "+10m", Salience.SILENT, hasMinimum = false, pinned = false),
-                    ParsedPreview("Study block", "07:30 to 09:30", Salience.NOTIFY, hasMinimum = true, pinned = false),
+                    ParsedPreview(
+                        title = "Wake up",
+                        whenText = "06:30",
+                        salience = Salience.ALARM,
+                        hasMinimum = false,
+                        pinned = false,
+                        anchor = Anchor.Fixed(LocalTime.of(6, 30)),
+                    ),
+                    ParsedPreview(
+                        title = "Drink water",
+                        whenText = "+10m",
+                        salience = Salience.SILENT,
+                        hasMinimum = false,
+                        pinned = false,
+                        anchor = Anchor.Relative(PlanTextParser.PARENT_UNRESOLVED, 10.minutes),
+                    ),
+                    ParsedPreview(
+                        title = "Study block",
+                        whenText = "07:30 to 09:30",
+                        salience = Salience.NOTIFY,
+                        hasMinimum = true,
+                        pinned = false,
+                        anchor = Anchor.Window(LocalTime.of(7, 30), LocalTime.of(9, 30)),
+                    ),
                 ),
                 notUnderstood = persistentListOf("remember to buy milk"),
             ),
             prompt = "",
-            onTextChanged = {},
-            onReview = {},
-            onBackToEditing = {},
-            onConfirm = {},
-            onBack = {},
+            actions = ImportActions.None,
         )
     }
 }

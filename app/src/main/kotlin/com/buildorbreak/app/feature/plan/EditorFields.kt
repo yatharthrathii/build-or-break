@@ -14,18 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.pluralStringResource
@@ -35,8 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.buildorbreak.app.R
-import com.buildorbreak.core.designsystem.component.FillButton
-import com.buildorbreak.core.designsystem.component.GhostButton
+import com.buildorbreak.app.format.rememberClockFormat
 import com.buildorbreak.core.designsystem.component.HairlineRule
 import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.Panel
@@ -48,12 +43,8 @@ import com.buildorbreak.core.model.enums.AnchorType
 import com.buildorbreak.core.model.plan.Weekdays
 import java.time.DayOfWeek
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
-
-private val CLOCK: DateTimeFormatter
-    get() = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
 
 private const val OFFSET_STEP = 5
 private const val MAX_OFFSET = 720
@@ -243,10 +234,12 @@ internal fun TimeField(
 ) {
     var picking by remember { mutableStateOf(false) }
 
-    PickerField(label = label, value = time.format(CLOCK), onClick = { picking = true }, modifier = modifier)
+    PickerField(label = label, value = rememberClockFormat().format(time), onClick = {
+        picking = true
+    }, modifier = modifier)
 
     if (picking) {
-        TimePickerDialog(
+        TimeWheelDialog(
             initial = time,
             onDismiss = { picking = false },
             onPicked = {
@@ -254,40 +247,6 @@ internal fun TimeField(
                 picking = false
             },
         )
-    }
-}
-
-/**
- * The platform picker, in a plain dialog.
- *
- * `TimePicker` is still marked experimental in Material 3 and has been for
- * several releases. Writing a wheel by hand to avoid one opt in would be worse:
- * this one already handles 24 hour mode, accessibility and the user's own
- * locale, and none of that is worth reimplementing.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerDialog(initial: LocalTime, onDismiss: () -> Unit, onPicked: (LocalTime) -> Unit) {
-    val picker = rememberTimePickerState(initialHour = initial.hour, initialMinute = initial.minute, is24Hour = true)
-
-    Dialog(onDismissRequest = onDismiss) {
-        Panel {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TimePicker(state = picker)
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GhostButton(text = stringResource(R.string.editor_cancel), onClick = onDismiss)
-                    FillButton(
-                        text = stringResource(R.string.editor_set),
-                        onClick = { onPicked(LocalTime.of(picker.hour, picker.minute)) },
-                    )
-                }
-            }
-        }
     }
 }
 

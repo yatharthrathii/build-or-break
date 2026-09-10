@@ -20,18 +20,23 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DragHandle
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -52,11 +57,15 @@ import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
 import com.buildorbreak.core.model.enums.Salience
+import com.buildorbreak.core.model.plan.Weekdays
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
 private val TimeColumn = 44.dp
 private val HandleSize = 18.dp
+
+/** A dialog id that means "make a new template" rather than edit one. */
+private const val NEW_TEMPLATE = -1L
 
 /**
  * The plan, as something to change.
@@ -79,6 +88,8 @@ fun PlanScreen(
     PlanContent(
         state = state,
         onSelectTemplate = viewModel::onSelectTemplate,
+        onSaveTemplate = viewModel::onSaveTemplate,
+        onDeleteTemplate = viewModel::onDeleteTemplate,
         onEditItem = onEditItem,
         onAddItem = onAddItem,
         onImport = onImport,
@@ -90,11 +101,16 @@ fun PlanScreen(
 fun PlanContent(
     state: PlanUiState,
     onSelectTemplate: (Long) -> Unit,
+    onSaveTemplate: (Long?, String, Weekdays) -> Unit,
+    onDeleteTemplate: (Long) -> Unit,
     onEditItem: (Long) -> Unit,
     onAddItem: () -> Unit,
     onImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Null: closed. NEW_TEMPLATE: a new one. Anything else: editing that id.
+    var editingTemplate by rememberSaveable { mutableStateOf<Long?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -102,13 +118,10 @@ fun PlanContent(
             .statusBarsPadding(),
     ) {
         ScreenHeader(kicker = kickerText(state), title = stringResource(R.string.plan_title)) {
-            Icon(
-                imageVector = Icons.Outlined.FileDownload,
-                contentDescription = stringResource(R.string.plan_import),
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable(role = Role.Button, onClick = onImport),
+            HeaderIcons(
+                state = state,
+                onEditTemplate = { editingTemplate = state.templates.getOrNull(state.selectedIndex)?.id },
+                onImport = onImport,
             )
         }
 
@@ -117,11 +130,75 @@ fun PlanContent(
             else -> Steps(
                 state = state,
                 onSelectTemplate = onSelectTemplate,
+                onNewTemplate = { editingTemplate = NEW_TEMPLATE },
                 onEditItem = onEditItem,
                 onAddItem = onAddItem,
             )
         }
     }
+
+    editingTemplate?.let { id ->
+        TemplateDialogHost(
+            id = id,
+            state = state,
+            onSaveTemplate = onSaveTemplate,
+            onDeleteTemplate = onDeleteTemplate,
+            onClose = { editingTemplate = null },
+        )
+    }
+}
+
+@Composable
+private fun TemplateDialogHost(
+    id: Long,
+    state: PlanUiState,
+    onSaveTemplate: (Long?, String, Weekdays) -> Unit,
+    onDeleteTemplate: (Long) -> Unit,
+    onClose: () -> Unit,
+) {
+    TemplateDialog(
+        existing = state.templates.firstOrNull { it.id == id },
+        canDelete = state.templates.size > 1,
+        onSave = { name, weekdays ->
+            onSaveTemplate(id.takeIf { it != NEW_TEMPLATE }, name, weekdays)
+            onClose()
+        },
+        onDelete = {
+            onDeleteTemplate(id)
+            onClose()
+        },
+        onDismiss = onClose,
+    )
+}
+
+/** Edit the template being shown, and import. Edit only once there is a plan. */
+@Composable
+private fun HeaderIcons(state: PlanUiState, onEditTemplate: () -> Unit, onImport: () -> Unit) {
+    if (state.hasPlan) {
+        HeaderIcon(
+            icon = Icons.Outlined.Edit,
+            description = stringResource(R.string.plan_template_edit),
+            onClick = onEditTemplate,
+        )
+    }
+
+    HeaderIcon(
+        icon = Icons.Outlined.FileDownload,
+        description = stringResource(R.string.plan_import),
+        onClick = onImport,
+    )
+}
+
+@Composable
+private fun HeaderIcon(icon: ImageVector, description: String, onClick: () -> Unit) {
+    Icon(
+        imageVector = icon,
+        contentDescription = description,
+        tint = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier
+            .size(24.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+    )
 }
 
 @Composable
@@ -141,19 +218,22 @@ private fun kickerText(state: PlanUiState): String = when {
 private fun Steps(
     state: PlanUiState,
     onSelectTemplate: (Long) -> Unit,
+    onNewTemplate: () -> Unit,
     onEditItem: (Long) -> Unit,
     onAddItem: () -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        if (state.templates.size > 1) {
-            item {
-                SegmentedTabs(
-                    options = state.templates.map { it.name },
-                    selectedIndex = state.selectedIndex,
-                    onSelect = { onSelectTemplate(state.templates[it].id) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                )
-            }
+        item {
+            // The templates, and a last cell that makes a new one. Weekday and
+            // weekend are the common pair; travel and rest days are the others.
+            SegmentedTabs(
+                options = state.templates.map { it.name } + stringResource(R.string.plan_template_new),
+                selectedIndex = state.selectedIndex,
+                onSelect = { index ->
+                    if (index == state.templates.size) onNewTemplate() else onSelectTemplate(state.templates[index].id)
+                },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
         }
 
         items(items = state.rows, key = { it.id }) { row ->
@@ -332,8 +412,12 @@ private fun PlanPreview() {
     BuildOrBreakTheme {
         PlanContent(
             state = PlanUiState(
+                planId = 1,
                 planName = "My routine",
-                templates = persistentListOf(TemplateTab(1, "Weekday"), TemplateTab(2, "Weekend")),
+                templates = persistentListOf(
+                    TemplateTab(1, "Weekday", Weekdays.MonToFri, true),
+                    TemplateTab(2, "Weekend", Weekdays.Weekend, false),
+                ),
                 selectedIndex = 0,
                 rows = persistentListOf(
                     PlanItemRow(1, "Wake + water", PlanKind.Fixed("06:40"), Salience.ALARM, false, 0, ""),
@@ -355,6 +439,8 @@ private fun PlanPreview() {
                 hasPlan = true,
             ),
             onSelectTemplate = {},
+            onSaveTemplate = { _, _, _ -> },
+            onDeleteTemplate = {},
             onEditItem = {},
             onAddItem = {},
             onImport = {},
