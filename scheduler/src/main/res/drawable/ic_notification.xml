@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The status bar mark. One colour, no detail, no gradient.
+
+    Android draws a small icon as a silhouette at 24dp on a bar that is white on
+    some phones and black on others, so everything but the shape is thrown away.
+    The shape is the square with the slash cut out of it, which is the same mark
+    as the launcher with the parts that would not survive removed.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFFFF">
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M3,3 H21 V21 H3 Z M15.6,2 L18.4,2 L8.4,22 L5.6,22 Z" />
+</vector>

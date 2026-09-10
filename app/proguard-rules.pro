@@ -32,3 +32,17 @@
 # useful.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# Hilt entry points and ViewModels are found by generated code; the consumer
+# rules cover them. The alarm activity is started by action, so nothing in
+# the app references it by class and R8 must not drop it.
+-keep class com.buildorbreak.app.feature.alarm.AlarmActivity { *; }
+
+# Glance instantiates an action callback by name when somebody taps a widget
+# button, so R8 cannot see the constructor being called. Glance ships a consumer
+# rule for this; ours is narrower and states the constructor explicitly, because
+# a widget button that silently does nothing in release and works in debug is
+# the hardest kind of bug to be told about.
+-keep class com.buildorbreak.widget.** implements androidx.glance.appwidget.action.ActionCallback {
+    <init>();
+}

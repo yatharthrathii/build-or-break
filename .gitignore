@@ -12,6 +12,10 @@ build-logic/**/build/
 captures/
 local.properties
 
+# VS Code. Kept alongside Android Studio only as a chat window, so its settings
+# are personal rather than part of the project.
+.vscode/
+
 # techspec.md section 12: no secrets in the repository.
 # local.properties holds the signing config and the RevenueCat key. CI reads
 # them from repository secrets instead.

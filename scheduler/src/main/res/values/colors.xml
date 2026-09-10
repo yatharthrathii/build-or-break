@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The one colour the platform lets a notification carry. It has to live in
+    this module because the notification is built here, and it is the same
+    vermilion the app is drawn in.
+-->
+<resources>
+    <color name="notification_accent">#EC3013</color>
+</resources>

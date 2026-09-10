@@ -26,6 +26,16 @@ android {
         buildConfig = true
     }
 
+    buildTypes {
+        getByName("release") {
+            // Signed with the debug key for now, so a release build can be
+            // sideloaded and felt on a real phone. This is not the key the app
+            // ships with: M9 creates the upload key, and an install signed
+            // with this one has to be uninstalled before that build goes on.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     androidComponents {
         /*
          * Unit tests run on debug only.
@@ -89,6 +99,12 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // The walkthrough runs on a real phone. MIUI refuses adb input injection,
+    // so this is the only way to drive the app through its own screens and
+    // find out what a tap actually does on the device it ships to.
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.truth)
 }
 
 // Feature packages live inside this module for now: today, plan, insights,

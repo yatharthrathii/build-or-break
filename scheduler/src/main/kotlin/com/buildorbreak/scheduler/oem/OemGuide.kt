@@ -57,6 +57,15 @@ class OemGuide @Inject constructor(
      */
     fun autostartIntent(): Intent? = VendorIntents.autostartIntent(context)
 
+    /**
+     * Whether this phone needs to be told to let an alarm show on the lock
+     * screen, which is the difference between an alarm you can answer and one
+     * you have to unlock the phone to reach.
+     */
+    fun needsLockScreenGuidance(): Boolean = lockScreenIntent() != null
+
+    fun lockScreenIntent(): Intent? = VendorIntents.lockScreenIntent(context)
+
     private fun intentFor(blocker: TierBlocker): Intent? = when (blocker) {
         TierBlocker.NOTIFICATIONS_DENIED,
         TierBlocker.CHANNEL_SILENCED,

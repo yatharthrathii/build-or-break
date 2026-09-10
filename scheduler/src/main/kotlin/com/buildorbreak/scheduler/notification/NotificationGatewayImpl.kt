@@ -10,11 +10,11 @@ import androidx.core.content.getSystemService
 import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.domain.gateway.NotificationGateway
 import com.buildorbreak.core.model.enums.Milestone
-import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.resolved.CascadePreview
 import com.buildorbreak.scheduler.R
+import com.buildorbreak.scheduler.alarm.AlarmRingerService
 import com.buildorbreak.scheduler.alarm.AlarmScheduling
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -34,6 +34,7 @@ private const val MILESTONE_NOTIFICATION_ID = 1
  */
 class NotificationGatewayImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val look: AlarmNotification,
     private val dispatchers: AppDispatchers,
 ) : NotificationGateway {
 
@@ -43,11 +44,20 @@ class NotificationGatewayImpl @Inject constructor(
     override suspend fun show(occurrence: Occurrence, item: Item, preview: CascadePreview?) =
         withContext(dispatchers.io) {
             Channels.ensureCreated(context)
-            post(AlarmScheduling.requestCode(occurrence.id), build(occurrence, item, preview))
+            post(AlarmScheduling.requestCode(occurrence.id), look.due(occurrence, item, preview))
         }
 
+    /**
+     * Takes the notification down and stops the sound with it.
+     *
+     * Every way of settling a step calls this: the buttons on the notification,
+     * the alarm screen, and a tap in the app. Stopping the ringer here rather
+     * than at each of those is what makes it impossible to add a fourth way and
+     * leave the phone ringing.
+     */
     override suspend fun dismiss(occurrenceId: Long) = withContext(dispatchers.io) {
         manager?.cancel(AlarmScheduling.requestCode(occurrenceId))
+        AlarmRingerService.stop(context, occurrenceId)
 
         Unit
     }
@@ -97,72 +107,5 @@ class NotificationGatewayImpl @Inject constructor(
      */
     override fun canPostNotifications(): Boolean = NotificationManagerCompat.from(context).areNotificationsEnabled()
 
-    override fun canUseFullScreenIntent(): Boolean =
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            true
-        } else {
-            manager?.canUseFullScreenIntent() ?: false
-        }
-
-    /**
-     * The buttons are the feature.
-     *
-     * Done, the smaller version, snooze and skip all complete from the shade.
-     * The smaller version only appears when one was declared in advance, which is
-     * the entire point of declaring it: nobody having a bad day is in a state to
-     * decide what a fair reduced version would be, so the decision is made when
-     * the plan is written and offered when it is needed.
-     *
-     * The snooze consequence text is shown when a preview was handed in. It is
-     * not computed here, because working out what a snooze costs means resolving
-     * the whole day and this method runs inside a ten second broadcast budget.
-     */
-    private fun build(occurrence: Occurrence, item: Item, preview: CascadePreview?): Notification {
-        val id = occurrence.id
-
-        val builder = NotificationCompat.Builder(context, channelFor(item.salience))
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle(item.title)
-            .setContentText(item.detail ?: preview?.let(::consequenceText))
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setPriority(priorityFor(item.salience))
-            .setAutoCancel(false)
-            .setOnlyAlertOnce(true)
-            .addAction(0, context.getString(R.string.action_done), doneIntent(id))
-
-        if (item.hasMinimum) {
-            builder.addAction(0, context.getString(R.string.action_minimum), minimumIntent(id))
-        }
-
-        builder
-            .addAction(0, context.getString(R.string.action_snooze), snoozeIntent(id))
-            .addAction(0, context.getString(R.string.action_skip), skipIntent(id))
-
-        return builder.build()
-    }
-
-    private fun consequenceText(preview: CascadePreview): String? =
-        preview.moved.takeIf { it.size > 1 }?.let { "Moves ${it.size - 1} later steps" }
-
-    private fun channelFor(salience: Salience): String = when (salience) {
-        Salience.ALARM -> Channels.ALARM_ID
-        Salience.NOTIFY -> Channels.REMINDER_ID
-        Salience.SILENT, Salience.TIMELINE -> Channels.QUIET_ID
-    }
-
-    private fun priorityFor(salience: Salience): Int = when (salience) {
-        Salience.ALARM -> NotificationCompat.PRIORITY_MAX
-        Salience.NOTIFY -> NotificationCompat.PRIORITY_DEFAULT
-        Salience.SILENT, Salience.TIMELINE -> NotificationCompat.PRIORITY_LOW
-    }
-
-    private fun doneIntent(id: Long) = NotificationActions.pendingIntent(context, id, NotificationActions.ACTION_DONE)
-
-    private fun minimumIntent(id: Long) =
-        NotificationActions.pendingIntent(context, id, NotificationActions.ACTION_DONE_MINIMUM)
-
-    private fun snoozeIntent(id: Long) =
-        NotificationActions.pendingIntent(context, id, NotificationActions.ACTION_SNOOZE)
-
-    private fun skipIntent(id: Long) = NotificationActions.pendingIntent(context, id, NotificationActions.ACTION_SKIP)
+    override fun canUseFullScreenIntent(): Boolean = look.canUseFullScreenIntent()
 }

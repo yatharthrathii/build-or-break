@@ -17,6 +17,15 @@ object AlarmScheduling {
 
     const val ACTION_FIRE = "com.buildorbreak.scheduler.ACTION_FIRE"
 
+    /**
+     * The activity the app shows when an alarm fires.
+     *
+     * By action rather than by class, because the screen lives in :app and
+     * this module cannot see it. The app declares an activity for this action
+     * and the notification's full screen intent points at it by name.
+     */
+    const val ACTION_ALARM_SCREEN = "com.buildorbreak.ACTION_ALARM_SCREEN"
+
     const val EXTRA_OCCURRENCE_ID = "occurrence_id"
     const val EXTRA_ITEM_ID = "item_id"
 

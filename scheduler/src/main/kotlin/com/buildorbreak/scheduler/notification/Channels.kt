@@ -42,7 +42,11 @@ object Channels {
         manager.createNotificationChannel(
             NotificationChannel(ALARM_ID, "Alarms", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Steps that are meant to interrupt you"
-                setBypassDnd(false)
+                // Asked for at creation, which is the only time it can be. The
+                // user keeps the final say in the channel's own settings, and
+                // a step marked alarm is one the user has said should get
+                // through.
+                setBypassDnd(true)
                 enableVibration(true)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             },

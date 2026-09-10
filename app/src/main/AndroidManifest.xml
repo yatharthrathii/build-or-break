@@ -32,6 +32,38 @@
         </activity>
 
         <!--
+            The alarm, over the lock screen. Reached by action from the
+            notification's full screen intent, because :scheduler builds that
+            intent and cannot see this class. Not exported: only a PendingIntent
+            this app created can start it, so nothing else can fake an alarm.
+            Its own task and out of recents, so dismissing it leaves nothing
+            behind.
+        -->
+        <activity
+            android:name=".feature.alarm.AlarmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.BuildOrBreak"
+            android:turnScreenOn="true"
+            tools:targetApi="o_mr1">
+            <!--
+                The default category is not optional here. An implicit intent
+                only matches a filter that declares it, so without this line
+                the action resolves to nothing, the full screen intent has no
+                activity to launch, and an alarm rings without ever putting a
+                screen in front of anybody. It fails silently, which is why it
+                survived until a device test tried to start it.
+            -->
+            <intent-filter>
+                <action android:name="com.buildorbreak.ACTION_ALARM_SCREEN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!--
             Rescheduling on launch is the second path to work the daily job also
             does. WorkManager is best effort and a vendor battery manager may
             stop it for days, so the pass runs here too. It is idempotent, which

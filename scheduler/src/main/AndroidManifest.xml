@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
         Permissions live with the code that uses them. techspec.md section 7.
@@ -31,6 +32,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
+    <!--
+        The ringer holds the alarm audio stream open until somebody answers, so
+        it is a media playback service and says so. Anything vaguer would be a
+        worse description of what it does and a harder one to justify.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
     <!-- Every alarm is lost on restart. Without this a phone that rebooted
          overnight wakes up silent, and nothing tells the user until morning. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -38,12 +46,14 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!--
-        Not requested. REQUEST_IGNORE_BATTERY_OPTIMIZATIONS is policy restricted
-        on Play and asking for it wrongly gets a release rejected. The app sends
-        the user to the settings list instead, which is always allowed.
-
-        <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+        Play restricts this permission to apps whose core function is hurt by
+        Doze, and lists alarm apps as the example that is allowed. This app is
+        one. Without it the user is sent to a list of every app on the phone
+        and has to find this one; with it the phone asks a single question.
     -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        tools:ignore="BatteryLife" />
 
     <application>
 
@@ -104,6 +114,17 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!--
+            The alarm itself: the looping sound, the vibration, and the
+            notification whose full screen intent puts the alarm screen in
+            front of a locked phone. A notification alone rings for three
+            seconds and stops, which is not an alarm.
+        -->
+        <service
+            android:name=".alarm.AlarmRingerService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <service
             android:name=".service.BlockRunnerService"

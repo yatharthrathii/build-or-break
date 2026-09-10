@@ -1,5 +1,6 @@
 package com.buildorbreak.scheduler.oem
 
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -41,6 +42,39 @@ object VendorIntents {
         "com.letv.android.letvsafe" to "com.letv.android.letvsafe.AutobootManageActivity",
     )
 
+    /**
+     * The per app permission editor some vendors put the lock screen switch on.
+     *
+     * This is the one that decides whether an alarm can put a screen in front
+     * of a locked phone. On stock Android the full screen intent is enough; on
+     * MIUI and a few others it is refused silently unless the app is also
+     * allowed to show on the lock screen and to start while in the background,
+     * and both live on a vendor screen with no API behind it.
+     *
+     * Silently is the important word. Nothing fails, nothing is reported, the
+     * alarm simply rings with no way to answer it without unlocking, which is
+     * exactly the complaint this exists to prevent.
+     */
+    private val LOCK_SCREEN_CANDIDATES = listOf(
+        "com.miui.securitycenter" to "com.miui.permcenter.permissions.PermissionsEditorActivity",
+        "com.miui.securitycenter" to "com.miui.permcenter.permissions.AppPermissionsEditorActivity",
+        "com.coloros.safecenter" to "com.coloros.safecenter.permission.PermissionManagerActivity",
+        "com.vivo.permissionmanager" to "com.vivo.permissionmanager.activity.PurviewTabActivity",
+    )
+
+    /**
+     * The lock screen permission screen, with this app already selected where
+     * the vendor supports it, or null on a phone that does not need one.
+     */
+    fun lockScreenIntent(context: Context): Intent? = LOCK_SCREEN_CANDIDATES
+        .asSequence()
+        .map { (pkg, activity) ->
+            Intent()
+                .setComponent(ComponentName(pkg, activity))
+                .putExtra("extra_pkgname", context.packageName)
+        }
+        .firstOrNull { it.resolvesOn(context) }
+
     /** True when this phone is one the guidance is written for. */
     fun needsAutostartGuidance(context: Context): Boolean = autostartIntent(context) != null
 
@@ -67,6 +101,18 @@ object VendorIntents {
     fun batterySettingsIntent(context: Context): Intent? =
         Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).takeIf { it.resolvesOn(context) }
 
+    /**
+     * The one question dialog that takes this app off battery optimisation.
+     *
+     * Play allows asking when alarms are what the app is for. The list
+     * screen above stays as the fallback for a phone with no dialog.
+     */
+    @SuppressLint("BatteryLife")
+    fun requestIgnoreBatteryIntent(context: Context): Intent? =
+        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            .setData(Uri.fromParts("package", context.packageName, null))
+            .takeIf { it.resolvesOn(context) }
+
     /** The system screen for granting exact alarms, from Android 12. */
     fun exactAlarmSettingsIntent(context: Context): Intent? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
@@ -75,6 +121,16 @@ object VendorIntents {
             .setData(Uri.fromParts("package", context.packageName, null))
             .takeIf { it.resolvesOn(context) }
     }
+
+    /**
+     * One channel's own settings page: its sound, its vibration, and whether
+     * it may interrupt do not disturb. The system keeps those, so the app
+     * sends the user there rather than keeping a second copy it cannot enforce.
+     */
+    fun channelSettingsIntent(context: Context, channelId: String): Intent =
+        Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, channelId)
 
     /** This app's notification settings, where a silenced channel is turned back up. */
     fun notificationSettingsIntent(context: Context): Intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
