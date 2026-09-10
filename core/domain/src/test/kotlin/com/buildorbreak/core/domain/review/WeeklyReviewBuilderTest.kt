@@ -61,6 +61,32 @@ class WeeklyReviewBuilderTest {
         assertThat(review.story).isEqualTo(ReviewStory.SETTLING_IN)
     }
 
+    /**
+     * The regression that quietly made the headline useless.
+     *
+     * The week being reported is the week being lived, and a day is only
+     * closed once it is over, so the current week can never hold seven closes.
+     * A gate of seven meant every report, on every day, after any amount of
+     * history, said "too early to conclude anything".
+     */
+    @Test
+    fun `a week still in progress is reported on rather than deferred`() {
+        val review = builder.build(
+            inputOf(closes = GoalFixtures.closes(weekStart, days = 3, itemsDone = 9, itemsTotal = 10)),
+        )
+
+        assertThat(review.story).isEqualTo(ReviewStory.ON_TRACK)
+    }
+
+    @Test
+    fun `two days is still not enough to conclude anything`() {
+        val review = builder.build(
+            inputOf(closes = GoalFixtures.closes(weekStart, days = 2, itemsDone = 9, itemsTotal = 10)),
+        )
+
+        assertThat(review.story).isEqualTo(ReviewStory.SETTLING_IN)
+    }
+
     @Test
     fun `a week that went well is reported as going well`() {
         assertThat(builder.build(inputOf()).story).isEqualTo(ReviewStory.ON_TRACK)

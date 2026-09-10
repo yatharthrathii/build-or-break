@@ -1,6 +1,9 @@
 package com.buildorbreak.app.feature.today
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -9,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
+import com.buildorbreak.core.model.enums.SkipChip
 import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Rule
@@ -92,6 +96,68 @@ class TodayContentTest {
 
         compose.onNodeWithText("PASTE A ROUTINE").assertIsDisplayed()
         compose.onNodeWithText("WRITE IT MYSELF").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a step that has not come round yet cannot be ticked off`() {
+        val ahead = previewState().copy(next = previewState().next?.copy(hasArrived = false))
+        render(ahead)
+
+        scrollTo("DONE")
+        compose.onNodeWithText("Comes round at", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("DONE").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `a step that has not come round yet can still be skipped in advance`() {
+        val ahead = previewState().copy(next = previewState().next?.copy(hasArrived = false))
+        render(ahead)
+
+        scrollTo("SKIP TODAY")
+        compose.onNodeWithText("SKIP TODAY").assertIsEnabled()
+    }
+
+    @Test
+    fun `skipping asks what happened before it settles anything`() {
+        var skipped: Pair<Long, SkipChip?>? = null
+        render(previewState(), TodayActions.None.copy(onSkip = { id, chip -> skipped = id to chip }))
+
+        scrollTo("SKIP TODAY")
+        compose.onNodeWithText("SKIP TODAY").performClick()
+
+        // The sheet, not the settle. Nothing has been recorded yet.
+        compose.onNodeWithText("WHAT HAPPENED?").assertIsDisplayed()
+        assertThat(skipped).isNull()
+
+        compose.onNodeWithText("WORK CAME UP").performClick()
+        assertThat(skipped).isEqualTo(3L to SkipChip.WORK_CAME_UP)
+    }
+
+    @Test
+    fun `a skip with no reason still settles the step`() {
+        var skipped: Pair<Long, SkipChip?>? = null
+        render(previewState(), TodayActions.None.copy(onSkip = { id, chip -> skipped = id to chip }))
+
+        scrollTo("SKIP TODAY")
+        compose.onNodeWithText("SKIP TODAY").performClick()
+        compose.onNodeWithText("SKIP WITHOUT A REASON").performClick()
+
+        assertThat(skipped).isEqualTo(3L to null)
+    }
+
+    @Test
+    fun `loading draws nothing rather than claiming there is no plan`() {
+        render(TodayUiState.Loading)
+
+        compose.onAllNodesWithText("PASTE A ROUTINE").assertCountEquals(0)
+        compose.onAllNodesWithText("NO PLAN YET").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a sick day with no smaller versions says so instead of taking credit`() {
+        render(previewState().copy(isReduced = true, reducedCount = 0))
+
+        compose.onNodeWithText("No step here has a smaller version yet.", substring = true).assertIsDisplayed()
     }
 
     @Test

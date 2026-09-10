@@ -44,6 +44,37 @@ class PlanTextParserTest {
     // Anchors ------------------------------------------------------------------
 
     @Test
+    fun `a twelve hour list with the pm left off runs forwards through the day`() {
+        val pasted = """
+            6:30 Wake up
+            11:00 Kegel set
+            1:30 Lunch
+            2:30-4:30 Deep work
+            10:30 Screens off
+        """.trimIndent()
+
+        val starts = parser.parse(pasted).items.map {
+            (it.anchor as? Anchor.Fixed)?.at
+                ?: (it.anchor as Anchor.Window).from
+        }
+
+        assertThat(starts).containsExactly(
+            LocalTime.of(6, 30),
+            LocalTime.of(11, 0),
+            LocalTime.of(13, 30),
+            LocalTime.of(14, 30),
+            LocalTime.of(22, 30),
+        ).inOrder()
+    }
+
+    @Test
+    fun `an explicit am is never moved to the afternoon`() {
+        val items = parser.parse("11:00 Kegel set\n1:30 am Night feed").items
+
+        assertThat((items[1].anchor as Anchor.Fixed).at).isEqualTo(LocalTime.of(1, 30))
+    }
+
+    @Test
     fun `a plain time is a fixed anchor`() {
         val item = firstOf("06:30 Wake up")
 

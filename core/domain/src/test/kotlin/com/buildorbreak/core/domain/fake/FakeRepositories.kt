@@ -9,6 +9,7 @@ import com.buildorbreak.core.domain.gateway.WidgetGateway
 import com.buildorbreak.core.domain.repository.DayCloseRepository
 import com.buildorbreak.core.domain.repository.DayLogRepository
 import com.buildorbreak.core.domain.repository.ItemRepository
+import com.buildorbreak.core.domain.repository.MeasurementRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.ResetRepository
@@ -18,9 +19,13 @@ import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.OccurrenceState
 import com.buildorbreak.core.model.enums.ThemeMode
+import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.execution.DayLog
+import com.buildorbreak.core.model.execution.Measurement
 import com.buildorbreak.core.model.execution.Occurrence
+import com.buildorbreak.core.model.execution.SkipReason
 import com.buildorbreak.core.model.goal.DayClose
+import com.buildorbreak.core.model.goal.Reading
 import com.buildorbreak.core.model.plan.Block
 import com.buildorbreak.core.model.plan.DayTemplate
 import com.buildorbreak.core.model.plan.Item
@@ -157,6 +162,14 @@ class FakeOccurrenceRepository : OccurrenceRepository {
         return Outcome.Success(Unit)
     }
 
+    override suspend fun unsettle(id: Long): Outcome<Unit, DataError> {
+        occurrences.value = occurrences.value.map {
+            if (it.id == id) it.copy(state = OccurrenceState.PENDING, settledAt = null) else it
+        }
+
+        return Outcome.Success(Unit)
+    }
+
     override suspend fun shift(id: Long, by: Duration): Outcome<Occurrence, DataError> {
         occurrences.value = occurrences.value.map {
             if (it.id == id) {
@@ -207,10 +220,14 @@ class RecordingAlarmGateway(private val tier: DeliveryTier = DeliveryTier.FULL_S
     val scheduled = mutableListOf<Long>()
     val cancelled = mutableListOf<Long>()
 
+    /** The time each alarm was actually set for, which is the half a snooze changes. */
+    val scheduledFor = mutableListOf<Pair<Long, java.time.LocalDateTime>>()
+
     override fun currentTier(): DeliveryTier = tier
 
     override suspend fun schedule(occurrence: Occurrence, item: Item): Outcome<Unit, AlarmError> {
         scheduled += occurrence.id
+        scheduledFor += occurrence.id to occurrence.effectiveAt
 
         return Outcome.Success(Unit)
     }
@@ -279,6 +296,10 @@ class FakeSettingsRepository : SettingsRepository {
     override val onboardingComplete: Flow<Boolean> = onboarding
     override val themeMode: Flow<ThemeMode> = theme
     override val dismissedReviewWeek: Flow<LocalDate?> = dismissed
+    override val autostartDone = MutableStateFlow(false)
+    override val lockScreenDone = MutableStateFlow(false)
+
+    override val lateTolerance: Flow<Duration> = MutableStateFlow(Duration.ZERO)
 
     override suspend fun setOnboardingComplete(complete: Boolean) {
         onboarding.value = complete
@@ -291,6 +312,16 @@ class FakeSettingsRepository : SettingsRepository {
     override suspend fun setDismissedReviewWeek(week: LocalDate) {
         dismissed.value = week
     }
+
+    override suspend fun setLateTolerance(tolerance: Duration) = Unit
+
+    override suspend fun setAutostartDone(done: Boolean) {
+        autostartDone.value = done
+    }
+
+    override suspend fun setLockScreenDone(done: Boolean) {
+        lockScreenDone.value = done
+    }
 }
 
 class RecordingResetRepository : ResetRepository {
@@ -302,4 +333,36 @@ class RecordingResetRepository : ResetRepository {
 
         return Outcome.Success(Unit)
     }
+}
+
+/**
+ * Skip reasons, kept in memory.
+ *
+ * Only the two calls the review path makes. Measurements themselves are not
+ * used by any test that needs this fake, and a fake that implements more than
+ * it is asked about is a fake that quietly drifts from the real thing.
+ */
+class FakeMeasurementRepository : MeasurementRepository {
+    val reasons = MutableStateFlow<List<SkipReason>>(emptyList())
+
+    override fun observeForItem(itemId: Long): Flow<List<Measurement>> = MutableStateFlow(emptyList())
+
+    override suspend fun readings(kind: ValueKind, from: LocalDate, to: LocalDate): List<Reading> = emptyList()
+
+    override suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError> = Outcome.Success(Unit)
+
+    override suspend fun recordSkipReason(reason: SkipReason): Outcome<Unit, DataError> {
+        reasons.value = reasons.value + reason.copy(id = reasons.value.size + 1L)
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun clearSkipReason(occurrenceId: Long): Outcome<Unit, DataError> {
+        reasons.value = reasons.value.filterNot { it.occurrenceId == occurrenceId }
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun skipReasonsFor(occurrenceIds: List<Long>): List<SkipReason> =
+        reasons.value.filter { it.occurrenceId in occurrenceIds }
 }

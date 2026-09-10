@@ -3,13 +3,17 @@ package com.buildorbreak.core.domain.usecase
 import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.domain.fake.FakeDayCloseRepository
 import com.buildorbreak.core.domain.fake.FakeItemRepository
+import com.buildorbreak.core.domain.fake.FakeMeasurementRepository
 import com.buildorbreak.core.domain.fake.FakeOccurrenceRepository
 import com.buildorbreak.core.domain.fake.FakePlanRepository
 import com.buildorbreak.core.domain.fake.FakeSettingsRepository
 import com.buildorbreak.core.domain.fake.FakeTemplateRepository
 import com.buildorbreak.core.domain.review.DefaultWeeklyReviewBuilder
 import com.buildorbreak.core.domain.review.InsightsPeriod
+import com.buildorbreak.core.domain.review.SkipCount
 import com.buildorbreak.core.model.enums.OccurrenceState
+import com.buildorbreak.core.model.enums.SkipChip
+import com.buildorbreak.core.model.execution.SkipReason
 import com.buildorbreak.core.model.plan.Plan
 import com.buildorbreak.core.testing.fixtures.ExecutionFixtures
 import com.buildorbreak.core.testing.fixtures.PlanFixtures
@@ -48,12 +52,17 @@ class ObserveInsightsUseCaseTest {
         override val main = Dispatchers.Unconfined
     }
 
+    private val measurements = FakeMeasurementRepository()
+
     private val observeInsights = ObserveInsightsUseCase(
-        plans = plans,
-        templates = templates,
-        items = items,
-        occurrences = occurrences,
-        closes = closes,
+        sources = InsightsSources(
+            plans = plans,
+            templates = templates,
+            items = items,
+            occurrences = occurrences,
+            closes = closes,
+            measurements = measurements,
+        ),
         settings = settings,
         reviews = DefaultWeeklyReviewBuilder(),
         time = time,
@@ -91,6 +100,54 @@ class ObserveInsightsUseCaseTest {
         assertThat(insights.total).isEqualTo(3)
         assertThat(insights.previousKept).isEqualTo(1)
         assertThat(insights.previousTotal).isEqualTo(1)
+    }
+
+    @Test
+    fun `the reasons given for skips are counted, commonest first`() = runTest {
+        seedPlan()
+        occurrences.occurrences.value = listOf(
+            ExecutionFixtures.occurrence(itemId = 1, date = monday, id = 1, state = OccurrenceState.SKIPPED),
+            ExecutionFixtures.occurrence(itemId = 2, date = monday, id = 2, state = OccurrenceState.SKIPPED),
+            ExecutionFixtures.occurrence(
+                itemId = 1,
+                date = monday.plusDays(1),
+                id = 3,
+                state = OccurrenceState.SKIPPED,
+            ),
+            // Skipped, and no reason given. Never counted, never guessed at.
+            ExecutionFixtures.occurrence(
+                itemId = 2,
+                date = monday.plusDays(1),
+                id = 4,
+                state = OccurrenceState.SKIPPED,
+            ),
+        )
+        reason(occurrenceId = 1, chip = SkipChip.WORK_CAME_UP)
+        reason(occurrenceId = 2, chip = SkipChip.NO_TIME)
+        reason(occurrenceId = 3, chip = SkipChip.WORK_CAME_UP)
+
+        val reasons = observeInsights(InsightsPeriod.WEEK).first()!!.skipReasons
+
+        assertThat(reasons).containsExactly(
+            SkipCount(SkipChip.WORK_CAME_UP, 2),
+            SkipCount(SkipChip.NO_TIME, 1),
+        ).inOrder()
+    }
+
+    @Test
+    fun `nothing is shown when nobody said why`() = runTest {
+        seedPlan()
+        occurrences.occurrences.value = listOf(
+            ExecutionFixtures.occurrence(itemId = 1, date = monday, id = 1, state = OccurrenceState.SKIPPED),
+        )
+
+        assertThat(observeInsights(InsightsPeriod.WEEK).first()!!.skipReasons).isEmpty()
+    }
+
+    private suspend fun reason(occurrenceId: Long, chip: SkipChip) {
+        measurements.recordSkipReason(
+            SkipReason(id = 0, occurrenceId = occurrenceId, chip = chip, text = null, createdAt = Instant.EPOCH),
+        )
     }
 
     @Test

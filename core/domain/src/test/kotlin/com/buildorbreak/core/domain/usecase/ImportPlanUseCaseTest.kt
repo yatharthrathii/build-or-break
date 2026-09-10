@@ -5,6 +5,7 @@ import com.buildorbreak.core.domain.fake.FakeDayLogRepository
 import com.buildorbreak.core.domain.fake.FakeItemRepository
 import com.buildorbreak.core.domain.fake.FakeOccurrenceRepository
 import com.buildorbreak.core.domain.fake.FakePlanRepository
+import com.buildorbreak.core.domain.fake.FakeSettingsRepository
 import com.buildorbreak.core.domain.fake.FakeTemplateRepository
 import com.buildorbreak.core.domain.fake.RecordingAlarmGateway
 import com.buildorbreak.core.domain.parse.PlanTextParser
@@ -66,6 +67,7 @@ class ImportPlanUseCaseTest {
         items = items,
         occurrences = occurrences,
         dayLogs = dayLogs,
+        settings = FakeSettingsRepository(),
         resolver = DefaultTimelineResolver(),
         time = time,
         dispatchers = dispatchers,
@@ -191,13 +193,16 @@ class ImportPlanUseCaseTest {
     fun `the imported day resolves and schedules straight away`() = runTest {
         import("06:30 Wake up\n+30m Medicine\n21:00 Read")
 
-        val day = observeToday(time.today()).first()
+        val today = observeToday(time.today()).first()
+        val tomorrow = observeToday(time.today().plusDays(1)).first()
 
-        assertThat(day?.entries?.map { it.item.title }).containsExactly("Wake up", "Medicine", "Read").inOrder()
-        assertThat(day?.entryFor(items.items.value.first { it.title == "Medicine" }.id)?.at)
-            .isEqualTo(time.today().atTime(7, 0))
+        // Imported in the afternoon, so today is only what is still ahead. The
+        // morning had not been planned yet when it happened.
+        assertThat(today?.entries?.map { it.item.title }).containsExactly("Read")
+        assertThat(tomorrow?.entries?.map { it.item.title }).containsExactly("Wake up", "Medicine", "Read").inOrder()
+        assertThat(tomorrow?.entryFor(items.items.value.first { it.title == "Medicine" }.id)?.at)
+            .isEqualTo(time.today().plusDays(1).atTime(7, 0))
 
-        // Only what is still ahead of 10:30 local. The morning has passed.
         assertThat(alarms.scheduled).isNotEmpty()
     }
 }
