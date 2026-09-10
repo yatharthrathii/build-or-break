@@ -2,14 +2,32 @@
 <!--
     Only the launch theme lives in XML. Everything after the first frame is
     Compose, driven by :core:designsystem.
-
-    The launch window uses the light ground so the very first frame is already
-    the app's own colour, not a white flash.
 -->
 <resources>
+
+    <!--
+        The window the system draws before the process is ready.
+
+        It follows the phone's own dark setting, because that is the only thing
+        the platform can know at this point: the app's own choice is in a
+        database it has not opened yet. MainActivity corrects it for the next
+        launch with setSplashScreenTheme, which is what the two explicit
+        variants below exist for.
+    -->
     <style name="Theme.BuildOrBreak.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/ground</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.BuildOrBreak</item>
+    </style>
+
+    <!-- The same window, pinned to one palette. Chosen at runtime, never in the manifest. -->
+    <style name="Theme.BuildOrBreak.Starting.Light" parent="Theme.BuildOrBreak.Starting">
+        <item name="windowSplashScreenBackground">#F3F2F2</item>
+        <item name="postSplashScreenTheme">@style/Theme.BuildOrBreak</item>
+    </style>
+
+    <style name="Theme.BuildOrBreak.Starting.Dark" parent="Theme.BuildOrBreak.Starting">
+        <item name="windowSplashScreenBackground">#141312</item>
         <item name="postSplashScreenTheme">@style/Theme.BuildOrBreak</item>
     </style>
 

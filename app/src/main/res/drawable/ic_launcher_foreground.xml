@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The mark: a square of accent with the slash cut through it in ink.
+    The mark: one slash.
 
-    The slash is the identity. BUILD/BREAK is about the line between the two,
-    and one diagonal says so at 48dp without a letter, a clock or a tick.
-    Hard cornered, like everything else.
+    BUILD/BREAK is the line between the two, so the mark is that line and
+    nothing else. A single stroke survives being shrunk to a 24dp notification
+    glyph, masked into a circle by one launcher and a squircle by the next, and
+    flattened to a silhouette for a themed icon. Two shapes would not.
+
+    The parallelogram is inscribed in the 66dp safe circle of the 108dp
+    adaptive canvas, so no launcher shape can clip a tip off it.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -12,13 +16,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- The square -->
     <path
-        android:fillColor="@color/accent"
-        android:pathData="M30,30 H78 V78 H30 Z" />
-
-    <!-- The slash, cut from upper right to lower left -->
-    <path
-        android:fillColor="@color/ink"
-        android:pathData="M64,26 L72,26 L44,82 L36,82 Z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M31.2,74.4 L67.2,26.4 L76.8,33.6 L40.8,81.6 Z" />
 </vector>

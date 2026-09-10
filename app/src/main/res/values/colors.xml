@@ -11,9 +11,6 @@
     <!-- The ground. Matches Light.Ground in the design system. -->
     <color name="ground">#F3F2F2</color>
 
-    <!-- The accent. Matches Light.Accent in the design system. -->
+    <!-- The accent: the launcher icon's field and the splash disc. Matches Light.Accent. -->
     <color name="accent">#EC3013</color>
-
-    <!-- Ink, for the icon's slash. Matches Light.Ink. -->
-    <color name="ink">#201E1D</color>
 </resources>

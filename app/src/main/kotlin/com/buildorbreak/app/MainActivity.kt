@@ -2,6 +2,7 @@ package com.buildorbreak.app
 
 import android.Manifest
 import android.content.Intent
+import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,8 +10,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.navigation.BuildOrBreakNavGraph
@@ -21,6 +27,7 @@ import com.buildorbreak.app.navigation.startSettings
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.model.enums.ThemeMode
 import com.buildorbreak.scheduler.alarm.TierBlocker
+import com.buildorbreak.scheduler.notification.Channels
 import com.buildorbreak.scheduler.oem.OemGuide
 import com.buildorbreak.scheduler.oem.VendorIntents
 import dagger.hilt.android.AndroidEntryPoint
@@ -57,31 +64,118 @@ class MainActivity : ComponentActivity() {
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    /**
+     * **There is deliberately no `setKeepOnScreenCondition` here.**
+     *
+     * Holding the splash until the first run flag had been read looked like
+     * the tidy answer and produced the worst bug in the app. The condition
+     * installs a pre draw listener that refuses the draw while it holds; when
+     * it let go, nothing asked for another one, so the window kept presenting
+     * the last frame it had. The mark sat on top of a fully composed, fully
+     * tappable app until something else forced a redraw, and the first tap
+     * always did. Nothing catches that: the accessibility tree is correct, the
+     * tests pass, the logs are clean, and the app looks hung.
+     *
+     * The flash it was added to prevent is solved below instead, by painting
+     * the ground on the very first frame and only placing the navigation once
+     * there is something to navigate to.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-        // Held until the first run flag and the theme have been read, so the
-        // first drawn frame is the right screen in the right palette.
-        splash.setKeepOnScreenCondition { viewModel.state.value == null }
+        splash.setOnExitAnimationListener(::handOver)
 
         setContent {
             val shell by viewModel.state.collectAsStateWithLifecycle()
-            val state = shell ?: return@setContent
+            val mode = shell?.themeMode ?: ThemeMode.SYSTEM
 
-            BuildOrBreakTheme(darkTheme = isDark(state.themeMode)) {
-                BuildOrBreakNavGraph(
-                    startRoute = if (state.onboardingComplete) TodayRoute else OnboardingRoute,
-                    actions = ShellActions(
-                        openSettingsFor = ::openSettingsFor,
-                        openAutostart = { startSettings(guide.autostartIntent()) },
-                        requestNotifications = ::requestNotifications,
-                        share = ::share,
-                    ),
-                )
+            SplashThemeFor(mode)
+
+            BuildOrBreakTheme(darkTheme = isDark(mode)) {
+                // The ground is painted from the first frame, so the hand over
+                // from the splash is one colour becoming the same colour. The
+                // navigation waits for the first run flag rather than guessing:
+                // drawing Today and then replacing it with the first run screen
+                // is the flash this whole arrangement exists to avoid.
+                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+                    shell?.let { state ->
+                        BuildOrBreakNavGraph(
+                            startRoute = if (state.onboardingComplete) TodayRoute else OnboardingRoute,
+                            actions = ShellActions(
+                                openSettingsFor = ::openSettingsFor,
+                                openAutostart = { startSettings(guide.autostartIntent()) },
+                                openLockScreen = { startSettings(guide.lockScreenIntent()) },
+                                requestNotifications = ::requestNotifications,
+                                share = ::share,
+                                openAlarmChannel = {
+                                    startSettings(
+                                        VendorIntents.channelSettingsIntent(this@MainActivity, Channels.ALARM_ID),
+                                    )
+                                },
+                            ),
+                        )
+                    }
+                }
             }
         }
+    }
+
+    /**
+     * The splash window follows the app's own theme from the next launch on.
+     *
+     * The system draws that window before the process exists, so it cannot ask
+     * a database which palette the user picked and falls back to the phone's
+     * dark setting. Somebody who chose light inside a dark phone therefore gets
+     * a black flash before a white app. `setSplashScreenTheme` is the platform's
+     * answer: it remembers a theme for the launches after this one. It arrived
+     * in Android 12, and below that the phone's setting is all there is.
+     */
+    @androidx.compose.runtime.Composable
+    private fun SplashThemeFor(mode: ThemeMode) {
+        androidx.compose.runtime.LaunchedEffect(mode) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return@LaunchedEffect
+
+            splashScreen.setSplashScreenTheme(
+                when (mode) {
+                    ThemeMode.SYSTEM -> Resources.ID_NULL
+                    ThemeMode.LIGHT -> R.style.Theme_BuildOrBreak_Starting_Light
+                    ThemeMode.DARK -> R.style.Theme_BuildOrBreak_Starting_Dark
+                },
+            )
+        }
+    }
+
+    /**
+     * The splash leaves rather than disappearing.
+     *
+     * One frame the mark is there and the next it is gone reads as a stutter on
+     * a mid range phone, because it is indistinguishable from a dropped frame.
+     * Lifting and fading it over a fifth of a second reads as a hand over.
+     *
+     * **The removal is on a timer, not on the animation's end action.** Taking
+     * this listener over makes the app responsible for getting rid of the
+     * splash view, and a `ViewPropertyAnimator` does not start until its view
+     * gets a draw pass. On a device where that pass never comes the end action
+     * never runs, and the mark then sits on top of a fully drawn, fully
+     * interactive app forever. It looks exactly like a hung launch, and the
+     * accessibility tree says everything is fine, so nothing catches it except
+     * looking at the screen. A timer cannot be starved that way: at worst the
+     * fade is not seen and the splash still goes.
+     */
+    private fun handOver(splash: androidx.core.splashscreen.SplashScreenViewProvider) {
+        val view = splash.view
+
+        view.animate()
+            .alpha(0f)
+            .scaleX(SPLASH_EXIT_SCALE)
+            .scaleY(SPLASH_EXIT_SCALE)
+            .setDuration(SPLASH_EXIT_MILLIS)
+            .setInterpolator(android.view.animation.AccelerateInterpolator())
+            .start()
+
+        view.postDelayed(splash::remove, SPLASH_EXIT_MILLIS)
     }
 
     @androidx.compose.runtime.Composable
@@ -124,7 +218,9 @@ class MainActivity : ComponentActivity() {
             TierBlocker.FULL_SCREEN_INTENT_DENIED -> VendorIntents.appSettingsIntent(this)
 
             TierBlocker.BATTERY_OPTIMISED ->
-                VendorIntents.batterySettingsIntent(this) ?: VendorIntents.autostartIntent(this)
+                VendorIntents.requestIgnoreBatteryIntent(this)
+                    ?: VendorIntents.batterySettingsIntent(this)
+                    ?: VendorIntents.autostartIntent(this)
         }
 
         startSettings(intent ?: VendorIntents.appSettingsIntent(this))
@@ -137,5 +233,10 @@ class MainActivity : ComponentActivity() {
             .putExtra(Intent.EXTRA_TEXT, text)
 
         startActivity(Intent.createChooser(send, getString(R.string.settings_export_chooser)))
+    }
+
+    private companion object {
+        const val SPLASH_EXIT_MILLIS = 220L
+        const val SPLASH_EXIT_SCALE = 1.06f
     }
 }

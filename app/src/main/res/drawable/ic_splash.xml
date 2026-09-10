@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The launch window mark: a white slash across the accent.
+
+    The disc is drawn here rather than left to windowSplashScreenIconBackgroundColor,
+    which several launchers and at least one emulator image quietly ignore. The
+    platform masks a splash icon to a circle, so the square becomes the disc and
+    the slash is cut by it, which is what makes it read as a stroke across the
+    mark rather than a bar sitting inside it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="@color/accent"
+        android:pathData="M0,0 H108 V108 H0 Z" />
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M21.4,81.8 L75.4,9.8 L86.6,18.2 L32.6,90.2 Z" />
+</vector>
