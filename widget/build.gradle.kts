@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.buildorbreak.android.library)
+    alias(libs.plugins.buildorbreak.android.compose)
     alias(libs.plugins.buildorbreak.android.hilt)
 }
 
