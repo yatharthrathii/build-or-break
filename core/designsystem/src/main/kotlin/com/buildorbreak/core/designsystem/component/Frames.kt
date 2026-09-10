@@ -46,7 +46,10 @@ fun ScreenHeader(
             verticalAlignment = Alignment.Bottom,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                if (kicker != null) {
+                // Blank counts as absent. A screen that has not read its data
+                // yet passes an empty string rather than inventing a label, and
+                // an empty kicker would otherwise reserve a line of nothing.
+                if (!kicker.isNullOrBlank()) {
                     Kicker(text = kicker)
                 }
 

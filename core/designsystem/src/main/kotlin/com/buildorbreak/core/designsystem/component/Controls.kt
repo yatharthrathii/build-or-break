@@ -82,6 +82,8 @@ private fun Segment(
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
+    val feedback = rememberFeedback()
+
     val ground by animateColorAsState(
         when {
             selected && accent -> MaterialTheme.colorScheme.primary
@@ -104,7 +106,10 @@ private fun Segment(
         maxLines = 1,
         modifier = modifier
             .background(ground)
-            .clickable(role = Role.Tab, onClick = onClick)
+            .clickable(role = Role.Tab) {
+                feedback.tick()
+                onClick()
+            }
             .padding(horizontal = 13.dp, vertical = 12.dp),
     )
 }
@@ -194,6 +199,8 @@ fun Stepper(
 
 @Composable
 private fun StepperButton(text: String, onClick: () -> Unit) {
+    val feedback = rememberFeedback()
+
     Text(
         text = text,
         style = MaterialTheme.typography.titleLarge,
@@ -202,7 +209,10 @@ private fun StepperButton(text: String, onClick: () -> Unit) {
         modifier = Modifier
             .width(StepperCell)
             .height(FieldHeight)
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(role = Role.Button) {
+                feedback.tick()
+                onClick()
+            }
             .padding(top = 10.dp),
     )
 }

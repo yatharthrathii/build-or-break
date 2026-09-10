@@ -28,7 +28,13 @@ import androidx.compose.ui.unit.dp
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
 
+/** Marks a step that rings. Not a string resource: it is a symbol, not a word. */
+private const val RINGS = "⏰"
+
 private val TimeColumnWidth = 46.dp
+
+/** Room for "10:30 PM". */
+private val WideTimeColumnWidth = 68.dp
 private val RailColumnWidth = 18.dp
 private val RailWidth = 2.dp
 private val MarkerSize = 12.dp
@@ -62,6 +68,21 @@ enum class RowState {
  * happened and a list that empties as it goes gives back no sense of a morning
  * actually done.
  */
+/** A row that answers a tap, with the tick that says it landed. Untouched when there is nothing to tap. */
+@Composable
+private fun Modifier.tappable(onClick: (() -> Unit)?): Modifier {
+    val feedback = rememberFeedback()
+
+    return if (onClick == null) {
+        this
+    } else {
+        clickable {
+            feedback.tap()
+            onClick()
+        }
+    }
+}
+
 @Composable
 fun TimelineRow(
     time: String,
@@ -73,16 +94,17 @@ fun TimelineRow(
     noteAccent: Boolean = false,
     last: Boolean = false,
     onClick: (() -> Unit)? = null,
+    /** True on a twelve hour clock, where a time carries its am or pm. */
+    wideTime: Boolean = false,
+    /** This step rings and takes over the screen. Everything else is a notification. */
+    alarm: Boolean = false,
 ) {
     val settled = state == RowState.DONE || state == RowState.MISSED
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            // Intrinsic height so the rail can fill the row: without it a
-            // fillMaxHeight child of a Row measures as zero.
-            .height(IntrinsicSize.Min),
+        // Intrinsic height so the rail can fill the row: without it a
+        // fillMaxHeight child of a Row measures as zero.
+        modifier = modifier.fillMaxWidth().tappable(onClick).height(IntrinsicSize.Min),
     ) {
         Text(
             text = time,
@@ -90,7 +112,7 @@ fun TimelineRow(
             color = timeColour(state),
             textAlign = TextAlign.End,
             modifier = Modifier
-                .width(TimeColumnWidth)
+                .width(if (wideTime) WideTimeColumnWidth else TimeColumnWidth)
                 .padding(top = 13.dp, end = Theme.spacing.small),
         )
 
@@ -99,6 +121,7 @@ fun TimelineRow(
         RowBody(
             title = title,
             settled = settled,
+            alarm = alarm,
             badge = badge,
             note = note,
             accentBadge = state == RowState.NEXT,
@@ -113,6 +136,7 @@ fun TimelineRow(
 private fun RowBody(
     title: String,
     settled: Boolean,
+    alarm: Boolean,
     badge: String?,
     note: String?,
     accentBadge: Boolean,
@@ -129,7 +153,7 @@ private fun RowBody(
             overflow = TextOverflow.Ellipsis,
         )
 
-        RowMeta(badge = badge, note = note, accentBadge = accentBadge, noteAccent = noteAccent)
+        RowMeta(badge = badge, note = note, accentBadge = accentBadge, noteAccent = noteAccent, alarm = alarm)
 
         if (!last) {
             HairlineRule(Modifier.padding(top = 13.dp))
@@ -172,8 +196,9 @@ private fun RowMeta(
     note: String?,
     accentBadge: Boolean,
     noteAccent: Boolean,
+    alarm: Boolean,
 ) {
-    if (badge == null && note == null) return
+    if (badge == null && note == null && !alarm) return
 
     Row(
         modifier = Modifier.padding(top = 5.dp),
@@ -182,6 +207,14 @@ private fun RowMeta(
     ) {
         if (badge != null) {
             Badge(text = badge, accent = accentBadge)
+        }
+
+        // The one distinction that decides whether somebody wakes up. A pasted
+        // routine makes every step a reminder unless its line said otherwise,
+        // and a step that will not ring has to look different from one that
+        // will before six in the morning, not after.
+        if (alarm) {
+            Text(text = RINGS, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
 
         if (note != null) {

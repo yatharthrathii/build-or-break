@@ -58,6 +58,7 @@ fun BlockButton(
     enabled: Boolean = true,
     icon: ImageVector? = null,
 ) {
+    val feedback = rememberFeedback()
     val interaction = remember { MutableInteractionSource() }
     val pressed = interaction.isPressed() && enabled
     val scale by animateFloatAsState(if (pressed) PRESSED_SCALE else 1f, spring(), label = "press")
@@ -79,7 +80,12 @@ fun BlockButton(
                 indication = null,
                 enabled = enabled,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    // The primary action is the one somebody commits to, so it
+                    // gets the heavier of the two ticks.
+                    feedback.confirm()
+                    onClick()
+                },
             )
             .padding(horizontal = Theme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
@@ -118,6 +124,7 @@ fun OutlineButton(
     muted: Boolean = false,
     enabled: Boolean = true,
 ) {
+    val feedback = rememberFeedback()
     val interaction = remember { MutableInteractionSource() }
     val pressed = interaction.isPressed() && enabled
 
@@ -143,7 +150,10 @@ fun OutlineButton(
                 indication = null,
                 enabled = enabled,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    feedback.tap()
+                    onClick()
+                },
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
     )
@@ -157,6 +167,7 @@ fun FillButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val feedback = rememberFeedback()
     val interaction = remember { MutableInteractionSource() }
     val pressed = interaction.isPressed() && enabled
 
@@ -182,7 +193,10 @@ fun FillButton(
                 indication = null,
                 enabled = enabled,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    feedback.tap()
+                    onClick()
+                },
             )
             .padding(horizontal = 14.dp, vertical = 10.dp),
     )
@@ -196,12 +210,17 @@ fun GhostButton(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onSurface,
 ) {
+    val feedback = rememberFeedback()
+
     Text(
         text = text.uppercase(Locale.getDefault()),
         style = MaterialTheme.typography.labelMedium,
         color = color,
         modifier = modifier
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(role = Role.Button) {
+                feedback.tap()
+                onClick()
+            }
             .padding(horizontal = 12.dp, vertical = 12.dp),
     )
 }

@@ -2,6 +2,7 @@ package com.buildorbreak.app.feature.today
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -14,9 +15,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -26,11 +30,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.buildorbreak.app.R
 import com.buildorbreak.core.designsystem.component.Badge
@@ -43,6 +49,8 @@ import com.buildorbreak.core.designsystem.component.NoticeBar
 import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.component.ProgressRing
+import com.buildorbreak.core.designsystem.component.SegmentedTabs
+import com.buildorbreak.core.designsystem.component.rememberFeedback
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
 import java.util.Locale
@@ -60,6 +68,9 @@ private val SHIFT_OPTIONS = listOf(15, 30, 60, 90)
  * below and a count is a thing somebody can check. The run line says how many
  * days in a row the plan has been kept, or that it has not started yet.
  */
+/** How long the kept count takes to catch up. Long enough to see, short enough not to wait. */
+private const val COUNT_MILLIS = 420
+
 @Composable
 internal fun RingRow(header: DayHeader, runDays: Int) {
     Column {
@@ -70,8 +81,18 @@ internal fun RingRow(header: DayHeader, runDays: Int) {
             ProgressRing(fraction = header.fraction)
 
             Column(modifier = Modifier.padding(start = 16.dp)) {
+                // Counted up rather than swapped. The number is the one thing
+                // on this screen that says the day is going well, and a digit
+                // that changes while the ring fills is worth watching; one that
+                // has already changed by the time the eye arrives is not.
+                val counted by animateIntAsState(
+                    targetValue = header.doneCount,
+                    animationSpec = tween(COUNT_MILLIS),
+                    label = "kept",
+                )
+
                 Text(
-                    text = stringResource(R.string.today_of, header.doneCount, header.total),
+                    text = stringResource(R.string.today_of, counted, header.total),
                     style = MaterialTheme.typography.displaySmall,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -103,8 +124,27 @@ internal fun RingRow(header: DayHeader, runDays: Int) {
  * shift chosen at 07:00 in a hurry is a shift somebody may want back.
  */
 @Composable
-internal fun ShiftBar(state: TodayUiState, onRunningLate: () -> Unit, onReset: () -> Unit) {
-    if (state.isShifted) {
+internal fun ShiftBar(
+    state: TodayUiState,
+    onRunningLate: () -> Unit,
+    onReset: () -> Unit,
+    onNormalDay: () -> Unit,
+) {
+    if (state.isReduced) {
+        // Honest about having changed nothing. A sick day only shrinks the
+        // steps that were given a smaller version in advance, and a banner
+        // claiming otherwise on a plan that has none is the app taking credit
+        // for work it did not do.
+        val line = if (state.sickDayChangedNothing) {
+            stringResource(R.string.today_sick_none)
+        } else {
+            pluralStringResource(R.plurals.today_sick_line, state.reducedCount, state.reducedCount)
+        }
+
+        NoticeBar(text = line) {
+            OutlineButton(text = stringResource(R.string.today_back_to_normal), onClick = onNormalDay)
+        }
+    } else if (state.isShifted) {
         NoticeBar(
             text = pluralStringResource(
                 R.plurals.today_shift_line,
@@ -133,6 +173,8 @@ internal fun ShiftBar(state: TodayUiState, onRunningLate: () -> Unit, onReset: (
 internal fun NextUpCard(
     next: NextUp?,
     allDone: Boolean,
+    /** Settled, but none of it kept. The same state, and not the same news. */
+    keptNothing: Boolean,
     onDone: (Long) -> Unit,
     onDoneMinimum: (Long) -> Unit,
     onSnooze: (Long) -> Unit,
@@ -157,7 +199,7 @@ internal fun NextUpCard(
         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
             when {
                 card != null -> NextUpPanel(card, onDone, onDoneMinimum, onSnooze, onSkip)
-                allDone -> DayDonePanel()
+                allDone -> DayDonePanel(keptNothing = keptNothing)
             }
         }
     }
@@ -174,6 +216,18 @@ private fun NextUpPanel(
     Panel {
         Column {
             NextUpHeading(card = card)
+
+            // Said plainly rather than left to a greyed out button. A control
+            // that does nothing and does not say why is the most annoying
+            // thing a screen can contain.
+            if (!card.hasArrived) {
+                Text(
+                    text = stringResource(R.string.today_not_yet, card.time),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Theme.colours.faint,
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
+                )
+            }
 
             BlockButton(
                 text = stringResource(R.string.today_done),
@@ -197,7 +251,7 @@ private fun NextUpHeading(card: NextUp) {
         verticalAlignment = Alignment.Bottom,
     ) {
         Kicker(
-            text = stringResource(R.string.today_next_up),
+            text = stringResource(if (card.isOverdue) R.string.today_still_open else R.string.today_next_up),
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.weight(1f),
         )
@@ -241,7 +295,10 @@ private fun SecondaryActions(
 ) {
     HeavyRule()
 
-    Row(modifier = Modifier.height(IntrinsicHeight)) {
+    // Sized to its tallest label rather than to a number. Three cells on a
+    // narrow phone put "Smaller version" on two lines, and a fixed height cut
+    // the second one off.
+    Row(modifier = Modifier.height(IntrinsicSize.Min)) {
         if (card.hasMinimum) {
             ActionCell(
                 text = stringResource(R.string.today_done_minimum),
@@ -263,7 +320,7 @@ private fun SecondaryActions(
 
         ActionCell(
             text = stringResource(R.string.today_skip_today),
-            enabled = card.isActionable,
+            enabled = card.isSkippable,
             onClick = { onSkip(card.occurrenceId) },
             modifier = Modifier.weight(1f),
             muted = true,
@@ -271,7 +328,8 @@ private fun SecondaryActions(
     }
 }
 
-private val IntrinsicHeight = 40.dp
+/** The shortest an action cell gets, so a one word label still has a tappable target. */
+private val CellMinHeight = 44.dp
 
 @Composable
 private fun ActionCell(
@@ -281,18 +339,29 @@ private fun ActionCell(
     modifier: Modifier = Modifier,
     muted: Boolean = false,
 ) {
-    Text(
-        text = text.uppercase(Locale.getDefault()),
-        style = MaterialTheme.typography.labelMedium,
-        color = when {
-            !enabled -> Theme.colours.faint
-            muted -> MaterialTheme.colorScheme.onSurfaceVariant
-            else -> MaterialTheme.colorScheme.onSurface
-        },
+    val feedback = rememberFeedback()
+
+    Box(
         modifier = modifier
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(start = 14.dp, top = 13.dp, bottom = 13.dp),
-    )
+            .heightIn(min = CellMinHeight)
+            .clickable(enabled = enabled, role = Role.Button) {
+                feedback.tap()
+                onClick()
+            }
+            .padding(horizontal = 8.dp, vertical = 11.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text.uppercase(Locale.getDefault()),
+            style = MaterialTheme.typography.labelMedium,
+            textAlign = TextAlign.Center,
+            color = when {
+                !enabled -> Theme.colours.faint
+                muted -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+        )
+    }
 }
 
 @Composable
@@ -300,27 +369,36 @@ private fun Divider() {
     Box(
         modifier = Modifier
             .width(Theme.spacing.rule)
-            .height(IntrinsicHeight)
+            .fillMaxHeight()
             .background(MaterialTheme.colorScheme.onSurface),
     )
 }
 
 /** Every step settled. The card's place is taken by a quiet full stop. */
 @Composable
-private fun DayDonePanel() {
+private fun DayDonePanel(keptNothing: Boolean) {
     Panel {
         Column(modifier = Modifier.padding(14.dp)) {
-            Kicker(text = stringResource(R.string.today_all_done_kicker), color = MaterialTheme.colorScheme.primary)
+            Kicker(
+                text = stringResource(
+                    if (keptNothing) R.string.today_all_settled_kicker else R.string.today_all_done_kicker,
+                ),
+                color = MaterialTheme.colorScheme.primary,
+            )
 
             Text(
-                text = stringResource(R.string.today_all_done_title),
+                text = stringResource(
+                    if (keptNothing) R.string.today_all_settled_title else R.string.today_all_done_title,
+                ),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 6.dp),
             )
 
             Text(
-                text = stringResource(R.string.today_all_done_body),
+                text = stringResource(
+                    if (keptNothing) R.string.today_all_settled_body else R.string.today_all_done_body,
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 5.dp),
@@ -338,7 +416,13 @@ private fun DayDonePanel() {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun RunningLateSheet(onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+internal fun RunningLateSheet(
+    state: TodayUiState,
+    onPick: (Int) -> Unit,
+    onRunTemplate: (Long) -> Unit,
+    onSickDay: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -367,6 +451,46 @@ internal fun RunningLateSheet(onPick: (Int) -> Unit, onDismiss: () -> Unit) {
                     )
                 }
             }
+
+            DifferentDay(state = state, onRunTemplate = onRunTemplate, onSickDay = onSickDay)
+        }
+    }
+}
+
+/**
+ * The other thing a morning can need: not later, but different.
+ *
+ * Every template on the plan as a tab, and a sick day, which runs the same
+ * template with every smaller version in place of the full one. Both reset a
+ * shift, because a different day is not the old day moved.
+ */
+@Composable
+private fun DifferentDay(state: TodayUiState, onRunTemplate: (Long) -> Unit, onSickDay: () -> Unit) {
+    Column(modifier = Modifier.padding(top = 24.dp)) {
+        Label(text = stringResource(R.string.today_different_day))
+
+        if (state.templates.size > 1) {
+            SegmentedTabs(
+                options = state.templates.map { it.name },
+                selectedIndex = state.templates.indexOfFirst { it.id == state.currentTemplateId }.coerceAtLeast(0),
+                onSelect = { onRunTemplate(state.templates[it].id) },
+                modifier = Modifier.padding(top = 10.dp),
+            )
+        }
+
+        if (!state.isReduced) {
+            OutlineButton(
+                text = stringResource(R.string.today_sick_day),
+                onClick = onSickDay,
+                modifier = Modifier.padding(top = 10.dp),
+            )
+
+            Text(
+                text = stringResource(R.string.today_sick_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp),
+            )
         }
     }
 }
@@ -401,4 +525,5 @@ internal fun noteText(note: EntryNote): String = when (note) {
     EntryNote.Skipped -> stringResource(R.string.note_skipped)
     is EntryNote.Snoozed -> stringResource(R.string.note_snoozed, note.count)
     EntryNote.Degraded -> stringResource(R.string.note_degraded)
+    EntryNote.Reduced -> stringResource(R.string.note_reduced)
 }

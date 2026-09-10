@@ -22,7 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 
@@ -31,6 +34,17 @@ private val NavIconSize = 20.dp
 /** One destination on the bar. The label is natural case; the bar sets it. */
 @Immutable
 data class NavDestination(val label: String, val icon: ImageVector)
+
+/**
+ * How a test finds one tab, given its label.
+ *
+ * A tag rather than the label itself, because the label is a word the app also
+ * uses in headings and body copy. A walkthrough looking for the text "Plan"
+ * found "My routine plan" in the header of the screen it was already on, tapped
+ * that, and passed for weeks without ever opening the tab it was written to
+ * test. A tag cannot be matched by accident.
+ */
+fun navTag(label: String): String = "nav:$label"
 
 /**
  * Four cells across the bottom, one of them filled.
@@ -69,6 +83,7 @@ fun BottomNavBar(
 
 @Composable
 private fun RowScope.NavCell(destination: NavDestination, selected: Boolean, onClick: () -> Unit) {
+    val feedback = rememberFeedback()
     val ground by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
         label = "cell",
@@ -79,7 +94,15 @@ private fun RowScope.NavCell(destination: NavDestination, selected: Boolean, onC
         modifier = Modifier
             .weight(1f)
             .background(ground)
-            .clickable(role = Role.Tab, onClick = onClick)
+            .clickable(role = Role.Tab) {
+                feedback.tap()
+                onClick()
+            }
+            // Merged so a screen reader announces the cell once, as a tab, and
+            // says whether it is the one currently open. Without `selected` the
+            // bar reads as four identical buttons.
+            .semantics(mergeDescendants = true) { this.selected = selected }
+            .testTag(navTag(destination.label))
             .padding(top = 9.dp, bottom = 11.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(5.dp),

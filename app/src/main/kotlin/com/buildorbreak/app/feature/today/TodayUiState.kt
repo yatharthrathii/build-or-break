@@ -10,10 +10,10 @@ import kotlinx.collections.immutable.persistentListOf
  *
  * architecture.md section 9. Three rules shape this file:
  *
- * **No loading flag.** The resolver is pure and runs in well under a frame, so
- * there is nothing to wait for after the first emission. A spinner here would be
- * shown for a length of time nobody can perceive and would then have to be
- * designed, tested and reasoned about forever.
+ * **Loading is not the same as empty.** There is no spinner, but there is a
+ * difference between "no plan" and "not read yet", and drawing the first as the
+ * second is how somebody with six weeks of history gets shown "no plan yet" for
+ * two frames on every cold start.
  *
  * **Null means absent, not pending.** `next == null` means the day is done,
  * not that the app is still deciding.
@@ -31,7 +31,7 @@ data class TodayUiState(
     val shiftMinutes: Int,
     /** How many unsettled, unpinned steps the shift moved. */
     val movedCount: Int,
-    /** The one thing the day has reached. Null when everything is settled. */
+    /** The first open step, overdue or not. Null when everything is settled. */
     val next: NextUp?,
     val entries: ImmutableList<TimelineEntry>,
     /** Index of [next] in [entries], or -1. */
@@ -40,10 +40,54 @@ data class TodayUiState(
     /** Null when alarms will work. Anything else is worth a line on screen. */
     val degradedTier: DeliveryTier?,
     val hasPlan: Boolean,
+    /** True until the first day has been read. Nothing is drawn under the header. */
+    val isLoading: Boolean = false,
+    /** A sick day: every step with a smaller version runs as that version. */
+    val isReduced: Boolean = false,
+    /** How many steps actually run as their smaller version today. */
+    val reducedCount: Int = 0,
+    /** The day is empty only because the plan was made after these steps had passed. */
+    val startsTomorrow: Boolean = false,
+    /**
+     * The last thing settled, while it can still be taken back.
+     *
+     * Null most of the time, and null again a few seconds after a tap. Held
+     * outside the resolved day on purpose: the day is what the database says,
+     * and this is a moment in the interface that no other screen shares.
+     */
+    val undo: UndoOffer? = null,
+    /** A skip made outside the app that nobody has been asked about yet. */
+    val askAbout: SkipAsk? = null,
+    /**
+     * The last thing the user asked for did not happen.
+     *
+     * Every action on this screen used to ignore its own result. A settle that
+     * failed left the row looking done, because the optimistic entry was never
+     * withdrawn, and the day the user could see stopped matching the day the
+     * app had recorded. Silence is the worst possible answer here.
+     */
+    val actionFailed: Boolean = false,
+    /** Every template on the plan, so the sheet can run a different one today. */
+    val templates: ImmutableList<DayChoice> = persistentListOf(),
+    val currentTemplateId: Long = 0,
+    val planId: Long = 0,
 ) {
     val isEmptyDay: Boolean get() = hasPlan && entries.isEmpty()
 
+    /** A sick day where nothing has a smaller version does nothing, and says so. */
+    val sickDayChangedNothing: Boolean get() = isReduced && reducedCount == 0
+
     val isAllDone: Boolean get() = hasPlan && entries.isNotEmpty() && next == null
+
+    /**
+     * Everything is settled and none of it happened.
+     *
+     * rules.md section 2 rule 8: a poor day gets no praise. "Nothing left on
+     * the rails" over a day where every step was skipped is the app
+     * congratulating somebody for giving up, which is the fastest way to lose
+     * their trust in everything else it says.
+     */
+    val keptNothing: Boolean get() = isAllDone && header.doneCount == 0
 
     val isShifted: Boolean get() = shiftMinutes != 0
 
@@ -60,8 +104,56 @@ data class TodayUiState(
             degradedTier = null,
             hasPlan = false,
         )
+
+        /** Before the first read. Not the same as having no plan. */
+        val Loading = Empty.copy(isLoading = true)
     }
 }
+
+/** Which of the three ways a step was settled. Changes only the wording. */
+enum class SettleKind { DONE, MINIMUM, SKIPPED }
+
+/**
+ * A settle that has not yet become permanent.
+ *
+ * The tap this exists for is Done pressed on the row above the one meant, on a
+ * phone held in one hand. Without a way back the only fix is the editor, and
+ * the history quietly stops matching what happened. Every number in the app is
+ * built on that history, so a wrong row is not a cosmetic problem.
+ */
+@Immutable
+data class UndoOffer(val occurrenceId: Long, val title: String, val kind: SettleKind)
+
+/**
+ * Which of the three questions the skip sheet is asking.
+ *
+ * They read almost the same and mean quite different things, and getting the
+ * wrong one is the difference between a sheet that sounds attentive and one
+ * that sounds broken.
+ */
+enum class SkipAskMode {
+    /** Its time has passed and nobody has said what happened. */
+    HAPPENED,
+
+    /** It has not come round yet. Deciding in advance is a real decision. */
+    AHEAD,
+
+    /** Already skipped, from a notification. The step is settled; only the reason is open. */
+    AFTER_THE_FACT,
+}
+
+/**
+ * One skip that arrived from a notification, and the question owed to it.
+ *
+ * Asked once, later, and never twice. See `ObserveUnexplainedSkipsUseCase` for
+ * why the question has to be deferred rather than asked where the skip is made.
+ */
+@Immutable
+data class SkipAsk(val occurrenceId: Long, val title: String)
+
+/** One template, as something the day can be switched to. */
+@Immutable
+data class DayChoice(val id: Long, val name: String)
 
 /**
  * The top of the screen.
@@ -91,9 +183,26 @@ data class NextUp(
     val note: EntryNote?,
     val durationMinutes: Int?,
     val hasMinimum: Boolean,
+    /** This one rings and takes over the screen. */
+    val isAlarm: Boolean = false,
+    /** Running as its smaller version today. Done means the minimum was done. */
+    val isReduced: Boolean = false,
+    /** Its time has passed and nobody has said what happened. */
+    val isOverdue: Boolean = false,
+    /**
+     * Its time has arrived, give or take the few minutes somebody might be early.
+     *
+     * A step four hours away is not something to tick off. Letting it be ticked
+     * turns the day into a checklist that can be emptied at breakfast, and the
+     * kept count into a number that means nothing.
+     */
+    val hasArrived: Boolean = true,
 ) {
-    /** Only a materialised occurrence can be completed from the screen. */
-    val isActionable: Boolean get() = occurrenceId > 0
+    /** Only a materialised occurrence that has come round can be completed. */
+    val isActionable: Boolean get() = occurrenceId > 0 && hasArrived
+
+    /** Skipping in advance is allowed. Deciding not to do something later is a real decision. */
+    val isSkippable: Boolean get() = occurrenceId > 0
 }
 
 /** One row, already formatted. */
@@ -109,6 +218,16 @@ data class TimelineEntry(
     val isMissed: Boolean,
     /** Which repeat of the item this is. Zero for anything that runs once. */
     val sequence: Int = 0,
+    val isReduced: Boolean = false,
+    /**
+     * This one rings and takes over the screen. Everything else is a notification.
+     *
+     * Shown because it is the difference between an app that wakes somebody and
+     * an app that does not, and because a pasted routine makes every step a
+     * reminder unless the line said otherwise. Somebody who cannot see which
+     * steps will ring finds out at six in the morning.
+     */
+    val isAlarm: Boolean = false,
 ) {
     val isSettled: Boolean get() = isDone || isMissed
 }
@@ -154,6 +273,9 @@ sealed interface EntryNote {
 
     /** The resolver had to guess. Worth a look on the editor. */
     data object Degraded : EntryNote
+
+    /** A sick day: the smaller version is what counts. */
+    data object Reduced : EntryNote
 }
 
 /**
