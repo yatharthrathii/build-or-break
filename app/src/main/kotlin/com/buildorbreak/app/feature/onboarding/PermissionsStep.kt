@@ -52,6 +52,7 @@ internal fun PermissionsStep(
     onRequestNotifications: () -> Unit,
     onFix: (TierBlocker) -> Unit,
     onOpenAutostart: () -> Unit,
+    onAutostartDone: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -80,6 +81,7 @@ internal fun PermissionsStep(
             onRequestNotifications = onRequestNotifications,
             onFix = onFix,
             onOpenAutostart = onOpenAutostart,
+            onAutostartDone = onAutostartDone,
         )
 
         RightNow(facts = facts)
@@ -92,6 +94,7 @@ private fun PermissionRows(
     onRequestNotifications: () -> Unit,
     onFix: (TierBlocker) -> Unit,
     onOpenAutostart: () -> Unit,
+    onAutostartDone: () -> Unit,
 ) {
     PermissionRow(
         icon = Icons.Outlined.Alarm,
@@ -121,8 +124,8 @@ private fun PermissionRows(
     )
 
     if (facts.autostart) {
-        // No API can read this one, so it is never shown as granted. The
-        // row says why and offers the screen.
+        // No API can read this one, so the app cannot tick it off. The user
+        // can, and until somebody does the row keeps offering the screen.
         PermissionRow(
             icon = Icons.Outlined.PowerSettingsNew,
             title = R.string.perm_autostart_title,
@@ -130,6 +133,8 @@ private fun PermissionRows(
             state = PermissionState.NEEDED,
             action = R.string.perm_open_settings,
             onAction = onOpenAutostart,
+            secondary = R.string.perm_autostart_done,
+            onSecondary = onAutostartDone,
         )
     }
 }
@@ -142,6 +147,8 @@ private fun PermissionRow(
     state: PermissionState,
     @StringRes action: Int,
     onAction: () -> Unit,
+    @StringRes secondary: Int? = null,
+    onSecondary: () -> Unit = {},
 ) {
     Column(modifier = Modifier.padding(vertical = 15.dp)) {
         Row(verticalAlignment = Alignment.Top) {
@@ -178,6 +185,8 @@ private fun PermissionRow(
                 Granted()
             } else {
                 FillButton(text = stringResource(action), onClick = onAction)
+
+                secondary?.let { OutlineButton(text = stringResource(it), onClick = onSecondary, muted = true) }
             }
         }
     }

@@ -58,8 +58,12 @@ private const val FADE_MILLIS = 220
 data class ShellActions(
     val openSettingsFor: (TierBlocker) -> Unit,
     val openAutostart: () -> Unit,
+    /** The vendor screen that lets an alarm show over a locked phone. */
+    val openLockScreen: () -> Unit,
     val requestNotifications: () -> Unit,
     val share: (String) -> Unit,
+    /** The alarm channel's own settings: sound, vibration, do not disturb. */
+    val openAlarmChannel: () -> Unit,
 )
 
 /**
@@ -152,7 +156,8 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
                         backStack.add(ItemEditorRoute(ItemEditorRoute.NEW_ITEM))
                     }
 
-                    StartChoice.SAMPLE -> Unit
+                    // A starter already wrote its day. Today is where it is.
+                    StartChoice.MORNING, StartChoice.STUDY, StartChoice.FITNESS -> Unit
                 }
             },
         )
@@ -176,7 +181,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
     }
 
     entry<InsightsRoute> {
-        InsightsScreen(onEditItem = { backStack.add(ItemEditorRoute(it)) })
+        InsightsScreen()
     }
 
     entry<SettingsRoute> {
@@ -184,6 +189,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
             onOpenReliability = { backStack.add(ReliabilityRoute) },
             onImport = { backStack.add(ImportRoute) },
             onShare = actions.share,
+            onOpenAlarmChannel = actions.openAlarmChannel,
         )
     }
 
@@ -191,6 +197,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
         ReliabilityScreen(
             onFix = actions.openSettingsFor,
             onOpenAutostart = actions.openAutostart,
+            onOpenLockScreen = actions.openLockScreen,
             onBack = { backStack.removeLastOrNull() },
         )
     }

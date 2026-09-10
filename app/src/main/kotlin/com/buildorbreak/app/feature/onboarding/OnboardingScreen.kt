@@ -43,17 +43,19 @@ import com.buildorbreak.core.designsystem.component.StepBars
 import com.buildorbreak.core.designsystem.component.Wordmark
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.scheduler.alarm.TierBlocker
+import kotlinx.collections.immutable.persistentListOf
 
 private const val SLIDE_FRACTION = 6
 private const val FADE_MILLIS = 200
 
 /**
- * The first run. Three screens and the app has a plan.
+ * The first run. Four screens and the app has a plan.
  *
- * What it does, how the plan gets in, and what the phone needs to allow. Each
- * one asks for one thing, and the third one explains every permission before
- * asking for it, because a permission dialog with no reason attached is one
- * most people decline.
+ * What it does, what the user is trying to build, the day that produces, and
+ * only then what the phone needs to allow. The order is the fix: permissions
+ * used to be asked for before the app had shown a single thing, which is
+ * exactly when people decline, and a declined notification permission is a
+ * routine app that never speaks again.
  */
 @Composable
 fun OnboardingScreen(
@@ -83,6 +85,7 @@ fun OnboardingScreen(
         onRequestNotifications = onRequestNotifications,
         onFix = onFix,
         onOpenAutostart = onOpenAutostart,
+        onAutostartDone = viewModel::onAutostartDone,
         onFinish = { viewModel.onFinish(onFinished) },
         modifier = modifier,
     )
@@ -97,6 +100,7 @@ fun OnboardingContent(
     onRequestNotifications: () -> Unit,
     onFix: (TierBlocker) -> Unit,
     onOpenAutostart: () -> Unit,
+    onAutostartDone: () -> Unit,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -124,11 +128,13 @@ fun OnboardingContent(
             when (step) {
                 0 -> WelcomeStep()
                 1 -> ChooseStep(choice = state.choice, onChoose = onChoose)
+                2 -> PreviewStep(state = state)
                 else -> PermissionsStep(
                     facts = state.permissions,
                     onRequestNotifications = onRequestNotifications,
                     onFix = onFix,
                     onOpenAutostart = onOpenAutostart,
+                    onAutostartDone = onAutostartDone,
                 )
             }
         }
@@ -195,14 +201,16 @@ private fun StepFooter(state: OnboardingUiState, onNext: () -> Unit, onFinish: (
     }
 }
 
+/**
+ * What the button says, which is a promise about the next screen.
+ *
+ * "See the day" is only honest when there is a day to see, so the two choices
+ * that arrive without one get a plain Next instead.
+ */
 private fun footerLabel(state: OnboardingUiState): Int = when (state.step) {
     0 -> R.string.onboarding_get_started
-    1 -> when (state.choice) {
-        StartChoice.SAMPLE -> R.string.onboarding_cta_sample
-        StartChoice.PASTE -> R.string.onboarding_cta_paste
-        StartChoice.WRITE -> R.string.onboarding_cta_write
-    }
-
+    1 -> if (state.choice.hasRoutine) R.string.onboarding_cta_choose else R.string.onboarding_cta_next
+    2 -> R.string.onboarding_cta_preview
     else -> R.string.onboarding_start_day
 }
 
@@ -211,14 +219,42 @@ private fun footerLabel(state: OnboardingUiState): Int = when (state.step) {
 @Preview(name = "Welcome", showBackground = true)
 @Composable
 private fun WelcomePreview() {
-    BuildOrBreakTheme { OnboardingContent(OnboardingUiState.Start, {}, {}, {}, {}, {}, {}, {}) }
+    BuildOrBreakTheme { OnboardingContent(OnboardingUiState.Start, {}, {}, {}, {}, {}, {}, {}, {}) }
 }
 
 @Preview(name = "Choose", showBackground = true)
 @Composable
 private fun ChoosePreview() {
-    BuildOrBreakTheme { OnboardingContent(OnboardingUiState.Start.copy(step = 1), {}, {}, {}, {}, {}, {}, {}) }
+    BuildOrBreakTheme { OnboardingContent(OnboardingUiState.Start.copy(step = 1), {}, {}, {}, {}, {}, {}, {}, {}) }
 }
+
+@Preview(name = "Preview the day", showBackground = true)
+@Composable
+private fun DayPreview() {
+    BuildOrBreakTheme {
+        OnboardingContent(
+            OnboardingUiState.Start.copy(step = 2, preview = previewRows()),
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+        )
+    }
+}
+
+// Fixture data for the preview. Literal on purpose: a preview built from named
+// constants is a preview nobody can read at a glance.
+@Suppress("MagicNumber")
+private fun previewRows() = persistentListOf(
+    PreviewRow("06:30", "Wake + water", PreviewKind.Fixed, rings = true, pinned = false),
+    PreviewRow("", "Make the bed", PreviewKind.After(10), rings = false, pinned = false),
+    PreviewRow("06:50", "Stretch", PreviewKind.Window("07:20"), rings = false, pinned = false),
+    PreviewRow("08:00", "Breakfast", PreviewKind.Fixed, rings = false, pinned = true),
+)
 
 @Preview(name = "Permissions", showBackground = true)
 @Composable
@@ -226,6 +262,7 @@ private fun PermissionsPreview() {
     BuildOrBreakTheme {
         OnboardingContent(
             OnboardingUiState.Start.copy(step = 2, permissions = PermissionFacts.Unknown.copy(autostart = true)),
+            {},
             {},
             {},
             {},
