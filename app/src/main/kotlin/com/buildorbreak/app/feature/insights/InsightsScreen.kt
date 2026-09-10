@@ -47,6 +47,7 @@ import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
 import com.buildorbreak.core.domain.review.InsightsPeriod
 import com.buildorbreak.core.model.enums.ReviewStory
+import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.review.ReviewAnswer
 import java.time.LocalDate
 import java.util.Locale
@@ -68,17 +69,13 @@ private const val MIN_BAR = 0.02f
  * eleven charts is a dashboard nobody opens twice.
  */
 @Composable
-fun InsightsScreen(
-    onEditItem: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: InsightsViewModel = hiltViewModel(),
-) {
+fun InsightsScreen(modifier: Modifier = Modifier, viewModel: InsightsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     InsightsContent(
         state = state,
         onPeriod = viewModel::onPeriod,
-        onApply = onEditItem,
+        onApply = viewModel::onApply,
         onDismiss = viewModel::onDismissSuggestion,
         modifier = modifier,
     )
@@ -88,7 +85,7 @@ fun InsightsScreen(
 fun InsightsContent(
     state: InsightsUiState,
     onPeriod: (InsightsPeriod) -> Unit,
-    onApply: (Long) -> Unit,
+    onApply: (SuggestionUi) -> Unit,
     onDismiss: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -130,18 +127,29 @@ private fun kickerText(state: InsightsUiState): String = when {
 }
 
 @Composable
-private fun Body(state: InsightsUiState, onApply: (Long) -> Unit, onDismiss: (LocalDate) -> Unit) {
+private fun Body(state: InsightsUiState, onApply: (SuggestionUi) -> Unit, onDismiss: (LocalDate) -> Unit) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         HeroRow(state = state)
         Chart(state = state)
 
         SectionLabel(text = stringResource(R.string.insights_step_by_step))
+        // Two words on the screen that nobody outside this app has met before.
+        // A column headed "slip" with no caption is a column people either
+        // ignore or quietly misread as something bad they did.
+        Text(
+            text = stringResource(R.string.insights_table_legend),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
+        )
         StepTable(steps = state.steps)
+
+        SkipReasons(rows = state.skipReasons)
 
         state.suggestion?.let { suggestion ->
             SuggestionPanel(
                 suggestion = suggestion,
-                onApply = { onApply(suggestion.itemId) },
+                onApply = { onApply(suggestion) },
                 onDismiss = { onDismiss(suggestion.weekStart) },
             )
         }
@@ -207,10 +215,10 @@ private fun HeroDetails(state: InsightsUiState) {
 
 @Composable
 private fun changeText(state: InsightsUiState): String {
-    val points = state.changePoints ?: return stringResource(R.string.insights_change_none)
     val period = stringResource(
         if (state.period == InsightsPeriod.WEEK) R.string.insights_period_week else R.string.insights_period_month,
     )
+    val points = state.changePoints ?: return stringResource(R.string.insights_change_none, period)
 
     return when {
         points > 0 -> stringResource(R.string.insights_change_up, points, period)
@@ -307,6 +315,63 @@ private fun BarFill(empty: Boolean, height: Float, colour: androidx.compose.ui.g
                 .background(colour),
         )
     }
+}
+
+/**
+ * Why steps were skipped, when anybody said.
+ *
+ * The whole reason the skip sheet asks. Drawn as bars against the commonest
+ * reason rather than as percentages, because five out of nine is a fact and
+ * fifty five percent is arithmetic somebody has to undo to use it.
+ */
+@Composable
+private fun SkipReasons(rows: List<SkipRowUi>) {
+    if (rows.isEmpty()) return
+
+    SectionLabel(text = stringResource(R.string.insights_why_skipped))
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        rows.forEach { row ->
+            Row(modifier = Modifier.padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(skipLabel(row.chip)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+
+                Box(
+                    modifier = Modifier
+                        .padding(end = 10.dp)
+                        .height(10.dp)
+                        .width(BAR_WIDTH * row.fraction)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+
+                Text(
+                    text = row.count.toString(),
+                    style = TimeStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HairlineRule()
+        }
+    }
+}
+
+/** The widest a reason bar gets, which is the commonest reason. */
+private val BAR_WIDTH = 96.dp
+
+private fun skipLabel(chip: SkipChip): Int = when (chip) {
+    SkipChip.WORK_CAME_UP -> R.string.skip_work
+    SkipChip.FORGOT -> R.string.skip_forgot
+    SkipChip.NOT_IN_MOOD -> R.string.skip_mood
+    SkipChip.UNWELL -> R.string.skip_unwell
+    SkipChip.TRAVELLING -> R.string.skip_travelling
+    SkipChip.NO_TIME -> R.string.skip_no_time
+    SkipChip.DID_IT_LATER -> R.string.skip_later
+    SkipChip.OTHER -> R.string.skip_other
 }
 
 @Composable
@@ -432,10 +497,20 @@ private fun SuggestionActions(ink: androidx.compose.ui.graphics.Color, onApply: 
     }
 }
 
+/**
+ * Why the change is being suggested, in one sentence that has to be true.
+ *
+ * The lateness wording is only used when the step is actually late by an
+ * amount a person would notice. It used to fire on any positive slip at all,
+ * which produced "it ran about 3 min late ... the plan is later than the day
+ * is" about a step that is simply skipped four days a week. A report that
+ * explains a real problem with a wrong reason is worse than one that says
+ * less.
+ */
 @Composable
 private fun suggestionBody(suggestion: SuggestionUi): String {
     val slip = suggestion.slipMinutes
-    return if (slip != null && slip > 0) {
+    return if (slip != null && slip >= MEANINGFUL_SLIP_MINUTES) {
         pluralStringResource(
             R.plurals.insights_suggestion_slipped,
             suggestion.outOf,
@@ -452,6 +527,9 @@ private fun suggestionBody(suggestion: SuggestionUi): String {
         )
     }
 }
+
+/** Below this a slip is ordinary life, not a sign the plan is in the wrong place. */
+private const val MEANINGFUL_SLIP_MINUTES = 10
 
 // Copy lookups -----------------------------------------------------------------
 
@@ -510,6 +588,11 @@ private val PreviewState = InsightsUiState(
         StepRowUi(2, "Gym", 6, 7, 9, false),
         StepRowUi(3, "Deep work block 2", 3, 7, 41, true),
         StepRowUi(4, "Language drill", 5, 7, null, false),
+    ),
+    skipReasons = persistentListOf(
+        SkipRowUi(SkipChip.WORK_CAME_UP, 5, 1f),
+        SkipRowUi(SkipChip.NO_TIME, 3, 0.6f),
+        SkipRowUi(SkipChip.FORGOT, 1, 0.2f),
     ),
     suggestion = SuggestionUi(
         itemId = 3,

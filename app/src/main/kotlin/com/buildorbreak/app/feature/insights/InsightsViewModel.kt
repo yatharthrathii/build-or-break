@@ -7,10 +7,13 @@ import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.review.InsightBar
 import com.buildorbreak.core.domain.review.Insights
 import com.buildorbreak.core.domain.review.InsightsPeriod
+import com.buildorbreak.core.domain.review.SkipCount
 import com.buildorbreak.core.domain.review.StepStat
 import com.buildorbreak.core.domain.review.Suggestion
+import com.buildorbreak.core.domain.usecase.ApplyReviewAnswerUseCase
 import com.buildorbreak.core.domain.usecase.ObserveInsightsUseCase
 import com.buildorbreak.core.model.enums.ReviewStory
+import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.review.ReviewAnswer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
@@ -60,6 +63,10 @@ data class SuggestionUi(
     val weekStart: LocalDate,
 )
 
+/** One reason and how often it was given, with the bar already worked out. */
+@Immutable
+data class SkipRowUi(val chip: SkipChip, val count: Int, val fraction: Float)
+
 @Immutable
 data class InsightsUiState(
     val period: InsightsPeriod,
@@ -74,6 +81,8 @@ data class InsightsUiState(
     val averageSlipMinutes: Int?,
     val bars: ImmutableList<BarUi>,
     val steps: ImmutableList<StepRowUi>,
+    /** Why steps were skipped, commonest first. Empty when nobody said. */
+    val skipReasons: ImmutableList<SkipRowUi>,
     val suggestion: SuggestionUi?,
     val story: ReviewStory,
 ) {
@@ -92,6 +101,7 @@ data class InsightsUiState(
             averageSlipMinutes = null,
             bars = persistentListOf(),
             steps = persistentListOf(),
+            skipReasons = persistentListOf(),
             suggestion = null,
             story = ReviewStory.SETTLING_IN,
         )
@@ -109,6 +119,7 @@ data class InsightsUiState(
 class InsightsViewModel @Inject constructor(
     observeInsights: ObserveInsightsUseCase,
     private val settings: SettingsRepository,
+    private val applyAnswer: ApplyReviewAnswerUseCase,
 ) : ViewModel() {
 
     private val period = MutableStateFlow(InsightsPeriod.WEEK)
@@ -136,6 +147,11 @@ class InsightsViewModel @Inject constructor(
         settings.setDismissedReviewWeek(weekStart)
     }
 
+    /** One tap. The use case makes the edit the answer implies and closes the question. */
+    fun onApply(suggestion: SuggestionUi) = viewModelScope.launch {
+        applyAnswer(suggestion.itemId, suggestion.answer, suggestion.weekStart)
+    }
+
     private fun toUiState(insights: Insights): InsightsUiState {
         val best = insights.bars.mapNotNull { it.fraction }.maxOrNull()
         val problemId = insights.suggestion?.itemId
@@ -152,6 +168,7 @@ class InsightsViewModel @Inject constructor(
             averageSlipMinutes = insights.averageSlip?.inWholeMinutes?.toInt(),
             bars = insights.bars.map { toBar(it, insights.period, best) }.toImmutableList(),
             steps = insights.steps.map { toRow(it, problemId) }.toImmutableList(),
+            skipReasons = toSkipRows(insights.skipReasons),
             suggestion = insights.suggestion?.let(::toSuggestion),
             story = insights.story,
         )
@@ -167,6 +184,13 @@ class InsightsViewModel @Inject constructor(
         isWeekend = bar.isWeekend,
         isBest = bar.fraction != null && bar.fraction == best,
     )
+
+    /** Each bar is drawn against the commonest reason, so the top one always fills the row. */
+    private fun toSkipRows(reasons: List<SkipCount>): ImmutableList<SkipRowUi> {
+        val most = reasons.maxOfOrNull { it.count } ?: return persistentListOf()
+
+        return reasons.map { SkipRowUi(it.chip, it.count, it.count.toFloat() / most) }.toImmutableList()
+    }
 
     private fun toRow(stat: StepStat, problemId: Long?) = StepRowUi(
         itemId = stat.itemId,

@@ -1,6 +1,7 @@
 package com.buildorbreak.core.domain.review
 
 import com.buildorbreak.core.model.enums.ReviewStory
+import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.review.ReviewAnswer
 import java.time.LocalDate
 import kotlin.time.Duration
@@ -37,6 +38,14 @@ data class Insights(
     /** One bar per day in a week, one per week in a month. */
     val bars: List<InsightBar>,
     val steps: List<StepStat>,
+    /**
+     * Why steps were skipped, commonest first. Empty when nobody said.
+     *
+     * The point of asking. "You skipped the walk four times" is a fact the user
+     * can see on their own timeline; "three of those were because work came up"
+     * is the one that suggests moving the walk rather than trying harder.
+     */
+    val skipReasons: List<SkipCount>,
     val suggestion: Suggestion?,
     val story: ReviewStory,
 ) {
@@ -59,6 +68,9 @@ data class Insights(
  * draws as empty rather than as zero. A day that has not happened is not a day
  * that went badly.
  */
+/** One reason and how often it was given. */
+data class SkipCount(val chip: SkipChip, val count: Int)
+
 data class InsightBar(val start: LocalDate, val fraction: Float?, val isWeekend: Boolean)
 
 /** One row of the step table. [slip] is the median lateness, when there is one. */

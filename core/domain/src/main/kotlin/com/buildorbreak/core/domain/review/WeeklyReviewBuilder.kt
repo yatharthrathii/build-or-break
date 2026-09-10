@@ -24,6 +24,18 @@ private const val ON_PACE_TOLERANCE = 0.9f
 private const val DAYS_IN_WEEK = 7
 
 /**
+ * How many closed days a week needs before the report will draw a conclusion.
+ *
+ * Three, not seven. The week being reported is the one being lived, and a day
+ * is only closed once it is over, so the current week can hold at most six
+ * closes and usually holds far fewer. Requiring a full seven looked reasonable
+ * and meant the report said "too early to conclude anything" every day of every
+ * week forever, which is the worst kind of bug: it never crashes, it just
+ * quietly makes the feature pointless.
+ */
+private const val MINIMUM_CLOSES = 3
+
+/**
  * Everything one week needs to be told as a story.
  *
  * A snapshot, like `ResolveInput`. The builder cannot read anything it was not
@@ -113,10 +125,13 @@ class DefaultWeeklyReviewBuilder(
      * Order matters more than any single threshold here.
      *
      * A first week is always `SETTLING_IN`, whatever the numbers say, because a
-     * conclusion drawn from four days is not a conclusion. After that, a week
-     * that went well is reported as going well even if something is still being
-     * missed: telling somebody who kept eighty five percent of their plan that
-     * they have a problem is how a report loses its reader for good.
+     * conclusion drawn against no previous week is not a conclusion. After that,
+     * a week that went well is reported as going well even if something is still
+     * being missed: telling somebody who kept eighty five percent of their plan
+     * that they have a problem is how a report loses its reader for good.
+     *
+     * The week in hand is always partial, so the bar for saying anything at all
+     * is [MINIMUM_CLOSES] closed days rather than a whole week.
      */
     private fun storyOf(
         input: ReviewInput,
@@ -124,7 +139,7 @@ class DefaultWeeklyReviewBuilder(
         previous: Float?,
         diagnosis: Diagnosis?,
     ): ReviewStory {
-        if (previous == null || input.closes.size < DAYS_IN_WEEK) return ReviewStory.SETTLING_IN
+        if (previous == null || input.closes.size < MINIMUM_CLOSES) return ReviewStory.SETTLING_IN
 
         return when {
             // Doing the work and the goal is still not moving. The plan is the

@@ -105,7 +105,7 @@ class CatchUpPlanner(
      * earlier the note was due.
      */
     private fun missedSoFar(day: ResolvedDay, now: LocalDateTime): List<ResolvedEntry> = day.entries
-        .filter { it.at < now && it.occurrence?.isSettled != true && !it.item.pinned }
+        .filter { it.at < now && it.occurrence?.isSettled != true && !it.item.pinned && it.item.catchable }
         .filter { it.salience != Salience.TIMELINE }
         .sortedWith(compareBy({ salienceRank(it.salience) }, { it.at }, { it.item.id }))
 
