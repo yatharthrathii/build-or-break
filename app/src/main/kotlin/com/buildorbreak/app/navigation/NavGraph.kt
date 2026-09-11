@@ -30,6 +30,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.NavDisplay
 import com.buildorbreak.app.R
+import com.buildorbreak.app.feature.goal.GoalScreen
 import com.buildorbreak.app.feature.insights.InsightsScreen
 import com.buildorbreak.app.feature.onboarding.OnboardingScreen
 import com.buildorbreak.app.feature.onboarding.StartChoice
@@ -175,18 +176,23 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
     entry<PlanRoute> {
         PlanScreen(
             onEditItem = { backStack.add(ItemEditorRoute(it)) },
-            onAddItem = { backStack.add(ItemEditorRoute(ItemEditorRoute.NEW_ITEM)) },
+            onAddItem = { templateId -> backStack.add(ItemEditorRoute(ItemEditorRoute.NEW_ITEM, templateId)) },
             onImport = { backStack.add(ImportRoute) },
         )
     }
 
     entry<InsightsRoute> {
-        InsightsScreen()
+        InsightsScreen(onOpenGoal = { backStack.add(GoalRoute) })
+    }
+
+    entry<GoalRoute> {
+        GoalScreen(onBack = { backStack.removeLastOrNull() })
     }
 
     entry<SettingsRoute> {
         SettingsScreen(
             onOpenReliability = { backStack.add(ReliabilityRoute) },
+            onOpenGoal = { backStack.add(GoalRoute) },
             onImport = { backStack.add(ImportRoute) },
             onShare = actions.share,
             onOpenAlarmChannel = actions.openAlarmChannel,
@@ -216,7 +222,11 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
     }
 
     entry<ItemEditorRoute> { route ->
-        ItemEditorScreen(itemId = route.itemId, onDone = { backStack.removeLastOrNull() })
+        ItemEditorScreen(
+            itemId = route.itemId,
+            templateId = route.templateId,
+            onDone = { backStack.removeLastOrNull() },
+        )
     }
 }
 

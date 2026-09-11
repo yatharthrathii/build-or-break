@@ -64,11 +64,16 @@ class DeliveryAuditRepositoryImpl @Inject constructor(
     private val dispatchers: AppDispatchers,
 ) : DeliveryAuditRepository {
 
-    override suspend fun recordScheduled(audit: DeliveryAudit): Outcome<Unit, DataError> =
-        sqlOutcome(dispatchers.io) { audits.insert(audit.toEntity()) }
+    override suspend fun recordScheduled(audit: DeliveryAudit): Outcome<Unit, DataError> = sqlOutcome(dispatchers.io) {
+        val moved = audits.moveOpen(audit.occurrenceId, audit.scheduledFor, audit.tier.name, audit.wasDeviceIdle)
+        if (moved == 0) audits.insert(audit.toEntity())
+    }
 
     override suspend fun recordFired(occurrenceId: Long, firedAt: Instant): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { audits.recordFired(occurrenceId, firedAt) }
+
+    override suspend fun discardUnfired(occurrenceId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { audits.deleteUnfired(occurrenceId) }
 
     override fun observeSince(instant: Instant): Flow<List<DeliveryAudit>> =
         audits.observeSince(instant).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)

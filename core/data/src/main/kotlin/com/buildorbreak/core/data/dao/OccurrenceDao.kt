@@ -7,6 +7,7 @@ import androidx.room.Query
 import com.buildorbreak.core.data.entity.OccurrenceEntity
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -56,21 +57,12 @@ interface OccurrenceDao {
     )
     suspend fun shift(id: Long, minutes: Int, state: String)
 
-    @Query("UPDATE occurrence SET scheduled_at = :at WHERE id = :id")
-    suspend fun markScheduled(id: Long, at: Instant?)
+    @Query("UPDATE occurrence SET planned_at = :plannedAt WHERE id = :id")
+    suspend fun replan(id: Long, plannedAt: LocalDateTime)
 
-    @Query("UPDATE occurrence SET fired_at = :at WHERE id = :id")
-    suspend fun markFired(id: Long, at: Instant)
-
-    /** Anything that should have fired and did not. Drives the reconcile pass. */
-    @Query(
-        """
-        SELECT * FROM occurrence
-        WHERE state = :pendingState AND scheduled_at IS NOT NULL AND scheduled_at < :instant
-        ORDER BY scheduled_at
-        """,
-    )
-    suspend fun pendingBefore(instant: Instant, pendingState: String): List<OccurrenceEntity>
+    /** Only open rows. A settled row is history and history is not tidied. */
+    @Query("DELETE FROM occurrence WHERE id IN (:ids) AND state IN (:openStates)")
+    suspend fun deleteOpen(ids: List<Long>, openStates: List<String>)
 
     /** Settles a whole day at once, which is what the midnight close does. */
     @Query(

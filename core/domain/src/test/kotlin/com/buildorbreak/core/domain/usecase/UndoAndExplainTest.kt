@@ -16,6 +16,8 @@ import com.buildorbreak.core.domain.resolver.DefaultTimelineResolver
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.OccurrenceState
 import com.buildorbreak.core.model.enums.SkipChip
+import com.buildorbreak.core.model.enums.ValueKind
+import com.buildorbreak.core.model.execution.Measurement
 import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.resolved.CascadePreview
@@ -259,5 +261,31 @@ class UndoAndExplainTest {
         override fun canPostNotifications(): Boolean = true
 
         override fun canUseFullScreenIntent(): Boolean = true
+    }
+
+    /**
+     * The number goes with the settle it was logged against.
+     *
+     * Left behind, sixty minutes of study kept counting toward a duration
+     * goal for a step that was later closed as missed.
+     */
+    @Test
+    fun `undoing a completion takes the number logged with it`() = runTest {
+        val id = givenTwoSteps().first()
+        complete(id)
+        measurements.upsert(
+            Measurement(
+                id = 0,
+                itemId = occurrences.byId(id)!!.itemId,
+                occurrenceId = id,
+                date = time.today(),
+                value = 60.0,
+                kind = ValueKind.MINUTES,
+            ),
+        )
+
+        undo(id)
+
+        assertThat(measurements.measurements.value.filter { it.occurrenceId == id }).isEmpty()
     }
 }

@@ -36,6 +36,8 @@ data class CatchUpSuggestion(
     val at: LocalDateTime,
     val duration: Duration,
     val useMinimum: Boolean = false,
+    /** Which repeat of an interval item this is. Every repeat is its own miss. */
+    val sequenceInDay: Int = 0,
 )
 
 /**
@@ -45,7 +47,20 @@ data class CatchUpSuggestion(
  * will settle to MISSED, and knowing it early is what lets the app stop nagging
  * about things that can no longer happen.
  */
-data class CatchUpPlan(val suggestions: List<CatchUpSuggestion>, val outOfTime: List<Long>) {
+data class CatchUpPlan(
+    val suggestions: List<CatchUpSuggestion>,
+    val outOfTime: List<Long>,
+    /**
+     * Missed, and it would still fit, but three is as much as is offered.
+     *
+     * Kept apart from [outOfTime] because the two are different news and
+     * only one of them is final. Telling somebody at three in the afternoon
+     * that there is no room left for a fifteen minute step, when there are
+     * seven hours of evening in front of them, is the app being wrong in the
+     * one place it is asking to be believed.
+     */
+    val beyondCap: List<Long> = emptyList(),
+) {
     val hasRoom: Boolean get() = suggestions.isNotEmpty()
 }
 
@@ -78,15 +93,17 @@ class CatchUpPlanner(
 
         val suggestions = mutableListOf<CatchUpSuggestion>()
         val outOfTime = mutableListOf<Long>()
+        val beyondCap = mutableListOf<Long>()
+        val busy = stillToCome(day, now)
         var cursor = now
 
         candidates.forEach { entry ->
             if (suggestions.size >= maxSuggestions) {
-                outOfTime += entry.item.id
+                beyondCap += entry.item.id
                 return@forEach
             }
 
-            val fitted = fit(entry, cursor, deadline)
+            val fitted = fit(entry, cursor, deadline, busy)
             if (fitted == null) {
                 outOfTime += entry.item.id
             } else {
@@ -95,7 +112,7 @@ class CatchUpPlanner(
             }
         }
 
-        return CatchUpPlan(suggestions, outOfTime)
+        return CatchUpPlan(suggestions, outOfTime, beyondCap)
     }
 
     /**
@@ -114,19 +131,56 @@ class CatchUpPlanner(
      * neither. Trying the full version first matters: offering the smaller one
      * while there was still room for the real thing quietly lowers the bar.
      */
-    private fun fit(entry: ResolvedEntry, from: LocalDateTime, deadline: LocalDateTime): CatchUpSuggestion? {
+    private fun fit(
+        entry: ResolvedEntry,
+        from: LocalDateTime,
+        deadline: LocalDateTime,
+        busy: List<Slot>,
+    ): CatchUpSuggestion? {
         val full = entry.item.duration ?: ASSUMED_DURATION
-        if (fitsBefore(from, full, deadline)) {
-            return CatchUpSuggestion(entry.item.id, from, full, useMinimum = false)
+        val fullStart = freeFrom(from, full, busy)
+        if (fitsBefore(fullStart, full, deadline)) {
+            return CatchUpSuggestion(entry.item.id, fullStart, full, useMinimum = false, entry.sequenceInDay)
         }
 
         val minimum = entry.item.minimum?.let { it.duration ?: ASSUMED_DURATION } ?: return null
-        if (fitsBefore(from, minimum, deadline)) {
-            return CatchUpSuggestion(entry.item.id, from, minimum, useMinimum = true)
+        val minimumStart = freeFrom(from, minimum, busy)
+        if (fitsBefore(minimumStart, minimum, deadline)) {
+            return CatchUpSuggestion(entry.item.id, minimumStart, minimum, useMinimum = true, entry.sequenceInDay)
         }
 
         return null
     }
+
+    /**
+     * The evening is not empty. Whatever is still to come, pinned or not,
+     * holds its slot, and a missed step is fitted into the gaps between them
+     * rather than on top of them. Two alarms in the same minute, one for
+     * dinner and one for the gym that was missed at six, is the app moving
+     * the problem rather than solving it.
+     */
+    private fun stillToCome(day: ResolvedDay, now: LocalDateTime): List<Slot> = day.entries
+        .filter { it.at >= now && it.occurrence?.isSettled != true && it.salience != Salience.TIMELINE }
+        .map { Slot(it.at, it.at.plusSeconds((it.item.duration ?: ASSUMED_DURATION).inWholeSeconds)) }
+        .sortedBy { it.start }
+
+    /** The first start at or after [from] where [duration] overlaps nothing in [busy]. */
+    private fun freeFrom(from: LocalDateTime, duration: Duration, busy: List<Slot>): LocalDateTime {
+        var start = from
+
+        // One pass is enough: the slots are sorted, so a start pushed past one
+        // can only collide with a later one, which is the next one checked.
+        busy.forEach { slot ->
+            val end = start.plusSeconds(duration.inWholeSeconds)
+            if (start < slot.end && end > slot.start) {
+                start = slot.end.plusSeconds(BREATHING_ROOM.inWholeSeconds)
+            }
+        }
+
+        return start
+    }
+
+    private data class Slot(val start: LocalDateTime, val end: LocalDateTime)
 
     private fun fitsBefore(from: LocalDateTime, duration: Duration, deadline: LocalDateTime): Boolean =
         !from.plusSeconds(duration.inWholeSeconds).isAfter(deadline)

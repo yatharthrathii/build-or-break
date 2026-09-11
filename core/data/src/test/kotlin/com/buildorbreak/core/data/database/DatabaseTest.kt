@@ -168,23 +168,6 @@ class DatabaseTest {
         assertThat(stored?.snoozeCount).isEqualTo(2)
     }
 
-    // The reconcile pass -------------------------------------------------------
-
-    @Test
-    fun `only scheduled pending rows in the past are reported as missed alarms`() = runTest {
-        val itemId = insertItemChain()
-        database.occurrenceDao().insertIgnoringExisting(listOf(occurrenceFor(itemId)))
-        val id = database.occurrenceDao().between(date, date).single().id
-        val scheduled = Instant.ofEpochMilli(1_000)
-
-        assertThat(database.occurrenceDao().pendingBefore(Instant.ofEpochMilli(2_000), "PENDING")).isEmpty()
-
-        database.occurrenceDao().markScheduled(id, scheduled)
-
-        assertThat(database.occurrenceDao().pendingBefore(Instant.ofEpochMilli(2_000), "PENDING")).hasSize(1)
-        assertThat(database.occurrenceDao().pendingBefore(Instant.ofEpochMilli(500), "PENDING")).isEmpty()
-    }
-
     // Cascades -----------------------------------------------------------------
 
     @Test

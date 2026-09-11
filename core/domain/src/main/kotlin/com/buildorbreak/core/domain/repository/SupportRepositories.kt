@@ -31,9 +31,17 @@ interface TrackRepository {
  * the alarm path itself.
  */
 interface DeliveryAuditRepository {
+    /**
+     * One open row per occurrence. Scheduling the same step again moves the
+     * row it already has; a step whose alarm has fired gets a fresh one, so a
+     * snooze after a fire is a second delivery rather than an overwrite.
+     */
     suspend fun recordScheduled(audit: DeliveryAudit): Outcome<Unit, DataError>
 
     suspend fun recordFired(occurrenceId: Long, firedAt: Instant): Outcome<Unit, DataError>
+
+    /** Forgets an alarm that was cancelled before it fired. Fired rows are kept. */
+    suspend fun discardUnfired(occurrenceId: Long): Outcome<Unit, DataError>
 
     /** Rows in a window, for the Reliability screen. */
     fun observeSince(instant: Instant): Flow<List<DeliveryAudit>>

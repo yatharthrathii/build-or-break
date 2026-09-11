@@ -1,6 +1,7 @@
 package com.buildorbreak.scheduler.alarm
 
 import androidx.test.core.app.ApplicationProvider
+import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.scheduler.notification.NotificationActions
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -94,5 +95,24 @@ class AlarmSchedulingTest {
         val second = NotificationActions.pendingIntent(context, 2, NotificationActions.ACTION_DONE)
 
         assertThat(first).isNotEqualTo(second)
+    }
+
+    /**
+     * The receiver reads the item back from the database, and the database
+     * only knows the item's own loudness. A step inside a group rings with
+     * the group's, so that has to travel with the alarm.
+     */
+    @Test
+    fun `the alarm carries the loudness it was set with`() {
+        val intent = AlarmScheduling.fireIntent(context, occurrenceId = 7, itemId = 3, salience = Salience.SILENT)
+
+        assertThat(intent.getStringExtra(AlarmScheduling.EXTRA_SALIENCE)).isEqualTo("SILENT")
+    }
+
+    @Test
+    fun `an alarm set without a loudness carries none, and the item decides`() {
+        val intent = AlarmScheduling.fireIntent(context, occurrenceId = 7, itemId = 3)
+
+        assertThat(intent.hasExtra(AlarmScheduling.EXTRA_SALIENCE)).isFalse()
     }
 }

@@ -60,6 +60,16 @@ interface ItemRepository {
 
     suspend fun upsertBlock(block: Block): Outcome<Long, DataError>
 
+    /**
+     * Removes a group and returns its steps to the ungrouped list.
+     *
+     * The steps are unlinked first and explicitly, rather than left pointing
+     * at an id nothing answers to. SQLite reuses a row id once it is the
+     * highest one deleted, so an orphaned reference is not merely untidy: the
+     * next group created could inherit somebody else's steps.
+     */
+    suspend fun deleteBlock(templateId: Long, blockId: Long): Outcome<Unit, DataError>
+
     /** Archived rather than deleted, so past occurrences keep their meaning. */
     suspend fun archive(itemId: Long): Outcome<Unit, DataError>
 }

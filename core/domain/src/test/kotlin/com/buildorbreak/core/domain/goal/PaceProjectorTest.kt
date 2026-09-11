@@ -1,6 +1,7 @@
 package com.buildorbreak.core.domain.goal
 
 import com.buildorbreak.core.model.enums.GoalKind
+import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.testing.fixtures.GoalFixtures
 import com.buildorbreak.core.testing.fixtures.GoalFixtures.goal
 import com.buildorbreak.core.testing.fixtures.GoalFixtures.progress
@@ -91,29 +92,62 @@ class PaceProjectorTest {
 
     @Test
     fun `percent complete reads zero at the start and one at the target`() {
-        assertThat(pace.percentComplete(goal(), 0.0)).isEqualTo(0f)
-        assertThat(pace.percentComplete(goal(), 10.0)).isEqualTo(1f)
+        assertThat(pace.percentComplete(goal(), 0.0, start)).isEqualTo(0f)
+        assertThat(pace.percentComplete(goal(), 10.0, start)).isEqualTo(1f)
     }
 
     @Test
     fun `percent complete is the fraction of the span covered`() {
-        assertThat(pace.percentComplete(goal(), 2.5)).isEqualTo(0.25f)
+        assertThat(pace.percentComplete(goal(), 2.5, start)).isEqualTo(0.25f)
     }
 
     @Test
     fun `overshooting the target is still one, not a bar past the end of itself`() {
-        assertThat(pace.percentComplete(goal(), 14.0)).isEqualTo(1f)
+        assertThat(pace.percentComplete(goal(), 14.0, start)).isEqualTo(1f)
     }
 
     @Test
     fun `sliding back past the start reads as nothing done rather than a negative`() {
-        assertThat(pace.percentComplete(goal(), -3.0)).isEqualTo(0f)
+        assertThat(pace.percentComplete(goal(), -3.0, start)).isEqualTo(0f)
     }
 
     @Test
     fun `a goal that goes down fills up as the number comes down`() {
         val losing = goal(startValue = 80.0, targetValue = 75.0)
 
-        assertThat(pace.percentComplete(losing, 77.5)).isEqualTo(0.5f)
+        assertThat(pace.percentComplete(losing, 77.5, start)).isEqualTo(0.5f)
+    }
+
+    // CONSISTENCY: a rate, not a total ----------------------------------------
+
+    private fun rate() = goal(kind = GoalKind.CONSISTENCY, valueKind = ValueKind.NONE, targetValue = 90.0)
+
+    @Test
+    fun `a rate has no line to climb, so its pace target is the target all the way through`() {
+        assertThat(pace.paceTarget(rate(), start)).isWithin(TOLERANCE).of(90.0)
+        assertThat(pace.paceTarget(rate(), start.plusDays(5))).isWithin(TOLERANCE).of(90.0)
+    }
+
+    @Test
+    fun `a rate carried forward is the rate, not eight times the rate`() {
+        val rows = listOf(progress(date = start.plusDays(4), rawValue = 100.0, smoothedValue = 80.0))
+
+        assertThat(pace.project(rate(), rows)).isWithin(TOLERANCE).of(80.0)
+    }
+
+    @Test
+    fun `being at the rate on day one is a good first day, not a goal nearly reached`() {
+        assertThat(pace.percentComplete(rate(), 95.0, start.plusDays(1))).isWithin(1e-6f).of(0.1f)
+    }
+
+    @Test
+    fun `a rate held for the whole period is reached on the last day and not before`() {
+        assertThat(pace.percentComplete(rate(), 95.0, start.plusDays(9))).isLessThan(1f)
+        assertThat(pace.percentComplete(rate(), 95.0, GoalFixtures.TARGET)).isWithin(1e-6f).of(1f)
+    }
+
+    @Test
+    fun `a rate below the target banks only the share of it that was kept`() {
+        assertThat(pace.percentComplete(rate(), 45.0, GoalFixtures.TARGET)).isWithin(1e-6f).of(0.5f)
     }
 }

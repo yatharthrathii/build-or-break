@@ -2,11 +2,13 @@ package com.buildorbreak.app.feature.today
 
 import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.time.TimeProvider
+import com.buildorbreak.core.domain.review.CatchUpViewBuilder
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.core.model.enums.OccurrenceState
 import com.buildorbreak.core.model.enums.Salience
+import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.plan.Anchor
 import com.buildorbreak.core.model.resolved.BudgetWarning
@@ -40,7 +42,23 @@ private const val EARLY_GRACE_MINUTES = 15L
  * never needs a locale, a zone or a formatter to draw itself. Kept out of the
  * ViewModel so the ViewModel is left with collecting and calling.
  */
-class TodayMapper @Inject constructor(private val time: TimeProvider, private val clock: ClockFormat) {
+/**
+ * The things about a day that are true of the whole day rather than of a step.
+ *
+ * Passed as one value so the mapper keeps a signature somebody can read, and
+ * so adding the next one of these does not mean touching every caller.
+ */
+data class DayFacts(
+    val runDays: Int,
+    val consistency: Consistency?,
+    val degradedTier: DeliveryTier?,
+)
+
+class TodayMapper @Inject constructor(
+    private val time: TimeProvider,
+    private val clock: ClockFormat,
+    private val catchUp: CatchUpViewBuilder,
+) {
 
     /**
      * [ahead] is what the user has just done and the database has not yet
@@ -48,11 +66,10 @@ class TodayMapper @Inject constructor(private val time: TimeProvider, private va
      */
     fun toUiState(
         day: ResolvedDay,
-        run: Int,
         now: LocalDateTime,
         ahead: Map<Long, OccurrenceState>,
         plan: PlanContents.Loaded?,
-        degradedTier: DeliveryTier?,
+        facts: DayFacts,
     ): TodayUiState {
         val titles = day.entries.associate { it.item.id to it.item.title }
         val states = day.entries.associate { it.item.id to it.sequenceInDay to stateOf(it, ahead) }
@@ -60,7 +77,10 @@ class TodayMapper @Inject constructor(private val time: TimeProvider, private va
         // The first open step, even one whose time has passed. A step that was
         // done and not tapped is still the thing to settle, and the card is
         // the only place with a Done button.
-        val next = day.entries.firstOrNull { !settled(it) }
+        // A timeline note has no row, no alarm and no Done button. Left in
+        // here it sat on the card for the rest of the evening with every
+        // button disabled, and the day could never be finished around it.
+        val next = day.entries.firstOrNull { !settled(it) && it.salience != Salience.TIMELINE }
 
         return TodayUiState(
             header = DayHeader(
@@ -68,16 +88,21 @@ class TodayMapper @Inject constructor(private val time: TimeProvider, private va
                 templateName = day.template.name,
                 clock = clock.format(now),
                 doneCount = day.entries.count { states[it.item.id to it.sequenceInDay]?.isDone == true },
-                total = day.total,
+                total = day.entries.count { it.salience != Salience.TIMELINE },
             ),
-            runDays = run,
+            runDays = facts.runDays,
+            consistency = facts.consistency,
             shiftMinutes = day.dayShift.inWholeMinutes.toInt(),
             movedCount = day.entries.count { !it.item.pinned && !settled(it) },
             next = next?.let { toNextUp(it, titles, now) },
             entries = day.entries.map { toEntry(it, titles, stateOf(it, ahead)) }.toImmutableList(),
             nowIndex = next?.let { day.entries.indexOf(it) } ?: -1,
             budget = day.budgetWarning?.let(::toBudgetNotice),
-            degradedTier = degradedTier,
+            // The step on the card is left out: it has its own Done button
+            // right there, and offering it twice reads as the app having
+            // lost count of its own day.
+            catchUp = catchUpFor(day, now, next?.occurrence?.id ?: 0),
+            degradedTier = facts.degradedTier,
             hasPlan = true,
             isReduced = day.mode == DayMode.REDUCED,
             reducedCount = day.entries.count { it.reduced },
@@ -87,6 +112,30 @@ class TodayMapper @Inject constructor(private val time: TimeProvider, private va
             planId = plan?.planId ?: 0,
         )
     }
+
+    private fun catchUpFor(day: ResolvedDay, now: LocalDateTime, exclude: Long): CatchUpPanel? =
+        catchUp.build(day, now, exclude)?.let { view ->
+            val plannedAt = day.entries.associate { (it.item.id to it.sequenceInDay) to it.at }
+
+            CatchUpPanel(
+                steps = view.steps.map { step ->
+                    CatchUpRow(
+                        occurrenceId = step.occurrenceId,
+                        itemId = step.itemId,
+                        sequenceInDay = step.sequenceInDay,
+                        title = step.title,
+                        time = clock.format(step.at),
+                        minutes = step.minutes,
+                        moveByMinutes = plannedAt[step.itemId to step.sequenceInDay]
+                            ?.let { ChronoUnit.MINUTES.between(it, step.at).toInt() }
+                            ?: 0,
+                        useMinimum = step.useMinimum,
+                    )
+                }.toImmutableList(),
+                outOfTime = view.outOfTime.toImmutableList(),
+                alsoMissed = view.alsoMissed.toImmutableList(),
+            )
+        }
 
     /** The smaller version's title on a sick day, the step's own otherwise. */
     private fun titleOf(entry: ResolvedEntry): String =
@@ -101,6 +150,8 @@ class TodayMapper @Inject constructor(private val time: TimeProvider, private va
         note = noteOf(entry),
         durationMinutes = entry.item.duration?.inWholeMinutes?.toInt(),
         hasMinimum = entry.item.hasMinimum && !entry.reduced,
+        detail = entry.item.detail?.takeIf { it.isNotBlank() },
+        measure = entry.item.valueKind.takeIf { it != ValueKind.NONE },
         isAlarm = entry.item.salience == Salience.ALARM,
         isReduced = entry.reduced,
         isOverdue = entry.at < now,

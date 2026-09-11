@@ -64,13 +64,14 @@ private const val MAX_DURATION = 600
 @Composable
 fun ItemEditorScreen(
     itemId: Long,
+    templateId: Long,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ItemEditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(itemId) { viewModel.load(itemId) }
+    LaunchedEffect(itemId, templateId) { viewModel.load(itemId, templateId) }
 
     ItemEditorContent(
         state = state,
@@ -131,7 +132,18 @@ private fun EditorBody(state: ItemEditorUiState, onChange: (ItemEditorUiState) -
         placeholder = stringResource(R.string.editor_title_hint),
     )
 
+    TextBox(
+        label = stringResource(R.string.editor_detail_label),
+        value = state.detail,
+        onValueChange = { onChange(state.copy(detail = it)) },
+        placeholder = stringResource(R.string.editor_detail_hint),
+        help = stringResource(R.string.editor_detail_body),
+        minLines = 2,
+    )
+
     TimingSection(state = state, onChange = onChange)
+
+    GroupSection(state = state, onChange = onChange)
 
     SalienceSection(state = state, onChange = onChange)
 
@@ -146,6 +158,8 @@ private fun EditorBody(state: ItemEditorUiState, onChange: (ItemEditorUiState) -
         placeholder = stringResource(R.string.editor_minimum_hint),
         help = stringResource(R.string.editor_minimum_body),
     )
+
+    MeasureSection(state = state, onChange = onChange)
 
     PinnedRow(state = state, onChange = onChange)
 
@@ -245,10 +259,20 @@ private fun SalienceSection(state: ItemEditorUiState, onChange: (ItemEditorUiSta
                 .padding(top = 8.dp),
         )
 
+        // A step in a group does not get to decide this, so the screen says so
+        // rather than leaving a control that quietly does nothing.
         Text(
-            text = stringResource(salienceHint(state.salience)),
+            text = if (state.salienceIsGroups) {
+                stringResource(R.string.editor_salience_group, state.group?.title.orEmpty())
+            } else {
+                stringResource(salienceHint(state.salience))
+            },
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (state.salienceIsGroups) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
             modifier = Modifier.padding(top = 7.dp),
         )
     }

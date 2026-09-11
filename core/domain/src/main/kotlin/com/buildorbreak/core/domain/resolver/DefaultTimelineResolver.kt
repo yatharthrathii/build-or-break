@@ -12,6 +12,9 @@ import java.time.LocalTime
 /** Where a `RELATIVE` orphan lands when the plan has no fixed item to start from. */
 private val DEFAULT_DAY_START = LocalTime.of(6, 0)
 
+/** Where a snooze stops. The day shift clamps here too, in [DayShifter]. */
+private val END_OF_DAY = LocalTime.of(23, 59)
+
 /**
  * The nine steps, wired together. architecture.md section 13 step 5.
  *
@@ -50,7 +53,11 @@ class DefaultTimelineResolver(
         val graph = graphBuilder.build(shifted.items)
         val placements = placeAndExpand(shifted.items, graph, input)
         val all = buildEntries(placements, shifted.items, input)
-        val entries = all.filter { input.startedAt?.isAfter(it.at) != true }
+        // Leads are chosen among the steps that are actually on today. On the
+        // day a plan begins, a group whose first step fell before the plan
+        // started would otherwise have its lead hidden and every visible step
+        // in it running silent.
+        val entries = withLeads(all.filter { input.startedAt?.isAfter(it.at) != true })
 
         return ResolvedDay(
             date = input.date,
@@ -126,6 +133,7 @@ class DefaultTimelineResolver(
         val byId = items.associateBy { it.id }
         val blocksById = input.blocks.associateBy { it.id }
         val occurrences = input.occurrences.associateBy { OccurrenceKey(it.itemId, it.sequenceInDay) }
+        val lastMinute = input.date.atTime(END_OF_DAY)
 
         return placements.mapNotNull { placement ->
             val item = byId[placement.itemId] ?: return@mapNotNull null
@@ -139,13 +147,35 @@ class DefaultTimelineResolver(
                 // snoozed step drawn at its old time and, worse, filtered out
                 // of the rescheduling pass as already past, so it never rang
                 // again and nothing said so.
-                at = placement.at.plusMinutes(occurrence?.shiftMinutes?.toLong() ?: 0),
+                //
+                // Held inside the day, the same way the day shift is. A step
+                // snoozed at five to midnight belongs to today: pushed past it,
+                // the alarm would ring for a date the receiver no longer looks
+                // at, and the step would go missing between two days.
+                at = minOf(placement.at.plusMinutes(occurrence?.shiftMinutes?.toLong() ?: 0), lastMinute),
                 occurrence = occurrence,
                 sequenceInDay = placement.sequenceInDay,
                 degraded = placement.degraded,
                 reduced = input.mode == DayMode.REDUCED && item.hasMinimum,
             )
         }.sortedWith(ENTRY_ORDER)
+    }
+
+    /**
+     * Which step leads each group, decided once. Earliest wins, and the lowest
+     * id breaks a tie so two steps at the same minute cannot swap the loud one
+     * between them from one resolve to the next.
+     */
+    private fun withLeads(entries: List<ResolvedEntry>): List<ResolvedEntry> {
+        val leads = entries
+            .mapNotNull { entry -> entry.block?.id?.let { it to entry } }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, group) -> group.minWith(compareBy({ it.at }, { it.item.id })).item.id }
+
+        return entries.map { entry ->
+            val blockId = entry.block?.id ?: return@map entry
+            entry.copy(isBlockLead = leads[blockId] == entry.item.id)
+        }
     }
 
     private data class OccurrenceKey(val itemId: Long, val sequenceInDay: Int)

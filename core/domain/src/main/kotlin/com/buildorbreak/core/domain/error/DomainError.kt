@@ -13,6 +13,15 @@ sealed interface DomainError {
     sealed interface DataError : DomainError {
         data object NotFound : DataError
         data object WriteFailed : DataError
+
+        /**
+         * The write was refused because the value made no sense.
+         *
+         * Distinct from [WriteFailed] on purpose. A failed write is something
+         * the user can retry; a refused one is something they have to change,
+         * and telling them to try again would be advice that cannot work.
+         */
+        data object ConstraintViolation : DataError
         data class Corrupt(val detail: String) : DataError
     }
 

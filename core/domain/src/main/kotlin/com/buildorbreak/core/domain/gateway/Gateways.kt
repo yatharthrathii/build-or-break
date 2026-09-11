@@ -27,8 +27,6 @@ interface AlarmGateway {
     suspend fun schedule(occurrence: Occurrence, item: Item): Outcome<Unit, AlarmError>
 
     suspend fun cancel(occurrenceId: Long)
-
-    suspend fun cancelAll()
 }
 
 interface NotificationGateway {

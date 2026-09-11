@@ -3,6 +3,7 @@ package com.buildorbreak.core.domain.usecase
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.goal.Streaks
 import com.buildorbreak.core.domain.repository.DayCloseRepository
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -22,10 +23,7 @@ class ObserveRunUseCase @Inject constructor(
     private val time: TimeProvider,
 ) {
 
-    operator fun invoke(): Flow<Int> {
-        val today = time.today()
-
-        return closes.observeRange(today.minusDays(RUN_WINDOW_DAYS), today.minusDays(1))
+    operator fun invoke(today: LocalDate = time.today()): Flow<Int> =
+        closes.observeRange(today.minusDays(RUN_WINDOW_DAYS), today.minusDays(1))
             .map { history -> Streaks.currentRun(history, today) }
-    }
 }

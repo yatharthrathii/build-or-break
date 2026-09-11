@@ -5,6 +5,7 @@ import com.buildorbreak.core.domain.resolver.ResolveInput
 import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.execution.Occurrence
+import com.buildorbreak.core.model.plan.Anchor
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.resolved.ResolvedDay
 import com.buildorbreak.core.testing.fixtures.ExecutionFixtures
@@ -12,7 +13,9 @@ import com.buildorbreak.core.testing.fixtures.PlanFixtures
 import com.buildorbreak.core.testing.fixtures.PlanFixtures.fixedAt
 import com.buildorbreak.core.testing.fixtures.PlanFixtures.item
 import com.google.common.truth.Truth.assertThat
+import java.time.LocalTime
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import org.junit.jupiter.api.Test
 
@@ -84,7 +87,12 @@ class CatchUpPlannerTest {
         val plan = planner.plan(day, now = date.atTime(20, 0))
 
         assertThat(plan.suggestions).hasSize(3)
-        assertThat(plan.outOfTime).hasSize(5)
+        // Left over rather than impossible. There are two and a half hours of
+        // evening in front of these and each takes ten minutes, so calling
+        // them out of time would be a claim the user can disprove by looking
+        // at a clock.
+        assertThat(plan.beyondCap).hasSize(5)
+        assertThat(plan.outOfTime).isEmpty()
     }
 
     @Test
@@ -178,5 +186,54 @@ class CatchUpPlannerTest {
 
         assertThat(plan.suggestions).isEmpty()
         assertThat(plan.outOfTime).isEmpty()
+    }
+
+    @Test
+    fun `a missed step is fitted around what is still to come, not on top of it`() {
+        // Gym missed at 08:00, dinner pinned at 18:15. At 18:00 the gym must
+        // not be proposed for 18:00: that puts two alarms in the same minute
+        // and moves the problem rather than solving it.
+        val day = dayOf(
+            listOf(
+                item(id = 1, anchor = fixedAt(8), duration = 45.minutes),
+                item(id = 2, anchor = fixedAt(18, 15), pinned = true, duration = 30.minutes),
+            ),
+        )
+
+        val plan = planner.plan(day, now = date.atTime(18, 0))
+
+        val gym = plan.suggestions.single { it.itemId == 1L }
+        assertThat(gym.at).isEqualTo(date.atTime(18, 50))
+    }
+
+    @Test
+    fun `a gap before the next step is used when the step fits in it`() {
+        val day = dayOf(
+            listOf(
+                item(id = 1, anchor = fixedAt(8), duration = 10.minutes),
+                item(id = 2, anchor = fixedAt(18, 30), duration = 30.minutes),
+            ),
+        )
+
+        val plan = planner.plan(day, now = date.atTime(18, 0))
+
+        assertThat(plan.suggestions.single().at).isEqualTo(date.atTime(18, 0))
+    }
+
+    @Test
+    fun `every missed repeat of an interval item is its own miss`() {
+        val day = dayOf(
+            listOf(
+                item(
+                    id = 1,
+                    anchor = Anchor.Interval(from = LocalTime.of(9, 0), to = LocalTime.of(13, 0), every = 2.hours),
+                    duration = 5.minutes,
+                ),
+            ),
+        )
+
+        val plan = planner.plan(day, now = date.atTime(18, 0))
+
+        assertThat(plan.suggestions.map { it.sequenceInDay }).containsExactly(0, 1, 2).inOrder()
     }
 }

@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import com.buildorbreak.core.model.enums.Salience
 
 /**
  * How an alarm is addressed, and why it can be cancelled reliably.
@@ -30,6 +31,16 @@ object AlarmScheduling {
     const val EXTRA_ITEM_ID = "item_id"
 
     /**
+     * How loud this particular alarm is, decided when it was set.
+     *
+     * The item's own salience is not enough: a step inside a group takes the
+     * group's loudness and every later step in the group runs silent. The
+     * receiver reads the item back from the database, and the database only
+     * knows the item. So the answer travels with the alarm instead.
+     */
+    const val EXTRA_SALIENCE = "salience"
+
+    /**
      * One request code per occurrence, derived rather than allocated.
      *
      * Deriving it means the same occurrence always maps to the same slot, on
@@ -51,13 +62,18 @@ object AlarmScheduling {
      * would be the same intent as far as `AlarmManager` is concerned, and setting
      * the second would silently replace the first.
      */
-    fun fireIntent(context: Context, occurrenceId: Long, itemId: Long): Intent =
-        Intent(context, AlarmReceiver::class.java).apply {
-            action = ACTION_FIRE
-            data = "buildorbreak://occurrence/$occurrenceId".toUri()
-            putExtra(EXTRA_OCCURRENCE_ID, occurrenceId)
-            putExtra(EXTRA_ITEM_ID, itemId)
-        }
+    fun fireIntent(
+        context: Context,
+        occurrenceId: Long,
+        itemId: Long,
+        salience: Salience? = null,
+    ): Intent = Intent(context, AlarmReceiver::class.java).apply {
+        action = ACTION_FIRE
+        data = "buildorbreak://occurrence/$occurrenceId".toUri()
+        putExtra(EXTRA_OCCURRENCE_ID, occurrenceId)
+        putExtra(EXTRA_ITEM_ID, itemId)
+        salience?.let { putExtra(EXTRA_SALIENCE, it.name) }
+    }
 
     /**
      * [mutable] is false for everything the scheduler sets. An immutable pending
@@ -69,6 +85,7 @@ object AlarmScheduling {
         occurrenceId: Long,
         itemId: Long,
         create: Boolean = true,
+        salience: Salience? = null,
     ): PendingIntent? {
         val flags = PendingIntent.FLAG_IMMUTABLE or
             if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
@@ -76,7 +93,7 @@ object AlarmScheduling {
         return PendingIntent.getBroadcast(
             context,
             requestCode(occurrenceId),
-            fireIntent(context, occurrenceId, itemId),
+            fireIntent(context, occurrenceId, itemId, salience),
             flags,
         )
     }

@@ -17,11 +17,14 @@ import javax.inject.Inject
  * again. It is the single most common way a routine app silently stops working,
  * and the user has no way to tell until the morning it matters.
  *
- * Both boot actions are handled. `LOCKED_BOOT_COMPLETED` arrives before the user
- * has unlocked, which on a phone that rebooted at three in the morning is hours
- * earlier than `BOOT_COMPLETED`. The database is not readable in that state, so
- * that path only queues the worker; the reschedule itself happens once the
- * device is unlocked.
+ * Only `BOOT_COMPLETED`, which arrives once the user has unlocked. The locked
+ * boot broadcast comes hours earlier on a phone that restarted overnight, but
+ * nothing here can use it: the database, and WorkManager's own database with
+ * it, live in credential encrypted storage and cannot be opened until the
+ * unlock. Queuing work from that state is a crash, not a head start.
+ *
+ * The day close is queued as well as the reschedule. A phone that was off
+ * for a week has days to settle, and the close is what settles them.
  */
 @AndroidEntryPoint
 class BootReceiver : BroadcastReceiver() {
@@ -31,17 +34,10 @@ class BootReceiver : BroadcastReceiver() {
     @Inject lateinit var dispatchers: AppDispatchers
 
     override fun onReceive(context: Context, intent: Intent) {
-        when (intent.action) {
-            Intent.ACTION_LOCKED_BOOT_COMPLETED ->
-                // Credential encrypted storage is not available yet, so nothing
-                // can be read. Queue the work and let it run when it can.
-                DailyMaintenanceWorker.enqueueOnce(context)
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
-            Intent.ACTION_BOOT_COMPLETED ->
-                goAsync().finishAfter(dispatchers.io) { reschedule() }
-
-            else -> Unit
-        }
+        DailyMaintenanceWorker.enqueueOnce(context)
+        goAsync().finishAfter(dispatchers.io) { reschedule() }
     }
 }
 

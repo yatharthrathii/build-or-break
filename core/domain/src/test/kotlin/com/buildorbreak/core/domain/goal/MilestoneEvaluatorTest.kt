@@ -56,8 +56,10 @@ class MilestoneEvaluatorTest {
 
     @Test
     fun `a milestone that has already fired never fires again`() {
+        // Three of four: a good day with a completion on it, and not a full
+        // day, so the only first it could claim is the one already said.
         val context = contextOf(
-            today = GoalFixtures.close(start.plusDays(1), itemsDone = 1, itemsTotal = 1),
+            today = GoalFixtures.close(start.plusDays(1), itemsDone = 3, itemsMissed = 1),
             awarded = listOf(award(Milestone.FIRST_COMPLETION, start)),
         )
 
@@ -169,5 +171,44 @@ class MilestoneEvaluatorTest {
 
         assertThat(score.consideredDays).isEqualTo(0)
         assertThat(score.fraction).isEqualTo(0f)
+    }
+
+    // A first held back is a first still owed ---------------------------------
+
+    @Test
+    fun `a first completion held back by a poor day is said on the next good one`() {
+        // Day one: one of five. Poor, so nothing was said. Day two is fine.
+        val context = contextOf(
+            today = GoalFixtures.close(start.plusDays(1), itemsDone = 4, itemsMissed = 1),
+            history = listOf(GoalFixtures.close(start, itemsDone = 1, itemsMissed = 4)),
+        )
+
+        assertThat(evaluator.evaluate(context)).isEqualTo(Milestone.FIRST_COMPLETION)
+    }
+
+    @Test
+    fun `a first full day the morning after a first completion is still said`() {
+        val context = contextOf(
+            today = GoalFixtures.close(start.plusDays(1), itemsDone = 5, itemsTotal = 5),
+            history = listOf(GoalFixtures.close(start, itemsDone = 3, itemsMissed = 2)),
+            awarded = listOf(award(Milestone.FIRST_COMPLETION, start)),
+        )
+
+        assertThat(evaluator.evaluate(context)).isEqualTo(Milestone.FIRST_FULL_DAY)
+    }
+
+    @Test
+    fun `a first week whose seventh day was poor is said on the eighth`() {
+        val context = contextOf(
+            today = GoalFixtures.close(start.plusDays(7), itemsDone = 10),
+            history = GoalFixtures.closes(start, days = 6) +
+                GoalFixtures.close(start.plusDays(6), itemsDone = 1, itemsMissed = 9),
+            awarded = listOf(
+                award(Milestone.FIRST_COMPLETION, start),
+                award(Milestone.FIRST_FULL_DAY, start.plusDays(1)),
+            ),
+        )
+
+        assertThat(evaluator.evaluate(context)).isEqualTo(Milestone.FIRST_WEEK)
     }
 }

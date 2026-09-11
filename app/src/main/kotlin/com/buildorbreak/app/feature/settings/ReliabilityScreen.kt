@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -21,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,10 +38,108 @@ import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.SectionLabel
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
+import com.buildorbreak.core.designsystem.theme.TimeStyle
+import com.buildorbreak.core.domain.review.DeliveryStats
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.scheduler.alarm.TierBlocker
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
+
+/**
+ * What the alarms actually did, counted rather than claimed.
+ *
+ * The rest of this screen explains what the app is permitted to do. This is
+ * the evidence. Every figure is a plain count somebody can check against
+ * their own week, and lateness is kept separate from a miss because they are
+ * different problems with different causes and only one of them is usually
+ * the user's to fix.
+ */
+@Composable
+private fun MeasuredSection(stats: DeliveryStats) {
+    SectionLabel(text = stringResource(R.string.reliability_measured), underlined = true)
+
+    if (!stats.hasData) {
+        Text(
+            text = stringResource(R.string.reliability_measured_none),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        )
+
+        return
+    }
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Text(
+            text = pluralStringResource(R.plurals.reliability_measured_window, stats.days, stats.days),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+
+        MeasuredRow(
+            label = stringResource(R.string.reliability_on_time),
+            value = stringResource(R.string.reliability_of, stats.onTime, stats.scheduled),
+            accent = true,
+        )
+        MeasuredRow(
+            label = stringResource(R.string.reliability_late),
+            value = stats.late.toString(),
+            note = stats.medianLateSeconds?.let {
+                stringResource(R.string.reliability_typically_late, it / SECONDS_PER_MINUTE)
+            },
+        )
+        MeasuredRow(
+            label = stringResource(R.string.reliability_never_arrived),
+            value = stats.missed.toString(),
+            note = stringResource(R.string.reliability_never_arrived_body).takeIf { stats.missed > 0 },
+        )
+    }
+}
+
+@Composable
+private fun MeasuredRow(
+    label: String,
+    value: String,
+    note: String? = null,
+    accent: Boolean = false,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            note?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+
+        Text(
+            text = value,
+            style = TimeStyle,
+            color = if (accent) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        )
+    }
+
+    HairlineRule()
+}
+
+private const val SECONDS_PER_MINUTE = 60
 
 /**
  * Why an alarm might not arrive, and what to do about it.
@@ -100,6 +200,8 @@ fun ReliabilityContent(
 
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             TierSummary(tier = state.tier)
+
+            MeasuredSection(stats = state.measured)
 
             if (state.blockers.isNotEmpty() || state.needsAutostart || state.needsLockScreen) {
                 SectionLabel(text = stringResource(R.string.reliability_what_would_change), underlined = true)

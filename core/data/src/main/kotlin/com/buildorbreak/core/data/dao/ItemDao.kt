@@ -30,11 +30,12 @@ interface ItemDao {
     @Query("SELECT * FROM block WHERE template_id = :templateId ORDER BY sort_order, id")
     fun observeBlocksForTemplate(templateId: Long): Flow<List<BlockEntity>>
 
-    @Query("SELECT * FROM item WHERE template_id = :templateId AND archived_at IS NULL ORDER BY sort_order, id")
-    suspend fun forTemplate(templateId: Long): List<ItemEntity>
-
     @Query("SELECT * FROM item WHERE id = :id")
     suspend fun byId(id: Long): ItemEntity?
+
+    /** Every step in the group, archived ones included, so no row keeps pointing at a group that is gone. */
+    @Query("UPDATE item SET block_id = NULL WHERE block_id = :blockId")
+    suspend fun unlinkBlock(blockId: Long)
 
     /** Everything hanging off this one, for the reschedule pass after a change. */
     @Query("SELECT * FROM item WHERE anchor_parent_item_id = :parentId AND archived_at IS NULL")
@@ -46,8 +47,16 @@ interface ItemDao {
     @Upsert
     suspend fun upsertBlock(block: BlockEntity): Long
 
-    @Upsert
-    suspend fun upsertAll(items: List<ItemEntity>)
+    /**
+     * Groups are deleted outright, unlike items.
+     *
+     * Nothing points at a group from the history: occurrences reference items,
+     * and an item keeps its own title and salience whether or not it is in a
+     * group. Deleting one loses nothing, which is why this is a delete and
+     * `archive` above is not.
+     */
+    @Query("DELETE FROM block WHERE id = :id")
+    suspend fun deleteBlock(id: Long)
 
     /**
      * Archived, never deleted. Occurrences point at items, and a completed step

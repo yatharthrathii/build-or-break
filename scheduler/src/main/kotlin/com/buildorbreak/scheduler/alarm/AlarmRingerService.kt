@@ -14,6 +14,7 @@ import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.getSystemService
 import com.buildorbreak.core.common.coroutines.AppDispatchers
@@ -57,6 +58,7 @@ class AlarmRingerService : Service() {
 
     private var player: MediaPlayer? = null
     private var ringing: Long = NO_ID
+    private var ringingIntent: Intent? = null
     private var timeout: Job? = null
 
     /**
@@ -106,7 +108,10 @@ class AlarmRingerService : Service() {
      */
     private fun ring(intent: Intent, occurrenceId: Long) {
         silence()
+        keepTheOneBefore(occurrenceId)
         ringing = occurrenceId
+        ringingIntent = intent
+        ringingId = occurrenceId
 
         ServiceCompat.startForeground(
             this,
@@ -126,16 +131,57 @@ class AlarmRingerService : Service() {
             ServiceCompat.stopForeground(this@AlarmRingerService, ServiceCompat.STOP_FOREGROUND_DETACH)
             silence()
             ringing = NO_ID
+            ringingIntent = null
+            ringingId = NO_ID
             stopSelf()
         }
     }
 
+    /**
+     * Two steps due in the same minute must not cost one of them its buttons.
+     *
+     * Promoting the service with a new notification id takes the previous
+     * foreground notification down, and for an alarm step that notification
+     * was the only one there was. So before the sound moves to the new step,
+     * the old step's notification is put back as an ordinary one, silent and
+     * with every action still on it.
+     */
+    private fun keepTheOneBefore(next: Long) {
+        val before = ringingIntent?.takeIf { ringing != NO_ID && ringing != next } ?: return
+
+        @Suppress("MissingPermission")
+        NotificationManagerCompat.from(this).notify(AlarmScheduling.requestCode(ringing), notifications.ringing(before))
+    }
+
     private fun stop() {
+        // A stop can land on an instance the platform created for this very
+        // intent, because a start of any kind creates one when none is
+        // running. That instance owes the platform a `startForeground`
+        // whatever it decides to do next, so the promise is kept here too
+        // rather than only on the path that noticed first.
+        keepThePromise()
+
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         silence()
         ringing = NO_ID
+        ringingIntent = null
+        ringingId = NO_ID
         promoted = false
         stopSelf()
+    }
+
+    /**
+     * Satisfies `startForegroundService` when nothing else has.
+     *
+     * The placeholder is on screen for a few milliseconds and nobody sees it.
+     * It exists so the process survives, which matters because the process is
+     * the one ringing somebody awake.
+     */
+    private fun keepThePromise() {
+        if (promoted) return
+
+        ServiceCompat.startForeground(this, PLACEHOLDER_ID, notifications.placeholder(), foregroundType())
+        promoted = true
     }
 
     /**
@@ -151,11 +197,7 @@ class AlarmRingerService : Service() {
      * screen for a few milliseconds and nobody sees it.
      */
     private fun standDown() {
-        if (!promoted) {
-            ServiceCompat.startForeground(this, PLACEHOLDER_ID, notifications.placeholder(), foregroundType())
-            promoted = true
-        }
-
+        keepThePromise()
         stop()
     }
 
@@ -295,6 +337,19 @@ class AlarmRingerService : Service() {
 
         private const val NO_ID = -1L
 
+        /**
+         * Which step is ringing right now, readable without the service.
+         *
+         * The service runs in the app's own process, so this is exact: a
+         * process that died took the sound with it. It exists so a stop for a
+         * step that is not ringing can be dropped before it starts a service
+         * instance whose only work would be to post a placeholder and leave.
+         * Every Done and Skip goes through the stop, and most of them are for
+         * a plain notification with nothing ringing at all.
+         */
+        @Volatile
+        private var ringingId: Long = NO_ID
+
         /** Its own id, so a placeholder can never replace a live alarm's notification. */
         private const val PLACEHOLDER_ID = 424_242
 
@@ -314,10 +369,18 @@ class AlarmRingerService : Service() {
          * from the background.
          */
         fun start(context: Context, intent: Intent) {
+            // Claimed before the platform has created the service, not when
+            // the service gets round to ringing. A stop that arrives in the
+            // gap between the two would otherwise be dropped as a stop for
+            // nothing, and the step it was for would ring on.
+            intent.getLongExtra(EXTRA_OCCURRENCE_ID, NO_ID).takeIf { it != NO_ID }?.let { ringingId = it }
+
             context.startForegroundService(intent.setClass(context, AlarmRingerService::class.java))
         }
 
         fun stop(context: Context, occurrenceId: Long) {
+            if (ringingId == NO_ID || (occurrenceId != NO_ID && ringingId != occurrenceId)) return
+
             context.startService(
                 Intent(context, AlarmRingerService::class.java)
                     .setAction(ACTION_STOP)

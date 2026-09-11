@@ -76,17 +76,20 @@ fun TodayScreen(
     TodayContent(
         state = state,
         actions = TodayActions(
-            onDone = viewModel::onDone,
-            onDoneMinimum = viewModel::onDoneMinimum,
+            onDone = { viewModel.onDone(it) },
+            onDoneMinimum = { viewModel.onDone(it, minimum = true) },
             onSnooze = viewModel::onSnooze,
             onSkip = viewModel::onSkip,
             onUndo = viewModel::onUndo,
+            onMoveToSlot = viewModel::onMoveToSlot,
+            onLogNumber = viewModel::onLogNumber,
+            onDismissNumber = viewModel::onDismissNumber,
+            onMilestoneSeen = viewModel::onMilestoneSeen,
             onExplainSkip = viewModel::onExplainSkip,
             onWaveAwayAsk = viewModel::onWaveAway,
             onShiftDay = viewModel::onShiftDay,
             onRunTemplate = viewModel::onRunTemplate,
-            onSickDay = viewModel::onSickDay,
-            onNormalDay = viewModel::onNormalDay,
+            onReducedDay = viewModel::onReducedDay,
             onOpenReliability = onOpenReliability,
             onOpenPlan = onOpenPlan,
             onImport = onImport,
@@ -103,12 +106,17 @@ data class TodayActions(
     val onSnooze: (Long) -> Unit,
     val onSkip: (Long, SkipChip?) -> Unit,
     val onUndo: () -> Unit,
+    /** Moves a missed step to the slot the catch up plan found for it. */
+    val onMoveToSlot: (Long, Int) -> Unit,
+    val onLogNumber: (Double) -> Unit,
+    val onDismissNumber: () -> Unit,
+    val onMilestoneSeen: () -> Unit,
     val onExplainSkip: (Long, SkipChip?) -> Unit,
     val onWaveAwayAsk: (Long) -> Unit,
     val onShiftDay: (Int) -> Unit,
     val onRunTemplate: (Long) -> Unit,
-    val onSickDay: () -> Unit,
-    val onNormalDay: () -> Unit,
+    /** True for a sick day, false to put the ordinary day back. */
+    val onReducedDay: (Boolean) -> Unit,
     val onOpenReliability: () -> Unit,
     val onOpenPlan: () -> Unit,
     val onImport: () -> Unit,
@@ -121,12 +129,15 @@ data class TodayActions(
             onSnooze = {},
             onSkip = { _, _ -> },
             onUndo = {},
+            onMoveToSlot = { _, _ -> },
+            onLogNumber = {},
+            onDismissNumber = {},
+            onMilestoneSeen = {},
             onExplainSkip = { _, _ -> },
             onWaveAwayAsk = {},
             onShiftDay = {},
             onRunTemplate = {},
-            onSickDay = {},
-            onNormalDay = {},
+            onReducedDay = {},
             onOpenReliability = {},
             onOpenPlan = {},
             onImport = {},
@@ -199,6 +210,10 @@ private fun Sheets(
         DifferentDaySheet(state = state, actions = actions, onClose = onClose)
     }
 
+    state.askNumber?.let { prompt ->
+        MeasureSheet(prompt = prompt, onLog = actions.onLogNumber, onDismiss = actions.onDismissNumber)
+    }
+
     if (skipping != NO_OCCURRENCE) {
         SkipSheet(
             title = state.entries.firstOrNull { it.occurrenceId == skipping }?.title.orEmpty(),
@@ -268,7 +283,7 @@ private fun DifferentDaySheet(state: TodayUiState, actions: TodayActions, onClos
         },
         onSickDay = {
             onClose()
-            actions.onSickDay()
+            actions.onReducedDay(true)
         },
         onDismiss = onClose,
     )
@@ -296,33 +311,18 @@ private fun Day(
     val haptics = LocalHapticFeedback.current
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item { RingRow(header = state.header, runDays = state.runDays) }
-
-        item {
-            ShiftBar(
-                state = state,
-                onRunningLate = onRunningLate,
-                onReset = { actions.onShiftDay(0) },
-                onNormalDay = actions.onNormalDay,
-            )
-        }
-
-        notices(state = state, onOpenReliability = actions.onOpenReliability)
-
-        state.askAbout?.let { ask ->
-            item(key = "ask:${ask.occurrenceId}") {
-                SkipAskBar(
-                    ask = ask,
-                    onAnswer = { onAnswerAsk(ask.occurrenceId) },
-                    onWaveAway = { actions.onWaveAwayAsk(ask.occurrenceId) },
-                )
-            }
-        }
+        top(state = state, actions = actions, onRunningLate = onRunningLate, onAnswerAsk = onAnswerAsk)
 
         nextUp(state = state, actions = actions, onSkip = onSkip, onDone = {
             haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
             actions.onDone(it)
         })
+
+        state.catchUp?.let { panel ->
+            item(key = "catchup") {
+                CatchUpPanelView(panel = panel, onMove = actions.onMoveToSlot, onSkip = onSkip)
+            }
+        }
 
         item { SectionLabel(text = stringResource(R.string.today_the_day)) }
 
@@ -331,6 +331,44 @@ private fun Day(
         // Room for the undo bar, so the last row of the day can still be read
         // while it is on screen.
         item { Spacer(Modifier.height(96.dp)) }
+    }
+}
+
+/**
+ * Everything above the card: the ring, anything earned, the shift bar, the
+ * delivery notices and the one deferred question.
+ */
+private fun LazyListScope.top(
+    state: TodayUiState,
+    actions: TodayActions,
+    onRunningLate: () -> Unit,
+    onAnswerAsk: (Long) -> Unit,
+) {
+    item { RingRow(header = state.header, runDays = state.runDays, consistency = state.consistency) }
+
+    state.milestone?.let { notice ->
+        item(key = "milestone") { MilestoneBanner(notice = notice, onSeen = actions.onMilestoneSeen) }
+    }
+
+    item {
+        ShiftBar(
+            state = state,
+            onRunningLate = onRunningLate,
+            onReset = { actions.onShiftDay(0) },
+            onNormalDay = { actions.onReducedDay(false) },
+        )
+    }
+
+    notices(state = state, onOpenReliability = actions.onOpenReliability)
+
+    state.askAbout?.let { ask ->
+        item(key = "ask:" + ask.occurrenceId) {
+            SkipAskBar(
+                ask = ask,
+                onAnswer = { onAnswerAsk(ask.occurrenceId) },
+                onWaveAway = { actions.onWaveAwayAsk(ask.occurrenceId) },
+            )
+        }
     }
 }
 

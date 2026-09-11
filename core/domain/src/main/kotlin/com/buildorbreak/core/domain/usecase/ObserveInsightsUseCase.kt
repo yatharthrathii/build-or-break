@@ -10,10 +10,13 @@ import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
 import com.buildorbreak.core.domain.review.InsightBar
+import com.buildorbreak.core.domain.review.InsightPattern
+import com.buildorbreak.core.domain.review.InsightWin
 import com.buildorbreak.core.domain.review.Insights
 import com.buildorbreak.core.domain.review.InsightsPeriod
 import com.buildorbreak.core.domain.review.ReviewInput
 import com.buildorbreak.core.domain.review.SkipCount
+import com.buildorbreak.core.domain.review.SkipPatternDetector
 import com.buildorbreak.core.domain.review.StepStat
 import com.buildorbreak.core.domain.review.Suggestion
 import com.buildorbreak.core.domain.review.TimeShiftDetector
@@ -87,6 +90,9 @@ class ObserveInsightsUseCase @Inject constructor(
      */
     private val slips = TimeShiftDetector(minimumSamples = 2, threshold = Duration.ZERO)
 
+    /** The defaults. The screen lists what the review would act on, not more. */
+    private val patterns = SkipPatternDetector()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(period: InsightsPeriod): Flow<Insights?> {
         val today = time.today()
@@ -118,6 +124,7 @@ class ObserveInsightsUseCase @Inject constructor(
 
         val review = reviewFor(plan, weekStart, planItems, recent)
         val stats = statsFor(planItems, current, recent)
+        val titles = planItems.associate { it.id to it.title }
 
         return Insights(
             period = period,
@@ -131,9 +138,37 @@ class ObserveInsightsUseCase @Inject constructor(
             bars = barsFor(period, from, current),
             steps = stats,
             skipReasons = skipReasonsIn(current),
+            win = review.win?.let { InsightWin(it.itemId, it.title, it.done, it.outOf) },
+            patterns = patternsIn(recent, titles),
             suggestion = suggestionFor(review, stats, weekStart).takeIf { dismissed != weekStart },
+            hasHistory = recent.any { it.isSettled },
             story = review.story,
         )
+    }
+
+    /**
+     * Every step being missed often enough to mention, worst first.
+     *
+     * The detector is run again here rather than lifted off the review,
+     * because the review deliberately keeps only the single worst pattern:
+     * it has to ask one question, and three questions is an interrogation.
+     * The screen has room to show the list, and the list is the finding.
+     */
+    private suspend fun patternsIn(recent: List<Occurrence>, titles: Map<Long, String>): List<InsightPattern> {
+        val reasons = reasonsFor(recent)
+
+        return patterns.detect(recent, reasons).mapNotNull { pattern ->
+            titles[pattern.itemId]?.let { title ->
+                InsightPattern(
+                    itemId = pattern.itemId,
+                    title = title,
+                    misses = pattern.misses,
+                    opportunities = pattern.opportunities,
+                    cause = pattern.cause,
+                    weekday = pattern.weekday,
+                )
+            }
+        }
     }
 
     /** Counted, commonest first, and only the ones somebody actually gave. */
@@ -167,7 +202,8 @@ class ObserveInsightsUseCase @Inject constructor(
                 closes = closes.observeRange(weekStart, weekEnd).first().filter { it.planId == plan.id },
                 occurrences = recent.filter { it.date in weekStart..weekEnd },
                 items = planItems,
-                previousCloses = closes.observeRange(lastWeekStart, weekStart.minusDays(1)).first(),
+                previousCloses = closes.observeRange(lastWeekStart, weekStart.minusDays(1)).first()
+                    .filter { it.planId == plan.id },
                 recentOccurrences = recent,
                 // Without these the detector sees counts and nothing else, so
                 // every cause comes back UNKNOWN and the same fix is offered
@@ -238,6 +274,7 @@ class ObserveInsightsUseCase @Inject constructor(
             outOf = problem.outOf,
             slip = stats.firstOrNull { it.itemId == problem.itemId }?.slip,
             weekStart = weekStart,
+            options = review.question?.options.orEmpty().ifEmpty { listOf(answer) },
         )
     }
 }

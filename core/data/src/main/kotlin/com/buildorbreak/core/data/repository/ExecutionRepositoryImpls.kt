@@ -32,10 +32,14 @@ class MeasurementRepositoryImpl @Inject constructor(
     override fun observeForItem(itemId: Long): Flow<List<Measurement>> =
         measurements.observeForItem(itemId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
 
-    override suspend fun readings(kind: ValueKind, from: LocalDate, to: LocalDate): List<Reading> =
-        withContext(dispatchers.io) {
-            measurements.readings(kind.name, from, to).map { it.toReading() }
-        }
+    override suspend fun readings(
+        kind: ValueKind,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long?,
+    ): List<Reading> = withContext(dispatchers.io) {
+        measurements.readings(kind.name, from, to, itemId).map { it.toReading() }
+    }
 
     override suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { measurements.upsert(measurement.toEntity()) }
@@ -45,6 +49,9 @@ class MeasurementRepositoryImpl @Inject constructor(
 
     override suspend fun clearSkipReason(occurrenceId: Long): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { measurements.deleteSkipReasonFor(occurrenceId) }
+
+    override suspend fun clearMeasurementFor(occurrenceId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { measurements.deleteForOccurrence(occurrenceId) }
 
     override suspend fun skipReasonsFor(occurrenceIds: List<Long>): List<SkipReason> =
         withContext(dispatchers.io) { measurements.skipReasonsFor(occurrenceIds).map { it.toModel() } }

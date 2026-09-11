@@ -14,6 +14,21 @@ import kotlinx.coroutines.flow.Flow
 interface GoalRepository {
     fun observeActive(planId: Long): Flow<Goal?>
 
+    suspend fun byId(goalId: Long): Goal?
+
+    /**
+     * Writes a goal and makes it the only active one on its plan.
+     *
+     * The two happen together because they are one decision. Two active goals
+     * on the free tier would make every screen that says "the goal" ambiguous,
+     * and a save that left the old one active would produce exactly that state
+     * with no way for the user to see it had happened.
+     */
+    suspend fun upsert(goal: Goal): Outcome<Long, DataError>
+
+    /** Retires a goal without deleting its history. */
+    suspend fun deactivate(goalId: Long): Outcome<Unit, DataError>
+
     fun observeProgress(goalId: Long): Flow<List<GoalProgress>>
 
     suspend fun upsertProgress(progress: GoalProgress): Outcome<Unit, DataError>

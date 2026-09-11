@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.buildorbreak.core.domain.repository.SettingsRepository
+import com.buildorbreak.core.domain.review.DeliveryStats
+import com.buildorbreak.core.domain.usecase.ObserveDeliveryStatsUseCase
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.scheduler.alarm.TierBlocker
 import com.buildorbreak.scheduler.alarm.TierDetector
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -41,6 +44,16 @@ data class ReliabilityUiState(
      * unlocking, and the one no API can read.
      */
     val needsLockScreen: Boolean = false,
+    /**
+     * What the alarms actually did, over the last fortnight.
+     *
+     * The tier above says what the app is allowed to do. This says what
+     * happened, which is the only claim worth making: a phone can report
+     * every permission granted and still hold alarms for twenty minutes
+     * behind a battery manager, and the tier alone would show a confident
+     * green while somebody was being woken late every day.
+     */
+    val measured: DeliveryStats = DeliveryStats.None,
 ) {
     companion object {
         val Unknown = ReliabilityUiState(
@@ -69,6 +82,7 @@ class ReliabilityViewModel @Inject constructor(
     private val tiers: TierDetector,
     private val guide: OemGuide,
     private val settings: SettingsRepository,
+    observeStats: ObserveDeliveryStatsUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ReliabilityUiState.Unknown)
@@ -76,6 +90,13 @@ class ReliabilityViewModel @Inject constructor(
 
     init {
         refresh()
+
+        // The audit rows change when an alarm fires, which can happen while
+        // this screen is open. Everything else here has to be polled because
+        // Android has no callback for a permission; this one does not.
+        viewModelScope.launch {
+            observeStats().collect { stats -> _state.update { it.copy(measured = stats) } }
+        }
     }
 
     /**
@@ -110,12 +131,14 @@ class ReliabilityViewModel @Inject constructor(
     private suspend fun read() {
         val status = tiers.detect()
 
-        _state.value = ReliabilityUiState(
-            tier = status.tier,
-            blockers = status.topBlockers().toImmutableList(),
-            needsAutostart = guide.needsAutostartGuidance() && !settings.autostartDone.first(),
-            needsLockScreen = guide.needsLockScreenGuidance() && !settings.lockScreenDone.first(),
-        )
+        _state.update {
+            it.copy(
+                tier = status.tier,
+                blockers = status.topBlockers().toImmutableList(),
+                needsAutostart = guide.needsAutostartGuidance() && !settings.autostartDone.first(),
+                needsLockScreen = guide.needsLockScreenGuidance() && !settings.lockScreenDone.first(),
+            )
+        }
     }
 
     private companion object {

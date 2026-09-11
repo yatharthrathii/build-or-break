@@ -71,19 +71,16 @@
             android:exported="false" />
 
         <!--
-            directBootAware, so the locked boot broadcast arrives on a phone that
-            rebooted at three in the morning rather than waiting hours for the
-            first unlock. The database cannot be read in that state, which is why
-            that path only queues work.
+            Not directBootAware on purpose. Before the first unlock the database
+            is in storage that cannot be opened, and so is WorkManager's, so a
+            locked boot broadcast would have nothing it could safely do.
         -->
         <receiver
             android:name=".receiver.BootReceiver"
             android:exported="true"
-            android:directBootAware="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 

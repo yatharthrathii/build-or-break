@@ -2,6 +2,8 @@ package com.buildorbreak.app.feature.today
 
 import androidx.compose.runtime.Immutable
 import com.buildorbreak.core.model.enums.DeliveryTier
+import com.buildorbreak.core.model.enums.Milestone
+import com.buildorbreak.core.model.enums.ValueKind
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -59,6 +61,27 @@ data class TodayUiState(
     /** A skip made outside the app that nobody has been asked about yet. */
     val askAbout: SkipAsk? = null,
     /**
+     * What is still possible today, once the day has slipped.
+     *
+     * Null on an ordinary day, and that is most days. A recovery plan on a
+     * morning that is going fine tells somebody they are behind when they
+     * are not, which is the fastest way to make the panel meaningless on the
+     * day it matters.
+     */
+    val catchUp: CatchUpPanel? = null,
+    /** Something earned and not yet said. At most one, ever. */
+    val milestone: MilestoneNotice? = null,
+    /**
+     * How many of the last thirty days went well.
+     *
+     * Shown instead of a consecutive day streak. A streak is a reward that
+     * turns into a punishment the moment it breaks, and the person this app
+     * is for is the person who already misses things.
+     */
+    val consistency: Consistency? = null,
+    /** A number owed for a step that was just completed. Always skippable. */
+    val askNumber: MeasurePrompt? = null,
+    /**
      * The last thing the user asked for did not happen.
      *
      * Every action on this screen used to ignore its own result. A settle that
@@ -77,7 +100,7 @@ data class TodayUiState(
     /** A sick day where nothing has a smaller version does nothing, and says so. */
     val sickDayChangedNothing: Boolean get() = isReduced && reducedCount == 0
 
-    val isAllDone: Boolean get() = hasPlan && entries.isNotEmpty() && next == null
+    val isAllDone: Boolean get() = hasPlan && header.total > 0 && next == null
 
     /**
      * Everything is settled and none of it happened.
@@ -151,6 +174,74 @@ enum class SkipAskMode {
 @Immutable
 data class SkipAsk(val occurrenceId: Long, val title: String)
 
+/**
+ * What is still possible today, and what honestly is not.
+ *
+ * [outOfTime] is named rather than counted. "2 things will not fit" is a
+ * number somebody has to decode; "the gym and the long read will not fit" is
+ * something they can act on, including by deciding they do not mind.
+ */
+@Immutable
+data class CatchUpPanel(
+    val steps: ImmutableList<CatchUpRow>,
+    /** Named, and genuinely will not fit before the day is over. */
+    val outOfTime: ImmutableList<String>,
+    /** Named, would still fit, and not offered because three is the limit. */
+    val alsoMissed: ImmutableList<String>,
+)
+
+/** One missed step, and the slot it could still take. */
+@Immutable
+data class CatchUpRow(
+    val occurrenceId: Long,
+    val itemId: Long,
+    val title: String,
+    val time: String,
+    val minutes: Int,
+    /**
+     * How far the step has to move to land in this slot.
+     *
+     * Worked out here rather than on the screen, because the action is an
+     * ordinary snooze and a snooze is a duration. Zero or less means the slot
+     * it already has, so there is nothing to move.
+     */
+    val moveByMinutes: Int,
+    /** The full version no longer fits, but the smaller one does. */
+    val useMinimum: Boolean,
+    /** Which repeat of an interval item. Every repeat is its own miss. */
+    val sequenceInDay: Int = 0,
+)
+
+/** Something earned. The screen turns the enum into a sentence. */
+@Immutable
+data class MilestoneNotice(val milestone: Milestone)
+
+/** [goodDays] out of [days]. Both, so the screen can say it and be believed. */
+@Immutable
+data class Consistency(val goodDays: Int, val days: Int) {
+    val hasEnough: Boolean get() = days >= MINIMUM_DAYS
+
+    private companion object {
+        /** Under a week there is no shape to read, only a couple of days. */
+        const val MINIMUM_DAYS = 7
+    }
+}
+
+/**
+ * A step that was just completed and asks for a number.
+ *
+ * Asked after the settle, never before it. Making the number a condition of
+ * ticking something off is how the numbers stop arriving at all, exactly as
+ * with skip reasons.
+ */
+@Immutable
+data class MeasurePrompt(
+    val occurrenceId: Long,
+    val itemId: Long,
+    val title: String,
+    val kind: ValueKind,
+)
+
 /** One template, as something the day can be switched to. */
 @Immutable
 data class DayChoice(val id: Long, val name: String)
@@ -183,6 +274,10 @@ data class NextUp(
     val note: EntryNote?,
     val durationMinutes: Int?,
     val hasMinimum: Boolean,
+    /** The line the user wrote for this step, shown at the moment it arrives. */
+    val detail: String? = null,
+    /** The number this step asks for once it is done, if any. */
+    val measure: ValueKind? = null,
     /** This one rings and takes over the screen. */
     val isAlarm: Boolean = false,
     /** Running as its smaller version today. Done means the minimum was done. */

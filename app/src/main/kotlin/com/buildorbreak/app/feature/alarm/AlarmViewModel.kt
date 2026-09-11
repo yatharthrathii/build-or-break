@@ -18,7 +18,6 @@ import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -83,7 +82,7 @@ class AlarmViewModel @Inject constructor(
     val state: StateFlow<AlarmUiState> = _state.asStateFlow()
 
     fun load(occurrenceId: Long, itemId: Long) = viewModelScope.launch {
-        val row = occurrences.observeForDate(time.today()).first().firstOrNull { it.id == occurrenceId }
+        val row = occurrences.byId(occurrenceId)
         val item = items.byId(itemId)
 
         if (row == null || item == null || row.isSettled) {

@@ -18,7 +18,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.flow.first
 
 /**
  * The alarm went off.
@@ -64,16 +63,21 @@ class AlarmReceiver : BroadcastReceiver() {
         goAsync().finishAfter(dispatchers.io) {
             audits.recordFired(occurrenceId, time.now())
 
-            val occurrence = occurrences.observeForDate(time.today()).first()
-                .firstOrNull { it.id == occurrenceId }
-                ?: return@finishAfter
+            // By id rather than by today's date: a step snoozed at five to
+            // midnight belongs to a date that is over by the time it rings.
+            val occurrence = occurrences.byId(occurrenceId) ?: return@finishAfter
 
             // Already dealt with. This happens when a completion and the alarm
             // race, which they do whenever somebody finishes something a minute
             // early, and ringing for it would be the app arguing with the user.
             if (occurrence.isSettled) return@finishAfter
 
-            val item = items.byId(itemId) ?: return@finishAfter
+            // The alarm was set with the loudness the day gave this step, which
+            // for a step inside a group is the group's, not the item's own.
+            val salience = intent.getStringExtra(AlarmScheduling.EXTRA_SALIENCE)
+                ?.let { name -> Salience.entries.firstOrNull { it.name == name } }
+            val item = items.byId(itemId)?.let { if (salience == null) it else it.copy(salience = salience) }
+                ?: return@finishAfter
 
             // An alarm is handed to the ringer, which holds the alarm stream
             // open and posts its own notification. Anything quieter is just a

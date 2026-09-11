@@ -47,6 +47,11 @@ class SchedulerStartup : Initializer<Unit> {
 
         DailyMaintenanceWorker.enqueuePeriodic(context, entry.time().localNow())
 
+        // The close as well, not only the alarms. The periodic job is the fast
+        // path and on a phone whose battery manager starves it, this launch
+        // is the only thing that will ever settle yesterday.
+        DailyMaintenanceWorker.enqueueOnce(context)
+
         // Off the main thread and not waited on. A cold start must not block on
         // a database read, and if this is killed before it finishes the worker
         // and the next launch will both do it again.

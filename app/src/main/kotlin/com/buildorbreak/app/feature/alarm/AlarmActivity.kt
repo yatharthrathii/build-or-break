@@ -1,5 +1,6 @@
 package com.buildorbreak.app.feature.alarm
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -9,6 +10,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.MainViewModel
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
@@ -29,28 +32,53 @@ class AlarmActivity : ComponentActivity() {
 
     private val shell: MainViewModel by viewModels()
 
+    /** Which step is on screen. State, because a second alarm can arrive while the first is up. */
+    private val showing = mutableStateOf<Pair<Long, Long>?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         showOverLockScreen()
 
-        val occurrenceId = intent.getLongExtra(AlarmScheduling.EXTRA_OCCURRENCE_ID, NO_ID)
-        val itemId = intent.getLongExtra(AlarmScheduling.EXTRA_ITEM_ID, NO_ID)
-
-        if (occurrenceId == NO_ID || itemId == NO_ID) {
+        val step = stepIn(intent)
+        if (step == null) {
             finish()
             return
         }
+        showing.value = step
 
         setContent {
             val state by shell.state.collectAsStateWithLifecycle()
             val mode = state?.themeMode ?: ThemeMode.SYSTEM
+            val (occurrenceId, itemId) = showing.value ?: return@setContent
 
             BuildOrBreakTheme(darkTheme = isDark(mode)) {
-                AlarmScreen(occurrenceId = occurrenceId, itemId = itemId, onClosed = ::finish)
+                // Keyed on the step, so a second alarm gets its own screen
+                // rather than the first one's state with a new title.
+                key(occurrenceId) {
+                    AlarmScreen(occurrenceId = occurrenceId, itemId = itemId, onClosed = ::finish)
+                }
             }
         }
+    }
+
+    /**
+     * The activity is `singleInstance`, so a second alarm while the first is
+     * still up arrives here rather than in a new window. The newer step takes
+     * the screen; the older one still has its notification and every button
+     * on it.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        stepIn(intent)?.let { showing.value = it }
+    }
+
+    private fun stepIn(intent: Intent): Pair<Long, Long>? {
+        val occurrenceId = intent.getLongExtra(AlarmScheduling.EXTRA_OCCURRENCE_ID, NO_ID)
+        val itemId = intent.getLongExtra(AlarmScheduling.EXTRA_ITEM_ID, NO_ID)
+
+        return (occurrenceId to itemId).takeIf { occurrenceId != NO_ID && itemId != NO_ID }
     }
 
     /**

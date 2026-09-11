@@ -2,6 +2,7 @@ package com.buildorbreak.core.data.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import com.buildorbreak.core.data.entity.GoalEntity
 import com.buildorbreak.core.data.entity.GoalProgressEntity
@@ -19,6 +20,29 @@ interface GoalDao {
 
     @Upsert
     suspend fun upsert(goal: GoalEntity): Long
+
+    /**
+     * Retires every other goal on the plan.
+     *
+     * Only one goal is active at a time on the free tier, so activating one has
+     * to retire the rest. Done in SQL and in the same transaction as the write
+     * that follows it, because a moment with two active goals is a moment where
+     * every screen that says "the goal" is picking one at random.
+     */
+    @Query("UPDATE goal SET is_active = 0 WHERE plan_id = :planId AND id != :keepId")
+    suspend fun deactivateOthers(planId: Long, keepId: Long)
+
+    @Query("UPDATE goal SET is_active = 0 WHERE id = :goalId")
+    suspend fun deactivate(goalId: Long)
+
+    @Transaction
+    suspend fun upsertAsOnlyActive(goal: GoalEntity): Long {
+        val id = upsert(goal)
+        val written = if (goal.id == 0L) id else goal.id
+        if (goal.isActive) deactivateOthers(goal.planId, written)
+
+        return written
+    }
 
     @Query("SELECT * FROM goal_progress WHERE goal_id = :goalId ORDER BY date")
     fun observeProgress(goalId: Long): Flow<List<GoalProgressEntity>>

@@ -30,12 +30,22 @@ data object SettingsRoute : NavKey
 @Serializable
 data object ReliabilityRoute : NavKey
 
+/** The one goal a plan is allowed, and the form for writing it. */
+@Serializable
+data object GoalRoute : NavKey
+
 @Serializable
 data object ImportRoute : NavKey
 
-/** [itemId] of zero opens the editor on a new step rather than an existing one. */
+/**
+ * [itemId] of zero opens the editor on a new step rather than an existing one.
+ *
+ * [templateId] says which day a new step belongs to. An existing step knows
+ * its own; without this a step added from the Weekend tab was written to the
+ * weekday routine, and a step edited there was moved to it.
+ */
 @Serializable
-data class ItemEditorRoute(val itemId: Long) : NavKey {
+data class ItemEditorRoute(val itemId: Long, val templateId: Long = 0) : NavKey {
     companion object {
         const val NEW_ITEM = 0L
     }

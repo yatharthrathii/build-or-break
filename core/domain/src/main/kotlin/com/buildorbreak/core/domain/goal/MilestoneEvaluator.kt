@@ -106,8 +106,11 @@ class DefaultMilestoneEvaluator : MilestoneEvaluator {
         return earned(context)
             // 2. Once in the lifetime of an install.
             .filterNot { it in alreadyFired }
-            // 3. Not the same kind of praise two days running.
-            .filterNot { it.category == yesterdaysCategory }
+            // 3. Not the same kind of praise two days running. A first is
+            // exempt: a first completion on Monday and a first full day on
+            // Tuesday is what a good start looks like, and each happens once,
+            // so the second one held back would be the second one lost.
+            .filterNot { it.category == yesterdaysCategory && it.category != MilestoneCategory.FIRST }
             // 4. The rarest one, so a first time is never buried under a routine one.
             .minByOrNull(::rarity)
     }
@@ -130,19 +133,7 @@ class DefaultMilestoneEvaluator : MilestoneEvaluator {
      * change quietly breaks an unrelated milestone.
      */
     private fun earned(context: MilestoneContext): List<Milestone> = buildList {
-        val today = context.today
-
-        if (today.itemsDone + today.itemsMinimum > 0 && context.history.none { it.itemsDone > 0 }) {
-            add(Milestone.FIRST_COMPLETION)
-        }
-
-        if (today.isFullDay && context.history.none { it.isFullDay }) {
-            add(Milestone.FIRST_FULL_DAY)
-        }
-
-        if (closedDaysIncludingToday(context) == FIRST_WEEK_DAYS) {
-            add(Milestone.FIRST_WEEK)
-        }
+        addAll(firsts(context))
 
         context.goalPercent?.let { percent ->
             when {
@@ -158,7 +149,39 @@ class DefaultMilestoneEvaluator : MilestoneEvaluator {
         if ((context.longestRun?.days ?: 0) >= LONG_RUN_DAYS) add(Milestone.ITEM_THIRTY_DAY_RUN)
     }
 
+    /**
+     * A first is the first day it could have been said, not the first day it
+     * happened. A completion on a poor day is held back, and if that made the
+     * next completion no longer a first, the milestone was gone for good on
+     * the day it was earned.
+     */
+    private fun firsts(context: MilestoneContext): List<Milestone> = buildList {
+        val today = context.today
+
+        if (today.itemsDone + today.itemsMinimum > 0 && neverSayable(context) { it.itemsDone > 0 }) {
+            add(Milestone.FIRST_COMPLETION)
+        }
+
+        if (today.isFullDay && neverSayable(context) { it.isFullDay }) {
+            add(Milestone.FIRST_FULL_DAY)
+        }
+
+        if (closedDaysIncludingToday(context) >= FIRST_WEEK_DAYS && neverSayableSinceTheWeek(context)) {
+            add(Milestone.FIRST_WEEK)
+        }
+    }
+
     private fun closedDaysIncludingToday(context: MilestoneContext): Int = context.history.size + 1
+
+    /** No earlier day both qualified and was good enough to be told about it. */
+    private fun neverSayable(context: MilestoneContext, qualifies: (DayClose) -> Boolean): Boolean =
+        context.history.none { qualifies(it) && it.quality != DayQuality.POOR }
+
+    /** Every closed day from the seventh onward was a poor one, so the week has not been said. */
+    private fun neverSayableSinceTheWeek(context: MilestoneContext): Boolean = context.history
+        .sortedBy { it.date }
+        .drop(FIRST_WEEK_DAYS - 1)
+        .all { it.quality == DayQuality.POOR }
 
     /**
      * The best seven days so far, and only once there is something to compare

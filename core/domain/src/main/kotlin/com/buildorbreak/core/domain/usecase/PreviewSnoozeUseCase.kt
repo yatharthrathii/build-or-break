@@ -7,7 +7,6 @@ import com.buildorbreak.core.domain.resolver.CascadeCalculator
 import com.buildorbreak.core.model.resolved.CascadePreview
 import javax.inject.Inject
 import kotlin.time.Duration
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
@@ -30,9 +29,10 @@ class PreviewSnoozeUseCase @Inject constructor(
     /** Null when there is nothing to preview against, such as a day with no plan. */
     suspend operator fun invoke(occurrenceId: Long, by: Duration): CascadePreview? = withContext(dispatchers.default) {
         val input = observeToday.inputFor(time.today()) ?: return@withContext null
-        val row = occurrences.observeForDate(time.today()).first().firstOrNull { it.id == occurrenceId }
-            ?: return@withContext null
+        val row = occurrences.byId(occurrenceId) ?: return@withContext null
 
-        cascade.preview(input, row.itemId, by)
+        // The same arithmetic the snooze itself uses, so the consequence shown
+        // is the consequence of what will actually happen.
+        cascade.preview(input, row.itemId, snoozeShift(row, by, time.localNow()))
     }
 }

@@ -86,6 +86,7 @@ class SnoozeReschedulesTest {
         widget = object : WidgetGateway {
             override suspend fun refresh() = Unit
         },
+        time = time,
         dispatchers = dispatchers,
     )
 

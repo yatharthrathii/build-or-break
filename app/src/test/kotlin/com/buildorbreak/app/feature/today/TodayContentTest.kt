@@ -8,11 +8,14 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
+import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.SkipChip
+import com.buildorbreak.core.model.enums.ValueKind
 import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Rule
@@ -172,4 +175,147 @@ class TodayContentTest {
         scrollTo("Nothing left on the rails.")
         compose.onNodeWithText("Nothing left on the rails.").assertIsDisplayed()
     }
+
+    // Phase 3: catch up, milestones, the number, the note ---------------------
+
+    @Test
+    fun `an ordinary day shows no catch up panel`() {
+        render(previewState())
+
+        compose.onAllNodesWithText("STILL POSSIBLE").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a slipped day names when each missed step could still happen`() {
+        render(previewState().copy(catchUp = catchUp()))
+
+        scrollTo("STILL POSSIBLE")
+        compose.onNodeWithText("18:20").assertIsDisplayed()
+        compose.onNodeWithText("Evening read").assertIsDisplayed()
+    }
+
+    @Test
+    fun `what will not fit is named rather than counted`() {
+        render(previewState().copy(catchUp = catchUp()))
+
+        scrollTo("No room left today")
+        compose.onNodeWithText("No room left today for Long walk.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a fourth missed step is left over, not declared impossible`() {
+        // The three step limit is about what an evening absorbs, not about
+        // whether the time exists. Saying there is no room would be a lie
+        // the user can check against their own clock.
+        render(previewState().copy(catchUp = catchUp()))
+
+        scrollTo("was missed too")
+        compose.onNodeWithText("Piano was missed too", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `with nothing left that fits, the panel stops calling it possible`() {
+        val gone = catchUp().copy(steps = persistentListOf(), alsoMissed = persistentListOf())
+        render(previewState().copy(catchUp = gone))
+
+        scrollTo("OUT OF TIME")
+        compose.onNodeWithText("OUT OF TIME").assertIsDisplayed()
+        compose.onAllNodesWithText("could still fit", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `move hands back the occurrence and how far it has to go`() {
+        var moved: Pair<Long, Int>? = null
+        render(
+            state = previewState().copy(catchUp = catchUp()),
+            actions = TodayActions.None.copy(onMoveToSlot = { id, minutes -> moved = id to minutes }),
+        )
+
+        scrollTo("MOVE HERE")
+        compose.onAllNodesWithText("MOVE HERE").onFirst().performClick()
+
+        assertThat(moved).isEqualTo(3L to 500)
+    }
+
+    @Test
+    fun `a milestone is said once and can be closed`() {
+        var seen = false
+        render(
+            state = previewState().copy(milestone = MilestoneNotice(Milestone.FIRST_FULL_DAY)),
+            actions = TodayActions.None.copy(onMilestoneSeen = { seen = true }),
+        )
+
+        compose.onNodeWithText("A whole day kept.").assertIsDisplayed()
+        compose.onNodeWithText("GOT IT").performClick()
+
+        assertThat(seen).isTrue()
+    }
+
+    @Test
+    fun `the thirty day figure is shown once there is enough of it`() {
+        render(previewState().copy(consistency = Consistency(goodDays = 24, days = 30)))
+
+        compose.onNodeWithText("24 of the last 30 days went well").assertIsDisplayed()
+    }
+
+    @Test
+    fun `three days is not enough to draw a thirty day figure`() {
+        render(previewState().copy(consistency = Consistency(goodDays = 3, days = 3)))
+
+        compose.onAllNodesWithText("went well", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `the note the user wrote is on the card when the step arrives`() {
+        val card = previewState().next!!.copy(detail = "Shelf by the door")
+        render(previewState().copy(next = card))
+
+        compose.onNodeWithText("Shelf by the door").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a completed step can be given its number afterwards`() {
+        var logged: Double? = null
+        render(
+            state = previewState().copy(
+                askNumber = MeasurePrompt(3, 3, "Evening read", ValueKind.MINUTES),
+            ),
+            actions = TodayActions.None.copy(onLogNumber = { logged = it }),
+        )
+
+        compose.onNodeWithText("Optional. The step is already done either way.").assertIsDisplayed()
+        // Nothing typed yet, so there is nothing to log.
+        compose.onNodeWithText("LOG IT").assertIsNotEnabled()
+        assertThat(logged).isNull()
+    }
+
+    @Test
+    fun `the number question can be waved away and the step stays done`() {
+        var dismissed = false
+        render(
+            state = previewState().copy(
+                askNumber = MeasurePrompt(3, 3, "Evening read", ValueKind.MINUTES),
+            ),
+            actions = TodayActions.None.copy(onDismissNumber = { dismissed = true }),
+        )
+
+        compose.onNodeWithText("NOT NOW").performClick()
+
+        assertThat(dismissed).isTrue()
+    }
+
+    /**
+     * Two steps that could still happen, one that will not fit, one left over.
+     *
+     * Literal on purpose. A fixture built from the planner would test the
+     * planner, which has its own tests, rather than what the screen says.
+     */
+    private fun catchUp() = CatchUpPanel(
+        steps = persistentListOf(
+            CatchUpRow(3, 3, "Evening read", "18:20", 50, moveByMinutes = 500, useMinimum = false),
+            CatchUpRow(5, 5, "Ten minutes", "19:15", 10, moveByMinutes = 75, useMinimum = true),
+        ),
+        outOfTime = persistentListOf("Long walk"),
+        alsoMissed = persistentListOf("Piano"),
+    )
 }

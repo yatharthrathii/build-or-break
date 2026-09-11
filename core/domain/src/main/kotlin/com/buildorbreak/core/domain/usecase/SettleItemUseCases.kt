@@ -10,9 +10,13 @@ import com.buildorbreak.core.domain.gateway.WidgetGateway
 import com.buildorbreak.core.domain.repository.MeasurementRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.model.enums.OccurrenceState
+import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.execution.SkipReason
+import java.time.Duration as JavaDuration
+import java.time.LocalDateTime
 import javax.inject.Inject
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.withContext
 
 /**
@@ -68,12 +72,14 @@ class SnoozeItemUseCase @Inject constructor(
     private val reschedule: RescheduleAllUseCase,
     private val notifications: NotificationGateway,
     private val widget: WidgetGateway,
+    private val time: TimeProvider,
     private val dispatchers: AppDispatchers,
 ) {
 
     suspend operator fun invoke(occurrenceId: Long, by: Duration): Outcome<Unit, DataError> =
         withContext(dispatchers.io) {
-            val shifted = occurrences.shift(occurrenceId, by)
+            val row = occurrences.byId(occurrenceId) ?: return@withContext Outcome.Failure(DataError.NotFound)
+            val shifted = occurrences.shift(occurrenceId, snoozeShift(row, by, time.localNow()))
 
             notifications.dismiss(occurrenceId)
             reschedule()
@@ -84,6 +90,22 @@ class SnoozeItemUseCase @Inject constructor(
                 is Outcome.Failure -> shifted
             }
         }
+}
+
+/**
+ * How far a row has to move for "ten more minutes" to mean ten minutes from now.
+ *
+ * Measured from where the step is rather than from the clock, a snooze on an
+ * alarm that fired late or rang for a while lands in the past: the step is
+ * dropped by the rescheduling pass as already gone, the notification has been
+ * taken down, and the user who asked for ten more minutes gets nothing at all.
+ * So the time already lost is added to the shift, and a step that is not yet
+ * due moves by exactly what was asked.
+ */
+internal fun snoozeShift(row: Occurrence, by: Duration, now: LocalDateTime): Duration {
+    val late = JavaDuration.between(row.effectiveAt, now).toMinutes().coerceAtLeast(0)
+
+    return by + late.minutes
 }
 
 /**
@@ -152,6 +174,10 @@ class UndoSettleUseCase @Inject constructor(
         val restored = occurrences.unsettle(occurrenceId)
 
         measurements.clearSkipReason(occurrenceId)
+        // The number goes with the settle it was logged against. Left behind,
+        // sixty minutes of study would keep counting toward a duration goal
+        // for a step that was later closed as missed.
+        measurements.clearMeasurementFor(occurrenceId)
         reschedule()
         widget.refresh()
 

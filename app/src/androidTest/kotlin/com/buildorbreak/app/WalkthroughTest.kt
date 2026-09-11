@@ -27,6 +27,14 @@ import org.junit.runner.RunWith
  * answer whether the app survives a real Hilt graph, a real database and a real
  * launcher, and that is where the failures have actually been.
  *
+ * Runs in English, and expects the phone to be. Every wait below names a
+ * piece of English copy, and a phone left in Hindi after checking the
+ * translation turns the whole walkthrough into a fifteen second wait for a
+ * button that says something else. The app locale cannot be pinned from in
+ * here: changing it restarts the app's process, and this test runs inside
+ * that process. Set it from the host first:
+ * `adb shell cmd locale set-app-locales com.buildorbreak.app.debug --user 0 --locales en-US`.
+ *
  * Every step waits for something it can name before it asserts, rather than for
  * a fixed number of milliseconds. `waitForIdle` is not enough on its own here:
  * the day arrives from a database flow, and a screen that is idle is not the
@@ -74,6 +82,11 @@ class WalkthroughTest {
      * point of the preview is that it now comes first.
      */
     private fun firstRun() {
+        // A cold start has to read whether the phone has been through this
+        // before, and a check taken during that read sees neither screen. So
+        // the wait is for whichever of the two turns up, and only then does
+        // the test decide which walkthrough it is on.
+        compose.waitUntil(DEFAULT_TIMEOUT) { exists("Show me") || tabExists(TODAY) }
         if (!exists("Show me")) return
 
         shot("onboarding-welcome")
@@ -144,9 +157,20 @@ class WalkthroughTest {
         shot("settings-demo-done")
     }
 
+    /**
+     * The week, then the month.
+     *
+     * The demo history stops at yesterday, so on a Monday the current week is
+     * genuinely empty and the screen says so. A walkthrough that only passed
+     * on a Tuesday would be a walkthrough nobody could trust on a Monday.
+     */
     private fun insightsAfterHistory() {
         tab(INSIGHTS)
-        await("KEPT PER DAY")
+
+        // Either the week has something in it or it says plainly that it does
+        // not. Never tapped by the word WEEK, which also appears in the header
+        // above it.
+        awaitEither("KEPT PER DAY", "Nothing this week yet")
         shot("insights-week")
 
         tap("MONTH")
@@ -155,7 +179,7 @@ class WalkthroughTest {
 
         // The whole reason the skip sheet asks. Checked on the month rather
         // than the week: a week that is one day old can honestly contain no
-        // skips at all, and a test that fails on a Tuesday is not a test.
+        // skips at all.
         assertThat(exists("Why steps were skipped")).isTrue()
     }
 
@@ -226,6 +250,9 @@ class WalkthroughTest {
      * went on to assert things about a screen it had never opened. It passed.
      * A tag cannot be hit by accident, which is the entire reason it is here.
      */
+    private fun tabExists(name: String): Boolean =
+        compose.onAllNodes(hasTestTag(navTag(name))).fetchSemanticsNodes().isNotEmpty()
+
     private fun tab(name: String) {
         compose.waitUntilAtLeastOneExists(hasTestTag(navTag(name)), timeoutMillis = DEFAULT_TIMEOUT)
         compose.onNodeWithTag(navTag(name)).performClick()
@@ -249,6 +276,17 @@ class WalkthroughTest {
 
     private fun exists(text: String): Boolean =
         compose.onAllNodesWithText(text, substring = true, ignoreCase = true).fetchSemanticsNodes().isNotEmpty()
+
+    /**
+     * Waits for whichever of two honest answers the screen gives.
+     *
+     * Used where the data itself decides the wording, so the assertion is
+     * that the screen said something true rather than that the world was in
+     * a particular state on the morning the test ran.
+     */
+    private fun awaitEither(first: String, second: String, timeout: Long = DEFAULT_TIMEOUT) {
+        compose.waitUntil(timeout) { exists(first) || exists(second) }
+    }
 
     /** Waits for a screen to actually have its data, rather than merely to stop drawing. */
     private fun await(text: String, timeout: Long = DEFAULT_TIMEOUT) {

@@ -47,6 +47,13 @@ class AlarmDeliveryTest {
     @Before
     fun allowNotifications() {
         shell("pm grant ${'$'}{context.packageName} android.permission.POST_NOTIFICATIONS")
+
+        // Between two tests this process has no activity and no service, so
+        // the platform sees a cached app and its freezer may stop it cold. A
+        // frozen process cannot answer a foreground start in time, and the
+        // platform then kills it for the delay it caused itself. A real alarm
+        // never meets this: the broadcast thaws the app before the start.
+        shell("am unfreeze --sticky ${'$'}{context.packageName}")
         Thread.sleep(SETTLE_MILLIS)
     }
 
@@ -79,6 +86,14 @@ class AlarmDeliveryTest {
 
     @Test
     fun theAlarmScreenComesToTheFrontOverWhateverWasThere() {
+        // The emulator's screen may have gone dark since the previous test,
+        // and a dark screen has no focused window to find the alarm in. The
+        // real alarm turns the screen on itself; the test starts the activity
+        // directly and so has to do that part by hand.
+        shell("input keyevent KEYCODE_WAKEUP")
+        shell("wm dismiss-keyguard")
+        Thread.sleep(SETTLE_MILLIS)
+
         AlarmRingerService.start(context, ringIntent())
         waitFor { isRingerRunning() }
 

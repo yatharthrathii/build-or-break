@@ -20,8 +20,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
 
-/** Milestones share one id, so a second one replaces the first rather than stacking. */
-private const val MILESTONE_NOTIFICATION_ID = 1
+/**
+ * Milestones share one id, so a second one replaces the first rather than
+ * stacking. Well clear of the occurrence ids, which begin at one: a milestone
+ * posted as id 1 took down the notification for occurrence 1.
+ */
+private const val MILESTONE_NOTIFICATION_ID = 900_001
 
 /**
  * Puts a step in front of the user, as loudly as the plan asked and the phone

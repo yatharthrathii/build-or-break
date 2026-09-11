@@ -37,6 +37,21 @@ class ItemRepositoryImpl @Inject constructor(
         sqlOutcome(dispatchers.io) { items.upsertBlock(block.toEntity()) }
 
     /**
+     * Unlinks first, deletes second, in that order and never the other way.
+     *
+     * If the delete failed the steps are merely ungrouped, which is what the
+     * user asked for and is recoverable. If the unlink failed after the delete
+     * the steps would carry the id of a group that no longer exists, and an
+     * archived step brought back later would come back inside a group nobody
+     * can see. Archived steps are unlinked too, for the same reason.
+     */
+    override suspend fun deleteBlock(templateId: Long, blockId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) {
+            items.unlinkBlock(blockId)
+            items.deleteBlock(blockId)
+        }
+
+    /**
      * The archive time comes from the injected clock rather than from
      * `Instant.now`, which detekt fails the build over. It is not pedantry here:
      * a test that archives an item and then asserts what the day looks like has

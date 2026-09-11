@@ -1,20 +1,11 @@
 package com.buildorbreak.app.di
 
 import com.buildorbreak.core.domain.export.ExportBuilder
-import com.buildorbreak.core.domain.goal.DayQualityClassifier
-import com.buildorbreak.core.domain.goal.DefaultDayQualityClassifier
-import com.buildorbreak.core.domain.goal.DefaultGoalCalculator
-import com.buildorbreak.core.domain.goal.DefaultMilestoneEvaluator
-import com.buildorbreak.core.domain.goal.GoalCalculator
-import com.buildorbreak.core.domain.goal.MilestoneEvaluator
 import com.buildorbreak.core.domain.parse.PlanTextParser
 import com.buildorbreak.core.domain.resolver.CascadeCalculator
 import com.buildorbreak.core.domain.resolver.DefaultCascadeCalculator
 import com.buildorbreak.core.domain.resolver.DefaultTimelineResolver
 import com.buildorbreak.core.domain.resolver.TimelineResolver
-import com.buildorbreak.core.domain.review.CatchUpPlanner
-import com.buildorbreak.core.domain.review.DefaultWeeklyReviewBuilder
-import com.buildorbreak.core.domain.review.WeeklyReviewBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,13 +13,15 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * The pure domain services, constructed once.
+ * The pure domain services that lay a day out, constructed once.
  *
- * They are provided here rather than annotated in `:core:domain` because none of
- * them takes an injected dependency: they are plain objects with sensible
+ * They are provided here rather than annotated in `:core:domain` because none
+ * of them takes an injected dependency: they are plain objects with sensible
  * defaults, and constructing one is a single call. Putting the wiring in an
  * Android module keeps the domain readable as ordinary Kotlin that can be
  * instantiated in a test with `DefaultTimelineResolver()` and nothing else.
+ *
+ * The services that judge a finished day live in `ReviewModule` next door.
  *
  * Every one is a singleton because every one is stateless. Two timeline
  * resolvers would be two identical stateless objects, and holding one costs
@@ -50,26 +43,6 @@ object DomainModule {
     @Provides
     @Singleton
     fun provideCascadeCalculator(resolver: TimelineResolver): CascadeCalculator = DefaultCascadeCalculator(resolver)
-
-    @Provides
-    @Singleton
-    fun provideDayQualityClassifier(): DayQualityClassifier = DefaultDayQualityClassifier()
-
-    @Provides
-    @Singleton
-    fun provideMilestoneEvaluator(): MilestoneEvaluator = DefaultMilestoneEvaluator()
-
-    @Provides
-    @Singleton
-    fun provideGoalCalculator(): GoalCalculator = DefaultGoalCalculator()
-
-    @Provides
-    @Singleton
-    fun provideWeeklyReviewBuilder(): WeeklyReviewBuilder = DefaultWeeklyReviewBuilder()
-
-    @Provides
-    @Singleton
-    fun provideCatchUpPlanner(): CatchUpPlanner = CatchUpPlanner()
 
     @Provides
     @Singleton

@@ -96,12 +96,19 @@ class SwitchDayTemplateUseCase @Inject constructor(
         mode: DayMode = DayMode.NORMAL,
         date: LocalDate = time.today(),
     ): Outcome<Unit, DataError> = withContext(dispatchers.io) {
+        // A different template is a different day and the shift goes with the
+        // old one. The same template in a different mode is the same day: a
+        // morning that started ninety minutes late and then turned into a
+        // sick day is still ninety minutes late.
+        val existing = dayLogs.observe(date).first()
+        val shift = existing?.dayShiftMinutes?.takeIf { existing.templateId == templateId } ?: 0
+
         val written = dayLogs.upsert(
             DayLog(
                 date = date,
                 planId = planId,
                 templateId = templateId,
-                dayShiftMinutes = 0,
+                dayShiftMinutes = shift,
                 mode = mode,
                 chosenAt = time.now(),
             ),

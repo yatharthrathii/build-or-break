@@ -3,6 +3,7 @@ package com.buildorbreak.core.domain.review
 import com.buildorbreak.core.model.enums.ReviewStory
 import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.review.ReviewAnswer
+import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlin.time.Duration
 
@@ -46,7 +47,32 @@ data class Insights(
      * is the one that suggests moving the walk rather than trying harder.
      */
     val skipReasons: List<SkipCount>,
+    /**
+     * The one thing that went best, named.
+     *
+     * Named rather than aggregated on purpose. "You kept the evening walk
+     * every day this week" lands; "adherence 86 percent" does not. It is the
+     * first thing on the screen because a report that opens with what is wrong
+     * is a report people stop opening, and this one has to survive a bad week.
+     */
+    val win: InsightWin?,
+    /**
+     * Every step being missed often enough to mention, worst first.
+     *
+     * More than the one the suggestion picks. The suggestion has to choose one
+     * fix and act on it; this is the honest list, and seeing three steps with
+     * the same cause is itself the finding.
+     */
+    val patterns: List<InsightPattern>,
     val suggestion: Suggestion?,
+    /**
+     * Whether anything at all was settled in the trailing four weeks.
+     *
+     * The difference between a genuinely new install and a Monday morning.
+     * Both have an empty week, and telling somebody with six weeks of
+     * history that they are settling in is the app forgetting them.
+     */
+    val hasHistory: Boolean,
     val story: ReviewStory,
 ) {
     val adherence: Float get() = if (total == 0) 0f else kept.toFloat() / total
@@ -70,6 +96,28 @@ data class Insights(
  */
 /** One reason and how often it was given. */
 data class SkipCount(val chip: SkipChip, val count: Int)
+
+/** The step kept most reliably this period. */
+data class InsightWin(val itemId: Long, val title: String, val kept: Int, val outOf: Int) {
+    val isPerfect: Boolean get() = outOf > 0 && kept == outOf
+}
+
+/**
+ * One step that keeps being missed, and what kind of missing it is.
+ *
+ * [cause] is the whole value. Three steps each missed three times look
+ * identical to anything that only counts, and they do not have the same fix.
+ * [weekday] is set only when the misses cluster on one day, which is a
+ * different story again.
+ */
+data class InsightPattern(
+    val itemId: Long,
+    val title: String,
+    val misses: Int,
+    val opportunities: Int,
+    val cause: SkipCause,
+    val weekday: DayOfWeek?,
+)
 
 data class InsightBar(val start: LocalDate, val fraction: Float?, val isWeekend: Boolean)
 
@@ -100,4 +148,14 @@ data class Suggestion(
     val slip: Duration?,
     /** The Monday of the week the suggestion belongs to. Keyed for dismissal. */
     val weekStart: LocalDate,
+    /**
+     * Every fix the review would accept, best first, with a way out at the end.
+     *
+     * Offered rather than hidden behind the first one. A question with only
+     * one answer is not a question, and `LEAVE_IT` and `REMOVE_ITEM` matter
+     * more than they look: without an honest way out, somebody who has decided
+     * they are not going to do a thing picks whichever answer ends the
+     * conversation, and the same question returns next week unchanged.
+     */
+    val options: List<ReviewAnswer> = listOf(answer),
 )

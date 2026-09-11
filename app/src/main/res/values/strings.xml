@@ -193,6 +193,50 @@
     <string name="today_empty_title">Nothing today</string>
     <string name="today_empty_body">This plan has no steps that run on this weekday.</string>
 
+    <!-- Catch up. What is still possible, and what honestly is not. -->
+    <string name="today_catch_up">Still possible</string>
+    <string name="today_catch_up_body">The day slipped. Here is where these could still fit.</string>
+    <string name="today_catch_up_gone">Out of time</string>
+    <string name="today_catch_up_takes">Takes about %1$d min</string>
+    <string name="today_catch_up_smaller">The smaller version, about %1$d min</string>
+    <string name="today_catch_up_move">Move here</string>
+    <string name="today_catch_up_skip">Not today</string>
+    <plurals name="today_catch_up_also">
+        <item quantity="one">%1$s was missed too. Three at a time is as much as an evening absorbs.</item>
+        <item quantity="other">%1$s were missed too. Three at a time is as much as an evening absorbs.</item>
+    </plurals>
+    <string name="today_catch_up_no_room">No room left today for %1$s.</string>
+
+    <!-- Milestones. At most one a day, and never on a day that went badly. -->
+    <string name="today_milestone">Worth saying</string>
+    <string name="today_milestone_seen">Got it</string>
+    <string name="milestone_first_completion">First one done.</string>
+    <string name="milestone_first_completion_body">The routine has started. Everything after this is repetition.</string>
+    <string name="milestone_first_full_day">A whole day kept.</string>
+    <string name="milestone_first_full_day_body">Every step on the plan, done. That is the shape of a good day.</string>
+    <string name="milestone_first_week">A week in.</string>
+    <string name="milestone_first_week_body">Seven days recorded. From here the app has enough to tell you something useful.</string>
+    <string name="milestone_goal_quarter">A quarter of the way.</string>
+    <string name="milestone_goal_half">Halfway.</string>
+    <string name="milestone_goal_three_quarters">Three quarters there.</string>
+    <string name="milestone_goal_body">The goal is moving because the days are.</string>
+    <string name="milestone_goal_reached">Goal reached.</string>
+    <string name="milestone_goal_reached_body">Set the next one when you are ready. There is no hurry.</string>
+    <string name="milestone_best_week">Your best week yet.</string>
+    <string name="milestone_best_week_body">Better than every seven days before it.</string>
+    <string name="milestone_thirty_day_run">Thirty days in a row.</string>
+    <string name="milestone_thirty_day_run_body">One step, kept for a month. That is not luck any more.</string>
+
+    <plurals name="today_consistency">
+        <item quantity="one">%1$d of the last day went well</item>
+        <item quantity="other">%1$d of the last %2$d days went well</item>
+    </plurals>
+
+    <!-- The number a completed step asks for. Always optional. -->
+    <string name="today_number_body">Optional. The step is already done either way.</string>
+    <string name="today_number_save">Log it</string>
+    <string name="today_number_skip">Not now</string>
+
     <!-- What kind of time a step keeps. Set as a badge. -->
     <string name="kind_fixed">Fixed</string>
     <!-- Minutes, not a count of things, so the word after the number does not inflect. -->
@@ -203,10 +247,13 @@
     <!-- The one note beside a row. -->
     <string name="note_pinned">Never moves</string>
     <string name="note_done_at">Done %1$s</string>
-    <string name="note_done_over" tools:ignore="PluralsCandidate">Done %1$s · ran %2$d over</string>
-    <string name="note_done_early" tools:ignore="PluralsCandidate">Done %1$s · %2$d early</string>
-    <string name="note_moved_later">Moved +%1$d</string>
-    <string name="note_moved_earlier">Moved −%1$d</string>
+    <string name="note_done_over">Done %1$s · ran %2$s over</string>
+    <string name="note_done_early">Done %1$s · %2$s early</string>
+    <string name="note_moved_later">Moved +%1$s</string>
+    <string name="note_moved_earlier">Moved −%1$s</string>
+    <string name="span_minutes">%1$d</string>
+    <string name="span_hours">%1$dh</string>
+    <string name="span_hours_minutes">%1$dh %2$dm</string>
     <string name="note_ends">Ends %1$s</string>
     <string name="note_missed">Missed</string>
     <string name="note_skipped">Skipped</string>
@@ -390,7 +437,57 @@
     <string name="editor_pinned_body">A pinned step does not move when the whole day is shifted.</string>
     <string name="editor_catchable_title">Worth catching up</string>
     <string name="editor_catchable_body">Off for things that only make sense at their time, like waking up. The app will not suggest them later.</string>
+    <string name="editor_detail_label">Note</string>
+    <string name="editor_detail_hint">Anything you will want at the moment it comes round</string>
+    <string name="editor_detail_body">Shown on the card when the step arrives. A shelf, a page number, a bus route.</string>
+
+    <string name="editor_group">Group</string>
+    <string name="editor_group_none">Not in a group</string>
+    <string name="editor_group_pick">Which group</string>
+    <string name="editor_group_body">Steps in a group arrive as one interruption instead of several.</string>
+    <string name="editor_group_in">In %1$s. The first step of the group makes the noise; the rest are quiet.</string>
+    <string name="editor_salience_group">%1$s decides this. Take the step out of the group to set it here.</string>
+    <string name="editor_chosen">Chosen</string>
+
+    <string name="editor_measure">Ask for a number</string>
+    <string name="editor_measure_pick">What kind of number</string>
+    <string name="editor_measure_body">Off for almost everything. On for the steps worth a figure: weight, reps, pages.</string>
+    <string name="editor_measure_on">Offered when you tick it off, never required.</string>
+    <string name="measure_none">None</string>
+    <string name="measure_weight">Weight</string>
+    <string name="measure_reps">Reps</string>
+    <string name="measure_pages">Pages</string>
+    <string name="measure_minutes">Minutes</string>
+    <string name="measure_count">Count</string>
+    <string name="measure_number">Number</string>
+    <string name="unit_none"></string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_reps">reps</string>
+    <string name="unit_pages">pages</string>
+    <string name="unit_minutes">min</string>
+
     <string name="editor_archive">Remove this step</string>
+
+    <!-- Groups. Five things at eight in the morning are one interruption, not five. -->
+    <string name="plan_group_new_title">New group</string>
+    <string name="plan_group_edit_title">Edit group</string>
+    <string name="plan_group_name">Name</string>
+    <string name="plan_group_name_hint">For example, Morning routine</string>
+    <string name="plan_group_starts">Starts</string>
+    <string name="plan_group_how_loud">How loud</string>
+    <string name="plan_group_how_loud_body">The first step in the group announces itself this way. The rest stay quiet, so a group is one interruption instead of several.</string>
+    <string name="plan_group_delete">Remove group</string>
+    <plurals name="plan_group_delete_body">
+        <item quantity="one">Removing the group leaves its %1$d step on the plan, ungrouped.</item>
+        <item quantity="other">Removing the group leaves its %1$d steps on the plan, ungrouped.</item>
+    </plurals>
+    <string name="plan_group_empty">Nothing in it yet</string>
+    <plurals name="plan_group_steps">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+    <string name="plan_line_measured">Asks for a number</string>
+    <string name="plan_line_note">Has a note</string>
 
     <!--
         Import. The first thing anybody does, and the reason the app hands out a
@@ -474,6 +571,8 @@
         <item quantity="one">Missed %1$d of %2$d days.</item>
         <item quantity="other">Missed %1$d of %2$d days.</item>
     </plurals>
+    <string name="insights_quiet_title">Nothing this week yet</string>
+    <string name="insights_quiet_body">The week has only just started. Switch to Month to see the last four.</string>
     <string name="insights_empty_title">Nothing to show yet</string>
     <string name="insights_empty_body">Keep a few steps and this fills in. The first week is settling in, whatever the numbers say.</string>
     <string name="insights_no_plan_title">No plan yet</string>
@@ -496,6 +595,125 @@
     <string name="story_losing_grip">Slipping week on week. Worth a smaller plan before a bigger push.</string>
     <string name="story_settling_in">First week. Too early to conclude anything.</string>
     <string name="story_mixed">No clear pattern yet.</string>
+
+    <!-- The week in words, above every chart on the screen. -->
+    <string name="insights_reading">The reading</string>
+    <string name="insights_went_best">Went best</string>
+    <string name="insights_went_worst">Worth fixing</string>
+    <plurals name="insights_win">
+        <item quantity="one">%1$s, kept %2$d of the %3$d time it came round.</item>
+        <item quantity="other">%1$s, kept %2$d of %3$d times.</item>
+    </plurals>
+    <string name="insights_win_perfect">%1$s, kept every time. All %2$d of them.</string>
+    <plurals name="insights_problem">
+        <item quantity="one">%1$s was missed %2$d of the %3$d time it came round.</item>
+        <item quantity="other">%1$s was missed %2$d of %3$d times.</item>
+    </plurals>
+    <string name="insights_patterns">What keeps happening</string>
+    <string name="insights_pattern_count">%1$d/%2$d</string>
+    <string name="insights_pattern_weekday">Almost always on a %1$s. That is a shape, not bad luck.</string>
+    <string name="insights_other_options">Try something else</string>
+    <string name="insights_hide_options">Hide the others</string>
+    <string name="insights_goal">The goal</string>
+
+    <string name="story_head_on_track">The week held.</string>
+    <string name="story_head_plan_too_small">The plan is the problem, not you.</string>
+    <string name="story_head_timing_problem">Something is in the wrong place.</string>
+    <string name="story_head_reminder_problem">Things are being forgotten.</string>
+    <string name="story_head_losing_grip">This week slipped.</string>
+    <string name="story_head_settling_in">Still settling in.</string>
+    <string name="story_head_mixed">A mixed week.</string>
+
+    <!-- Why something keeps being missed. The reason decides the fix. -->
+    <string name="cause_timing">Something else keeps happening at that time.</string>
+    <string name="cause_motivation">Nothing was in the way. The step is probably too big as set.</string>
+    <string name="cause_reminder">It is being forgotten rather than refused.</string>
+    <string name="cause_unknown">Not enough was said to tell why.</string>
+
+    <!-- The goal. Optional, and the empty state is an offer rather than a nag. -->
+    <string name="goal_title">Goal</string>
+    <string name="goal_none_title">No goal yet</string>
+    <string name="goal_none_body">The routine works without one. A goal is for when you want the days to add up to something in particular.</string>
+    <string name="goal_set_one">Set a goal</string>
+    <string name="goal_edit">Edit</string>
+    <string name="goal_retire">Retire it</string>
+    <string name="goal_so_far">So far</string>
+    <string name="goal_nothing_yet">Nothing recorded yet. Too early to say.</string>
+    <string name="goal_ahead">Ahead of where the line says you should be.</string>
+    <string name="goal_on_pace">On pace.</string>
+    <string name="goal_behind">Behind the line. There is still time.</string>
+    <string name="goal_over">The date has passed. Set the next one when you are ready.</string>
+    <string name="goal_reached">Reached.</string>
+    <string name="goal_too_early">Too early to say.</string>
+    <string name="goal_current_of">%1$s of %2$s %3$s</string>
+    <string name="goal_pace_marker">The mark is where a straight line says you should be: %1$d%%.</string>
+    <string name="goal_pace_target">Where the line says</string>
+    <string name="goal_projection">At this rate</string>
+    <string name="goal_no_rate_body">Nothing to carry forward until a day has finished.</string>
+    <string name="goal_no_rate_yet">—</string>
+    <string name="goal_will_reach">Gets there in time.</string>
+    <string name="goal_will_miss">Falls short unless something changes.</string>
+    <string name="goal_time">Time left</string>
+    <string name="goal_day_of">Day %1$d of %2$d</string>
+    <string name="goal_trail_range">%1$s to %2$s</string>
+    <plurals name="goal_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+
+    <string name="goal_form_title">What is the goal</string>
+    <string name="goal_form_title_hint">For example, twelve gym sessions</string>
+    <string name="goal_form_kind">What kind</string>
+    <string name="goal_kind_number">Reach</string>
+    <string name="goal_kind_count">Count</string>
+    <string name="goal_kind_duration">Hours</string>
+    <string name="goal_kind_consistency">Hold</string>
+    <string name="goal_kind_number_hint">A measured value getting to a number: 78 kg, 40 pages a day.</string>
+    <string name="goal_kind_count_hint">Doing one step a set number of times.</string>
+    <string name="goal_kind_duration_hint">Accumulating minutes on one step.</string>
+    <string name="goal_kind_consistency_hint">Keeping the plan a set share of days.</string>
+    <string name="goal_form_step">Which step</string>
+    <string name="goal_form_step_none">Pick a step</string>
+    <string name="goal_form_step_body">The goal counts this step and nothing else.</string>
+    <string name="goal_form_measures">What is measured</string>
+    <string name="goal_form_measures_body">Readings logged against any step of this kind feed the goal.</string>
+    <string name="goal_form_start">Starting value</string>
+    <string name="goal_form_start_hint">Where you are today</string>
+    <string name="goal_form_target_value">Target value</string>
+    <string name="goal_form_target_times">How many times</string>
+    <string name="goal_form_target_minutes">How many minutes</string>
+    <string name="goal_form_target_percent">What percent of days</string>
+    <string name="goal_form_target_hint">A number</string>
+    <string name="goal_form_length">How long</string>
+    <string name="goal_form_length_body">Counted from today. A goal you can finish beats one you can only fail.</string>
+    <plurals name="goal_form_weeks">
+        <item quantity="one">%1$d week</item>
+        <item quantity="other">%1$d weeks</item>
+    </plurals>
+    <string name="goal_unit_times">times</string>
+    <string name="goal_unit_percent">%%</string>
+    <string name="goal_reason_title">Give the goal a name to save.</string>
+    <string name="goal_reason_target">Put a number in the target.</string>
+    <string name="goal_reason_start">Say where you are starting from.</string>
+    <string name="goal_reason_item">Pick which step this counts.</string>
+    <string name="goal_reason_nowhere">The start and the target are the same, so there is nothing to reach.</string>
+
+    <string name="settings_goal">Goal</string>
+    <string name="settings_goal_body">One target the days add up to. Optional.</string>
+
+    <!-- What the alarms actually did, as opposed to what they are allowed to do. -->
+    <string name="reliability_measured">What actually happened</string>
+    <string name="reliability_measured_none">No alarms have been due yet, so there is nothing to measure. This fills in on its own.</string>
+    <plurals name="reliability_measured_window">
+        <item quantity="one">Over the last day, on this phone.</item>
+        <item quantity="other">Over the last %1$d days, on this phone.</item>
+    </plurals>
+    <string name="reliability_on_time">Arrived on time</string>
+    <string name="reliability_of">%1$d of %2$d</string>
+    <string name="reliability_late">Arrived late</string>
+    <string name="reliability_typically_late">Usually about %1$d min behind.</string>
+    <string name="reliability_never_arrived">Never arrived</string>
+    <string name="reliability_never_arrived_body">Usually a battery manager. The fixes above are what change it.</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

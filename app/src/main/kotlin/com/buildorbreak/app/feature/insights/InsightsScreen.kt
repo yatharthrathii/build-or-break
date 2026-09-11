@@ -23,6 +23,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -45,7 +48,9 @@ import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.HeroNumberStyle
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
+import com.buildorbreak.core.domain.goal.GoalStanding
 import com.buildorbreak.core.domain.review.InsightsPeriod
+import com.buildorbreak.core.domain.review.SkipCause
 import com.buildorbreak.core.model.enums.ReviewStory
 import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.review.ReviewAnswer
@@ -69,7 +74,11 @@ private const val MIN_BAR = 0.02f
  * eleven charts is a dashboard nobody opens twice.
  */
 @Composable
-fun InsightsScreen(modifier: Modifier = Modifier, viewModel: InsightsViewModel = hiltViewModel()) {
+fun InsightsScreen(
+    onOpenGoal: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: InsightsViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     InsightsContent(
@@ -77,6 +86,7 @@ fun InsightsScreen(modifier: Modifier = Modifier, viewModel: InsightsViewModel =
         onPeriod = viewModel::onPeriod,
         onApply = viewModel::onApply,
         onDismiss = viewModel::onDismissSuggestion,
+        onOpenGoal = onOpenGoal,
         modifier = modifier,
     )
 }
@@ -85,8 +95,9 @@ fun InsightsScreen(modifier: Modifier = Modifier, viewModel: InsightsViewModel =
 fun InsightsContent(
     state: InsightsUiState,
     onPeriod: (InsightsPeriod) -> Unit,
-    onApply: (SuggestionUi) -> Unit,
+    onApply: (SuggestionUi, ReviewAnswer) -> Unit,
     onDismiss: (LocalDate) -> Unit,
+    onOpenGoal: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -109,12 +120,21 @@ fun InsightsContent(
                 body = stringResource(R.string.insights_no_plan_body),
             )
 
+            // A week that has not started yet is not a life that has not
+            // started yet. Somebody six weeks in who opens this on a Monday
+            // morning should be pointed at the month, not told they are
+            // settling in.
+            state.isQuietPeriod -> EmptyState(
+                title = stringResource(R.string.insights_quiet_title),
+                body = stringResource(R.string.insights_quiet_body),
+            )
+
             state.isEmpty -> EmptyState(
                 title = stringResource(R.string.insights_empty_title),
                 body = stringResource(R.string.insights_empty_body),
             )
 
-            else -> Body(state = state, onApply = onApply, onDismiss = onDismiss)
+            else -> Body(state = state, onApply = onApply, onDismiss = onDismiss, onOpenGoal = onOpenGoal)
         }
     }
 }
@@ -127,10 +147,21 @@ private fun kickerText(state: InsightsUiState): String = when {
 }
 
 @Composable
-private fun Body(state: InsightsUiState, onApply: (SuggestionUi) -> Unit, onDismiss: (LocalDate) -> Unit) {
+private fun Body(
+    state: InsightsUiState,
+    onApply: (SuggestionUi, ReviewAnswer) -> Unit,
+    onDismiss: (LocalDate) -> Unit,
+    onOpenGoal: () -> Unit,
+) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         HeroRow(state = state)
         Chart(state = state)
+
+        StoryPanel(state = state)
+
+        state.goal?.let { GoalStrip(goal = it, onOpen = onOpenGoal) }
+
+        PatternSection(patterns = state.patterns)
 
         SectionLabel(text = stringResource(R.string.insights_step_by_step))
         // Two words on the screen that nobody outside this app has met before.
@@ -149,7 +180,7 @@ private fun Body(state: InsightsUiState, onApply: (SuggestionUi) -> Unit, onDism
         state.suggestion?.let { suggestion ->
             SuggestionPanel(
                 suggestion = suggestion,
-                onApply = { onApply(suggestion) },
+                onApply = { answer -> onApply(suggestion, answer) },
                 onDismiss = { onDismiss(suggestion.weekStart) },
             )
         }
@@ -251,13 +282,6 @@ private fun Chart(state: InsightsUiState) {
         ) {
             state.bars.forEach { bar -> Bar(bar) }
         }
-
-        Text(
-            text = stringResource(storyText(state.story)),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 10.dp),
-        )
     }
 
     HairlineRule()
@@ -434,9 +458,19 @@ private fun slipText(minutes: Int?): String = when {
     else -> stringResource(R.string.insights_slip_early, -minutes)
 }
 
-/** The one change worth making, on a block of accent. */
+/**
+ * The one change worth making, on a block of accent.
+ *
+ * One is offered and the rest are a tap away. A question with a single answer
+ * is not a question, and the two answers most apps never offer, leaving it
+ * alone and taking it off the plan entirely, are the ones that keep the
+ * report honest: without a real way out somebody who has decided they are not
+ * doing a thing picks whatever ends the conversation, and the same question
+ * comes back next week unchanged.
+ */
 @Composable
-private fun SuggestionPanel(suggestion: SuggestionUi, onApply: () -> Unit, onDismiss: () -> Unit) {
+private fun SuggestionPanel(suggestion: SuggestionUi, onApply: (ReviewAnswer) -> Unit, onDismiss: () -> Unit) {
+    var showingOptions by rememberSaveable { mutableStateOf(false) }
     val ground = MaterialTheme.colorScheme.primary
     val ink = MaterialTheme.colorScheme.onPrimary
 
@@ -446,27 +480,80 @@ private fun SuggestionPanel(suggestion: SuggestionUi, onApply: () -> Unit, onDis
             .fillMaxWidth()
             .background(ground),
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Kicker(text = stringResource(R.string.insights_one_change), color = ink)
+        SuggestionHeading(
+            suggestion = suggestion,
+            ink = ink,
+            showingOptions = showingOptions,
+            onToggleOptions = { showingOptions = !showingOptions },
+        )
 
-            Text(
-                text = stringResource(answerTitle(suggestion.answer), suggestion.title),
-                style = MaterialTheme.typography.headlineSmall,
-                color = ink,
-                modifier = Modifier.padding(top = 9.dp),
-            )
-
-            Text(
-                text = suggestionBody(suggestion),
-                style = MaterialTheme.typography.bodySmall,
-                color = ink,
-                modifier = Modifier.padding(top = 7.dp),
-            )
+        if (showingOptions) {
+            OtherAnswers(suggestion = suggestion, ink = ink, onApply = onApply)
         }
 
         Box(modifier = Modifier.fillMaxWidth().height(Theme.spacing.rule).background(ink))
 
-        SuggestionActions(ink = ink, onApply = onApply, onDismiss = onDismiss)
+        SuggestionActions(ink = ink, onApply = { onApply(suggestion.answer) }, onDismiss = onDismiss)
+    }
+}
+
+@Composable
+private fun SuggestionHeading(
+    suggestion: SuggestionUi,
+    ink: androidx.compose.ui.graphics.Color,
+    showingOptions: Boolean,
+    onToggleOptions: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(14.dp)) {
+        Kicker(text = stringResource(R.string.insights_one_change), color = ink)
+
+        Text(
+            text = stringResource(answerTitle(suggestion.answer), suggestion.title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = ink,
+            modifier = Modifier.padding(top = 9.dp),
+        )
+
+        Text(
+            text = suggestionBody(suggestion),
+            style = MaterialTheme.typography.bodySmall,
+            color = ink,
+            modifier = Modifier.padding(top = 7.dp),
+        )
+
+        if (suggestion.options.size > 1) {
+            Text(
+                text = stringResource(
+                    if (showingOptions) R.string.insights_hide_options else R.string.insights_other_options,
+                ).uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelMedium,
+                color = ink,
+                modifier = Modifier.padding(top = 11.dp).clickable(onClick = onToggleOptions),
+            )
+        }
+    }
+}
+
+@Composable
+private fun OtherAnswers(
+    suggestion: SuggestionUi,
+    ink: androidx.compose.ui.graphics.Color,
+    onApply: (ReviewAnswer) -> Unit,
+) {
+    Column {
+        suggestion.options.filterNot { it == suggestion.answer }.forEach { answer ->
+            Box(modifier = Modifier.fillMaxWidth().height(Theme.spacing.rule).background(ink))
+
+            Text(
+                text = stringResource(answerTitle(answer), suggestion.title),
+                style = MaterialTheme.typography.titleSmall,
+                color = ink,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onApply(answer) }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            )
+        }
     }
 }
 
@@ -543,23 +630,19 @@ private fun answerTitle(answer: ReviewAnswer): Int = when (answer) {
     ReviewAnswer.REMOVE_ITEM -> R.string.suggestion_remove_item
 }
 
-private fun storyText(story: ReviewStory): Int = when (story) {
-    ReviewStory.ON_TRACK -> R.string.story_on_track
-    ReviewStory.PLAN_TOO_SMALL -> R.string.story_plan_too_small
-    ReviewStory.TIMING_PROBLEM -> R.string.story_timing_problem
-    ReviewStory.REMINDER_PROBLEM -> R.string.story_reminder_problem
-    ReviewStory.LOSING_GRIP -> R.string.story_losing_grip
-    ReviewStory.SETTLING_IN -> R.string.story_settling_in
-    ReviewStory.MIXED -> R.string.story_mixed
-}
-
 // Preview -----------------------------------------------------------------------
 
 @Preview(name = "Insights", showBackground = true)
 @Composable
 private fun InsightsPreview() {
     BuildOrBreakTheme {
-        InsightsContent(state = PreviewState, onPeriod = {}, onApply = {}, onDismiss = {})
+        InsightsContent(
+            state = PreviewState,
+            onPeriod = {},
+            onApply = { _, _ -> },
+            onDismiss = {},
+            onOpenGoal = {},
+        )
     }
 }
 
@@ -594,6 +677,11 @@ private val PreviewState = InsightsUiState(
         SkipRowUi(SkipChip.NO_TIME, 3, 0.6f),
         SkipRowUi(SkipChip.FORGOT, 1, 0.2f),
     ),
+    win = WinUi(1, "Wake + water", 7, 7, isPerfect = true),
+    patterns = persistentListOf(
+        PatternUi(3, "Deep work block 2", 4, 7, SkipCause.TIMING, weekday = null),
+        PatternUi(4, "Language drill", 3, 7, SkipCause.REMINDER, weekday = "Saturday"),
+    ),
     suggestion = SuggestionUi(
         itemId = 3,
         title = "Deep work block 2",
@@ -602,6 +690,14 @@ private val PreviewState = InsightsUiState(
         outOf = 7,
         slipMinutes = 41,
         weekStart = LocalDate.of(2026, 9, 7),
+        options = persistentListOf(
+            ReviewAnswer.MOVE_TIME,
+            ReviewAnswer.WIDEN_WINDOW,
+            ReviewAnswer.LEAVE_IT,
+            ReviewAnswer.REMOVE_ITEM,
+        ),
     ),
+    goal = GoalStripUi("Twelve gym sessions", 58, GoalStanding.ON_PACE, 19, hasData = true),
+    hasHistory = true,
     story = ReviewStory.TIMING_PROBLEM,
 )

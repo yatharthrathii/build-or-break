@@ -66,7 +66,7 @@ class AlarmGatewayImpl @Inject constructor(
             }
 
             val at = occurrence.effectiveAt.atZone(ZoneId.systemDefault()).toInstant()
-            val pending = AlarmScheduling.pendingIntent(context, occurrence.id, item.id)
+            val pending = AlarmScheduling.pendingIntent(context, occurrence.id, item.id, salience = item.salience)
                 ?: return@withContext Outcome.Failure(AlarmError.TooManyScheduled)
 
             // The permission can be revoked between the tier check and this call.
@@ -91,20 +91,13 @@ class AlarmGatewayImpl @Inject constructor(
         AlarmScheduling.pendingIntent(context, occurrenceId, itemId = 0, create = false)
             ?.let { alarms?.cancel(it) }
 
-        Unit
-    }
+        // An alarm taken down before it fired was never given the chance, and
+        // a step done ten minutes early is the commonest way that happens. Its
+        // row would otherwise stand in the reliability figure as an alarm the
+        // phone failed to deliver.
+        audits.discardUnfired(occurrenceId)
 
-    /**
-     * Cancels a range of request codes rather than a list of known alarms.
-     *
-     * `AlarmManager` cannot be asked what it holds, so there is no list to walk.
-     * Used only when the plan is being torn down, where cancelling a code that
-     * was never set is a no op and missing one that was is not.
-     */
-    override suspend fun cancelAll() = withContext(dispatchers.io) {
-        for (occurrenceId in 0L until CANCEL_SWEEP) {
-            cancel(occurrenceId)
-        }
+        Unit
     }
 
     private fun setAlarm(
@@ -117,8 +110,11 @@ class AlarmGatewayImpl @Inject constructor(
         val exact = tier == DeliveryTier.FULL_SCREEN_ALARM || tier == DeliveryTier.EXACT_HEADS_UP
 
         when {
+            // The second intent is what the status bar's alarm icon opens. It
+            // has to be the app, not the alarm broadcast: handed the broadcast,
+            // a tap on the icon at breakfast would ring the evening's step.
             exact && salience == Salience.ALARM ->
-                manager.setAlarmClock(AlarmManager.AlarmClockInfo(atMillis, pending), pending)
+                manager.setAlarmClock(AlarmManager.AlarmClockInfo(atMillis, openApp()), pending)
 
             exact ->
                 manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMillis, pending)
@@ -126,6 +122,17 @@ class AlarmGatewayImpl @Inject constructor(
             else ->
                 manager.setWindow(AlarmManager.RTC_WAKEUP, atMillis, INEXACT_WINDOW_MILLIS, pending)
         }
+    }
+
+    private fun openApp(): android.app.PendingIntent? {
+        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
+
+        return android.app.PendingIntent.getActivity(
+            context,
+            0,
+            launch,
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+        )
     }
 
     private fun auditFor(occurrence: Occurrence, at: Instant, tier: DeliveryTier) = DeliveryAudit(
@@ -140,13 +147,4 @@ class AlarmGatewayImpl @Inject constructor(
         wasDeviceIdle = context.getSystemService<android.os.PowerManager>()?.isDeviceIdleMode ?: false,
         latencySeconds = null,
     )
-
-    private companion object {
-        /**
-         * How many request codes a teardown sweeps. Occurrence ids start at one
-         * and a single phone will not reach this in a lifetime of use, so a plan
-         * being deleted leaves nothing behind.
-         */
-        const val CANCEL_SWEEP = 10_000L
-    }
 }

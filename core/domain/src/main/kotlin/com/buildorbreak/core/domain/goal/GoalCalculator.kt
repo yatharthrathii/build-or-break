@@ -20,7 +20,8 @@ interface GoalCalculator {
 
     fun project(goal: Goal, progress: List<GoalProgress>): Double
 
-    fun percentComplete(goal: Goal, current: Double): Float
+    /** [on] matters for a rate, which is banked with time; the other kinds ignore it. */
+    fun percentComplete(goal: Goal, current: Double, on: LocalDate): Float
 }
 
 class DefaultGoalCalculator(
@@ -34,5 +35,6 @@ class DefaultGoalCalculator(
 
     override fun project(goal: Goal, progress: List<GoalProgress>): Double = pace.project(goal, progress)
 
-    override fun percentComplete(goal: Goal, current: Double): Float = pace.percentComplete(goal, current)
+    override fun percentComplete(goal: Goal, current: Double, on: LocalDate): Float =
+        pace.percentComplete(goal, current, on)
 }

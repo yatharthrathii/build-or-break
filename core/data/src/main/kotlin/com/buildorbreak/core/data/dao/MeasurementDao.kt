@@ -24,17 +24,25 @@ interface MeasurementDao {
     @Query(
         """
         SELECT * FROM measurement
-        WHERE kind = :kind AND date BETWEEN :from AND :to
+        WHERE kind = :kind AND date BETWEEN :from AND :to AND (:itemId IS NULL OR item_id = :itemId)
         ORDER BY date
         """,
     )
-    suspend fun readings(kind: String, from: LocalDate, to: LocalDate): List<MeasurementEntity>
+    suspend fun readings(
+        kind: String,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long?,
+    ): List<MeasurementEntity>
 
     @Upsert
     suspend fun upsert(measurement: MeasurementEntity): Long
 
     @Query("DELETE FROM measurement WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("DELETE FROM measurement WHERE occurrence_id = :occurrenceId")
+    suspend fun deleteForOccurrence(occurrenceId: Long)
 
     @Upsert
     suspend fun upsertSkipReason(reason: SkipReasonEntity): Long

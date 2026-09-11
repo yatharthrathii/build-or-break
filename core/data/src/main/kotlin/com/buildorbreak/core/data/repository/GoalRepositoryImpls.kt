@@ -35,6 +35,14 @@ class GoalRepositoryImpl @Inject constructor(
     override fun observeActive(planId: Long): Flow<Goal?> =
         goals.observeActive(planId).map { it?.toModel() }.flowOn(dispatchers.io)
 
+    override suspend fun byId(goalId: Long): Goal? = withContext(dispatchers.io) { goals.byId(goalId)?.toModel() }
+
+    override suspend fun upsert(goal: Goal): Outcome<Long, DataError> =
+        sqlOutcome(dispatchers.io) { goals.upsertAsOnlyActive(goal.toEntity()) }
+
+    override suspend fun deactivate(goalId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { goals.deactivate(goalId) }
+
     override fun observeProgress(goalId: Long): Flow<List<GoalProgress>> =
         goals.observeProgress(goalId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
 

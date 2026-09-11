@@ -105,7 +105,9 @@ class BlockRunnerService : Service() {
         const val EXTRA_BLOCK_ID = "block_id"
 
         private const val CHANNEL_ID = "block_runner"
-        private const val NOTIFICATION_ID = 2
+
+        /** Clear of the occurrence ids, which begin at one. */
+        private const val NOTIFICATION_ID = 900_002
         private const val NO_ID = -1L
 
         fun start(context: Context, blockId: Long) {

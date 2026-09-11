@@ -13,6 +13,7 @@ import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.resolved.ResolvedEntry
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import javax.inject.Inject
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,10 @@ class OccurrenceRepositoryImpl @Inject constructor(
 
     override fun observeForDate(date: LocalDate): Flow<List<Occurrence>> =
         occurrences.observeForDate(date).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
+
+    override suspend fun byId(id: Long): Occurrence? = withContext(dispatchers.io) {
+        occurrences.byId(id)?.toModel()
+    }
 
     /**
      * Writes one PENDING row per entry, ignoring anything already there.
@@ -75,16 +80,34 @@ class OccurrenceRepositoryImpl @Inject constructor(
      * both need the new shift. Handing it straight back removes a second read
      * that could see a different value if anything else touched the row.
      */
-    override suspend fun shift(id: Long, by: Duration): Outcome<Occurrence, DataError> = sqlOutcome(dispatchers.io) {
-        occurrences.shift(id, by.inWholeMinutes.toInt(), OccurrenceState.SNOOZED.name)
-        occurrences.byId(id)?.toModel() ?: error("Occurrence $id vanished during a snooze")
+    override suspend fun shift(id: Long, by: Duration): Outcome<Occurrence, DataError> {
+        val shifted = sqlOutcome(dispatchers.io) {
+            occurrences.shift(id, by.inWholeMinutes.toInt(), OccurrenceState.SNOOZED.name)
+            occurrences.byId(id)?.toModel()
+        }
+
+        // A row that is not there is a reason, not a crash. The catch-up panel
+        // can offer a move for a step whose row has not been written yet, and
+        // the answer to that is "not found", reported, rather than a process
+        // taken down from inside a ViewModel.
+        return when (shifted) {
+            is Outcome.Success -> shifted.value?.let { Outcome.Success(it) } ?: Outcome.Failure(DataError.NotFound)
+            is Outcome.Failure -> shifted
+        }
     }
 
-    override suspend fun pendingBefore(instant: Instant): List<Occurrence> = withContext(dispatchers.io) {
-        occurrences.pendingBefore(instant, OccurrenceState.PENDING.name).map { it.toModel() }
+    override suspend fun replan(id: Long, plannedAt: LocalDateTime): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { occurrences.replan(id, plannedAt) }
+
+    override suspend fun discard(ids: List<Long>): Outcome<Unit, DataError> = sqlOutcome(dispatchers.io) {
+        if (ids.isNotEmpty()) occurrences.deleteOpen(ids, OPEN_STATES)
     }
 
     override suspend fun between(from: LocalDate, to: LocalDate): List<Occurrence> = withContext(dispatchers.io) {
         occurrences.between(from, to).map { it.toModel() }
+    }
+
+    private companion object {
+        val OPEN_STATES = OccurrenceState.entries.filterNot { it.isSettled }.map { it.name }
     }
 }

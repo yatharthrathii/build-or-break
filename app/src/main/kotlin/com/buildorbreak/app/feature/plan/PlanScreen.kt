@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
@@ -58,11 +59,15 @@ import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
 import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.plan.Weekdays
+import java.time.LocalTime
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
 private val TimeColumn = 44.dp
 private val HandleSize = 18.dp
+
+/** How far a step inside a group sits in from the edge. Enough to read as inside it. */
+private val GroupIndent = 30.dp
 
 /** A dialog id that means "make a new template" rather than edit one. */
 private const val NEW_TEMPLATE = -1L
@@ -78,7 +83,7 @@ private const val NEW_TEMPLATE = -1L
 @Composable
 fun PlanScreen(
     onEditItem: (Long) -> Unit,
-    onAddItem: () -> Unit,
+    onAddItem: (templateId: Long) -> Unit,
     onImport: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlanViewModel = hiltViewModel(),
@@ -87,30 +92,89 @@ fun PlanScreen(
 
     PlanContent(
         state = state,
-        onSelectTemplate = viewModel::onSelectTemplate,
-        onSaveTemplate = viewModel::onSaveTemplate,
-        onDeleteTemplate = viewModel::onDeleteTemplate,
-        onEditItem = onEditItem,
-        onAddItem = onAddItem,
-        onImport = onImport,
+        actions = PlanActions(
+            onSelectTemplate = viewModel::onSelectTemplate,
+            onSaveTemplate = viewModel::onSaveTemplate,
+            onDeleteTemplate = viewModel::onDeleteTemplate,
+            onSaveGroup = viewModel::onSaveGroup,
+            onDeleteGroup = viewModel::onDeleteGroup,
+            onEditItem = onEditItem,
+            onAddItem = { onAddItem(state.templateId) },
+            onImport = onImport,
+        ),
         modifier = modifier,
     )
 }
 
-@Composable
-fun PlanContent(
-    state: PlanUiState,
-    onSelectTemplate: (Long) -> Unit,
-    onSaveTemplate: (Long?, String, Weekdays) -> Unit,
-    onDeleteTemplate: (Long) -> Unit,
-    onEditItem: (Long) -> Unit,
-    onAddItem: () -> Unit,
-    onImport: () -> Unit,
-    modifier: Modifier = Modifier,
+/** Everything the plan screen can do, in one bag, so the leaves take one parameter. */
+data class PlanActions(
+    val onSelectTemplate: (Long) -> Unit,
+    val onSaveTemplate: (Long?, String, Weekdays) -> Unit,
+    val onDeleteTemplate: (Long) -> Unit,
+    val onSaveGroup: (Long?, String, LocalTime, Salience) -> Unit,
+    val onDeleteGroup: (Long) -> Unit,
+    val onEditItem: (Long) -> Unit,
+    val onAddItem: () -> Unit,
+    val onImport: () -> Unit,
 ) {
+    companion object {
+        val None = PlanActions(
+            onSelectTemplate = {},
+            onSaveTemplate = { _, _, _ -> },
+            onDeleteTemplate = {},
+            onSaveGroup = { _, _, _, _ -> },
+            onDeleteGroup = {},
+            onEditItem = {},
+            onAddItem = {},
+            onImport = {},
+        )
+    }
+}
+
+@Composable
+fun PlanContent(state: PlanUiState, actions: PlanActions, modifier: Modifier = Modifier) {
     // Null: closed. NEW_TEMPLATE: a new one. Anything else: editing that id.
     var editingTemplate by rememberSaveable { mutableStateOf<Long?>(null) }
+    var editingGroup by rememberSaveable { mutableStateOf<Long?>(null) }
 
+    PlanBody(
+        state = state,
+        actions = actions,
+        onEditTemplate = { editingTemplate = it },
+        onEditGroup = { editingGroup = it },
+        modifier = modifier,
+    )
+
+    editingGroup?.let { id ->
+        GroupDialogHost(
+            id = id,
+            state = state,
+            onSaveGroup = actions.onSaveGroup,
+            onDeleteGroup = actions.onDeleteGroup,
+            onClose = { editingGroup = null },
+        )
+    }
+
+    editingTemplate?.let { id ->
+        TemplateDialogHost(
+            id = id,
+            state = state,
+            onSaveTemplate = actions.onSaveTemplate,
+            onDeleteTemplate = actions.onDeleteTemplate,
+            onClose = { editingTemplate = null },
+        )
+    }
+}
+
+/** The header, the template tabs, and the steps under their headings. */
+@Composable
+private fun PlanBody(
+    state: PlanUiState,
+    actions: PlanActions,
+    onEditTemplate: (Long?) -> Unit,
+    onEditGroup: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -120,32 +184,44 @@ fun PlanContent(
         ScreenHeader(kicker = kickerText(state), title = stringResource(R.string.plan_title)) {
             HeaderIcons(
                 state = state,
-                onEditTemplate = { editingTemplate = state.templates.getOrNull(state.selectedIndex)?.id },
-                onImport = onImport,
+                onEditTemplate = { onEditTemplate(state.templates.getOrNull(state.selectedIndex)?.id) },
+                onNewGroup = { onEditGroup(NEW_GROUP) },
+                onImport = actions.onImport,
             )
         }
 
         when {
-            !state.hasPlan -> NoPlan(onImport = onImport, onAddItem = onAddItem)
+            !state.hasPlan -> NoPlan(onImport = actions.onImport, onAddItem = actions.onAddItem)
             else -> Steps(
                 state = state,
-                onSelectTemplate = onSelectTemplate,
-                onNewTemplate = { editingTemplate = NEW_TEMPLATE },
-                onEditItem = onEditItem,
-                onAddItem = onAddItem,
+                actions = actions,
+                onNewTemplate = { onEditTemplate(NEW_TEMPLATE) },
+                onEditGroup = onEditGroup,
             )
         }
     }
+}
 
-    editingTemplate?.let { id ->
-        TemplateDialogHost(
-            id = id,
-            state = state,
-            onSaveTemplate = onSaveTemplate,
-            onDeleteTemplate = onDeleteTemplate,
-            onClose = { editingTemplate = null },
-        )
-    }
+@Composable
+private fun GroupDialogHost(
+    id: Long,
+    state: PlanUiState,
+    onSaveGroup: (Long?, String, LocalTime, Salience) -> Unit,
+    onDeleteGroup: (Long) -> Unit,
+    onClose: () -> Unit,
+) {
+    GroupDialog(
+        existing = state.groups.firstOrNull { it.id == id },
+        onSave = { title, at, salience ->
+            onSaveGroup(id.takeIf { it != NEW_GROUP }, title, at, salience)
+            onClose()
+        },
+        onDelete = {
+            onDeleteGroup(id)
+            onClose()
+        },
+        onDismiss = onClose,
+    )
 }
 
 @Composable
@@ -171,14 +247,25 @@ private fun TemplateDialogHost(
     )
 }
 
-/** Edit the template being shown, and import. Edit only once there is a plan. */
+/** Edit the template being shown, make a group, and import. */
 @Composable
-private fun HeaderIcons(state: PlanUiState, onEditTemplate: () -> Unit, onImport: () -> Unit) {
+private fun HeaderIcons(
+    state: PlanUiState,
+    onEditTemplate: () -> Unit,
+    onNewGroup: () -> Unit,
+    onImport: () -> Unit,
+) {
     if (state.hasPlan) {
         HeaderIcon(
             icon = Icons.Outlined.Edit,
             description = stringResource(R.string.plan_template_edit),
             onClick = onEditTemplate,
+        )
+
+        HeaderIcon(
+            icon = Icons.Outlined.CreateNewFolder,
+            description = stringResource(R.string.plan_group_new_title),
+            onClick = onNewGroup,
         )
     }
 
@@ -217,10 +304,9 @@ private fun kickerText(state: PlanUiState): String = when {
 @Composable
 private fun Steps(
     state: PlanUiState,
-    onSelectTemplate: (Long) -> Unit,
+    actions: PlanActions,
     onNewTemplate: () -> Unit,
-    onEditItem: (Long) -> Unit,
-    onAddItem: () -> Unit,
+    onEditGroup: (Long) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -230,30 +316,41 @@ private fun Steps(
                 options = state.templates.map { it.name } + stringResource(R.string.plan_template_new),
                 selectedIndex = state.selectedIndex,
                 onSelect = { index ->
-                    if (index == state.templates.size) onNewTemplate() else onSelectTemplate(state.templates[index].id)
+                    if (index == state.templates.size) {
+                        onNewTemplate()
+                    } else {
+                        actions.onSelectTemplate(state.templates[index].id)
+                    }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
         }
 
-        items(items = state.rows, key = { it.id }) { row ->
-            StepRow(row = row, onEdit = onEditItem)
+        state.sections.forEach { section ->
+            section.group?.let { group ->
+                item(key = "group:" + group.id) { GroupHeader(group = group, onEdit = onEditGroup) }
+            }
+
+            items(items = section.rows, key = { it.id }) { row ->
+                StepRow(row = row, indented = section.group != null, onEdit = actions.onEditItem)
+            }
         }
 
-        item { AddStep(onAddItem = onAddItem) }
+        item { AddStep(onAddItem = actions.onAddItem) }
 
         item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
 @Composable
-private fun StepRow(row: PlanItemRow, onEdit: (Long) -> Unit) {
+private fun StepRow(row: PlanItemRow, indented: Boolean, onEdit: (Long) -> Unit) {
     Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Button) { onEdit(row.id) }
-                .padding(horizontal = 16.dp, vertical = 13.dp),
+                .padding(start = if (indented) GroupIndent else 16.dp, end = 16.dp)
+                .padding(vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -396,8 +493,10 @@ private fun kindLine(row: PlanItemRow): String {
             },
         )
         if (row.childCount > 0) add(pluralStringResource(R.plurals.plan_line_anchor, row.childCount, row.childCount))
-        if (row.salience == Salience.ALARM) add(stringResource(R.string.plan_line_alarm))
+        if (row.salience == Salience.ALARM && row.groupId == null) add(stringResource(R.string.plan_line_alarm))
         if (row.pinned) add(stringResource(R.string.plan_line_pinned))
+        if (row.measured) add(stringResource(R.string.plan_line_measured))
+        if (row.hasNote) add(stringResource(R.string.plan_line_note))
         if (row.weekdaysText.isNotEmpty()) add(row.weekdaysText)
     }
 
@@ -410,40 +509,42 @@ private fun kindLine(row: PlanItemRow): String {
 @Composable
 private fun PlanPreview() {
     BuildOrBreakTheme {
-        PlanContent(
-            state = PlanUiState(
-                planId = 1,
-                planName = "My routine",
-                templates = persistentListOf(
-                    TemplateTab(1, "Weekday", Weekdays.MonToFri, true),
-                    TemplateTab(2, "Weekend", Weekdays.Weekend, false),
-                ),
-                selectedIndex = 0,
-                rows = persistentListOf(
-                    PlanItemRow(1, "Wake + water", PlanKind.Fixed("06:40"), Salience.ALARM, false, 0, ""),
-                    PlanItemRow(2, "Journal", PlanKind.Window("06:50", "07:30", 40), Salience.NOTIFY, false, 0, ""),
-                    PlanItemRow(3, "Gym", PlanKind.Fixed("07:30"), Salience.ALARM, true, 2, ""),
-                    PlanItemRow(4, "Protein + shower", PlanKind.After("Gym", 15), Salience.SILENT, false, 0, ""),
-                    PlanItemRow(
-                        5,
-                        "Stand up",
-                        PlanKind.Every(45, "11:00", "15:00"),
-                        Salience.SILENT,
-                        false,
-                        0,
-                        "Mon Wed Fri",
-                    ),
-                ),
-                firstTime = "06:40",
-                lastTime = "22:15",
-                hasPlan = true,
-            ),
-            onSelectTemplate = {},
-            onSaveTemplate = { _, _, _ -> },
-            onDeleteTemplate = {},
-            onEditItem = {},
-            onAddItem = {},
-            onImport = {},
-        )
+        PlanContent(state = previewPlanState(), actions = PlanActions.None)
     }
+}
+
+// Fixture data, literal on purpose so the preview can be read at a glance.
+@Suppress("MagicNumber")
+private fun previewPlanState(): PlanUiState {
+    val morning = PlanGroupRow(1, "Morning routine", "06:40", LocalTime.of(6, 40), Salience.ALARM, 2)
+
+    val rows = persistentListOf(
+        PlanItemRow(1, "Wake + water", PlanKind.Fixed("06:40"), Salience.ALARM, false, 0, "", groupId = 1),
+        PlanItemRow(2, "Journal", PlanKind.Window("06:50", "07:30", 40), Salience.NOTIFY, false, 0, "", groupId = 1),
+        PlanItemRow(3, "Gym", PlanKind.Fixed("07:30"), Salience.ALARM, true, 2, "", measured = true),
+        PlanItemRow(4, "Protein + shower", PlanKind.After("Gym", 15), Salience.SILENT, false, 0, "", hasNote = true),
+        PlanItemRow(5, "Stand up", PlanKind.Every(45, "11:00", "15:00"), Salience.SILENT, false, 0, "Mon Wed Fri"),
+    )
+
+    return PlanUiState(
+        planId = 1,
+        planName = "My routine",
+        templateId = 1,
+        templates = persistentListOf(
+            TemplateTab(1, "Weekday", Weekdays.MonToFri, true),
+            TemplateTab(2, "Weekend", Weekdays.Weekend, false),
+        ),
+        selectedIndex = 0,
+        rows = rows,
+        sections = persistentListOf(
+            PlanSection(morning, persistentListOf(rows[0], rows[1])),
+            PlanSection(null, persistentListOf(rows[2])),
+            PlanSection(null, persistentListOf(rows[3])),
+            PlanSection(null, persistentListOf(rows[4])),
+        ),
+        groups = persistentListOf(morning),
+        firstTime = "06:40",
+        lastTime = "22:15",
+        hasPlan = true,
+    )
 }

@@ -12,12 +12,22 @@ import com.buildorbreak.core.model.goal.Reading
 import com.buildorbreak.core.model.resolved.ResolvedEntry
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 
 /** What actually happened. architecture.md section 5.2. */
 interface OccurrenceRepository {
     fun observeForDate(date: LocalDate): Flow<List<Occurrence>>
+
+    /**
+     * One row by id, whatever date it belongs to.
+     *
+     * The alarm receiver and the alarm screen look a step up by the id the
+     * alarm carried, and a step snoozed at five to midnight belongs to a date
+     * that is no longer today by the time it rings.
+     */
+    suspend fun byId(id: Long): Occurrence?
 
     /**
      * Creates the rows an alarm can point at.
@@ -49,8 +59,26 @@ interface OccurrenceRepository {
 
     suspend fun shift(id: Long, by: Duration): Outcome<Occurrence, DataError>
 
-    /** Drives the reconcile pass: anything that should have fired and did not. */
-    suspend fun pendingBefore(instant: Instant): List<Occurrence>
+    /**
+     * Brings a row's planned time back in line with what the resolver says now.
+     *
+     * The row was written with the time the resolver gave at first sight, and
+     * the plan has moved since: the day was shifted, the item was edited, a
+     * parent step happened late. The alarm is set from the row, so a row that
+     * is not kept in step is an alarm at the wrong minute. This is the
+     * "reconciled on every resolve" that architecture.md section 1 promises.
+     */
+    suspend fun replan(id: Long, plannedAt: LocalDateTime): Outcome<Unit, DataError>
+
+    /**
+     * Removes rows the plan no longer has a place for, if they are still open.
+     *
+     * A row for a step that was archived, moved to another weekday, or left
+     * behind by a template switch is a step the user was never asked for.
+     * Left in place it would ring anyway and then count as missed at the
+     * close. Settled rows are never touched: those are history.
+     */
+    suspend fun discard(ids: List<Long>): Outcome<Unit, DataError>
 
     /**
      * Every occurrence in a date range, oldest first. Both ends inclusive.
@@ -74,8 +102,19 @@ interface DayLogRepository {
 interface MeasurementRepository {
     fun observeForItem(itemId: Long): Flow<List<Measurement>>
 
-    /** The series a NUMBER goal smooths. Ordered by date, oldest first. */
-    suspend fun readings(kind: ValueKind, from: LocalDate, to: LocalDate): List<Reading>
+    /**
+     * The series a NUMBER goal smooths. Ordered by date, oldest first.
+     *
+     * [itemId] narrows it to one step. Two steps that both record a weight
+     * are two series, and a goal that follows one of them must not have the
+     * other averaged into it.
+     */
+    suspend fun readings(
+        kind: ValueKind,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long? = null,
+    ): List<Reading>
 
     suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError>
 
@@ -84,6 +123,15 @@ interface MeasurementRepository {
 
     /** Removes whatever was said about one skip. Used when the skip itself is undone. */
     suspend fun clearSkipReason(occurrenceId: Long): Outcome<Unit, DataError>
+
+    /**
+     * Removes the number logged against one settle.
+     *
+     * Used when that settle is undone, and before a fresh number is written
+     * for the same settle: a weigh in typed as 720 is corrected by typing 72,
+     * not by having both of them averaged.
+     */
+    suspend fun clearMeasurementFor(occurrenceId: Long): Outcome<Unit, DataError>
 
     /**
      * The reasons given for a set of skips.

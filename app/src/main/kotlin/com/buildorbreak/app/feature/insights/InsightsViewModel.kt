@@ -3,14 +3,19 @@ package com.buildorbreak.app.feature.insights
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.buildorbreak.core.domain.goal.GoalSnapshot
+import com.buildorbreak.core.domain.goal.GoalStanding
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.review.InsightBar
+import com.buildorbreak.core.domain.review.InsightPattern
 import com.buildorbreak.core.domain.review.Insights
 import com.buildorbreak.core.domain.review.InsightsPeriod
+import com.buildorbreak.core.domain.review.SkipCause
 import com.buildorbreak.core.domain.review.SkipCount
 import com.buildorbreak.core.domain.review.StepStat
 import com.buildorbreak.core.domain.review.Suggestion
 import com.buildorbreak.core.domain.usecase.ApplyReviewAnswerUseCase
+import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
 import com.buildorbreak.core.domain.usecase.ObserveInsightsUseCase
 import com.buildorbreak.core.model.enums.ReviewStory
 import com.buildorbreak.core.model.enums.SkipChip
@@ -29,6 +34,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -61,6 +67,47 @@ data class SuggestionUi(
     val outOf: Int,
     val slipMinutes: Int?,
     val weekStart: LocalDate,
+    /**
+     * Every fix the review would accept, best first, with a way out at the end.
+     *
+     * Offered rather than hidden behind the first one. A question with one
+     * answer is not a question, and without an honest way out somebody who
+     * has decided they are not doing a thing picks whichever answer ends the
+     * conversation and the same problem returns next week unchanged.
+     */
+    val options: ImmutableList<ReviewAnswer> = persistentListOf(answer),
+)
+
+/** The step kept most reliably. Named, because a name lands and a percentage does not. */
+@Immutable
+data class WinUi(val itemId: Long, val title: String, val kept: Int, val outOf: Int, val isPerfect: Boolean)
+
+/** One step that keeps being missed, and what kind of missing it is. */
+@Immutable
+data class PatternUi(
+    val itemId: Long,
+    val title: String,
+    val misses: Int,
+    val opportunities: Int,
+    val cause: SkipCause,
+    /** Set only when the misses land on one weekday. Already formatted. */
+    val weekday: String?,
+)
+
+/**
+ * The active goal, in one line.
+ *
+ * A strip rather than a section. The goal has its own screen; this exists so
+ * that somebody reviewing their week is reminded the goal is there and can
+ * see in one glance whether the week moved it.
+ */
+@Immutable
+data class GoalStripUi(
+    val title: String,
+    val percent: Int,
+    val standing: GoalStanding,
+    val daysLeft: Int,
+    val hasData: Boolean,
 )
 
 /** One reason and how often it was given, with the bar already worked out. */
@@ -83,10 +130,18 @@ data class InsightsUiState(
     val steps: ImmutableList<StepRowUi>,
     /** Why steps were skipped, commonest first. Empty when nobody said. */
     val skipReasons: ImmutableList<SkipRowUi>,
+    val win: WinUi?,
+    val patterns: ImmutableList<PatternUi>,
     val suggestion: SuggestionUi?,
+    val goal: GoalStripUi?,
+    /** Whether the last four weeks hold anything, even if this period does not. */
+    val hasHistory: Boolean,
     val story: ReviewStory,
 ) {
     val isEmpty: Boolean get() = hasPlan && total == 0
+
+    /** Empty here, but not empty everywhere. A Monday, not a first day. */
+    val isQuietPeriod: Boolean get() = isEmpty && hasHistory
 
     companion object {
         val Empty = InsightsUiState(
@@ -102,7 +157,11 @@ data class InsightsUiState(
             bars = persistentListOf(),
             steps = persistentListOf(),
             skipReasons = persistentListOf(),
+            win = null,
+            patterns = persistentListOf(),
             suggestion = null,
+            goal = null,
+            hasHistory = false,
             story = ReviewStory.SETTLING_IN,
         )
     }
@@ -118,6 +177,7 @@ data class InsightsUiState(
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
     observeInsights: ObserveInsightsUseCase,
+    observeGoal: ObserveGoalUseCase,
     private val settings: SettingsRepository,
     private val applyAnswer: ApplyReviewAnswerUseCase,
 ) : ViewModel() {
@@ -127,9 +187,9 @@ class InsightsViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<InsightsUiState> = period
         .flatMapLatest { chosen ->
-            observeInsights(chosen).map {
-                it?.let(::toUiState)
-                    ?: InsightsUiState.Empty.copy(period = chosen)
+            combine(observeInsights(chosen), observeGoal()) { insights, goal ->
+                insights?.let { toUiState(it, goal) }
+                    ?: InsightsUiState.Empty.copy(period = chosen, goal = goal?.let(::toGoalStrip))
             }
         }
         .stateIn(
@@ -148,11 +208,11 @@ class InsightsViewModel @Inject constructor(
     }
 
     /** One tap. The use case makes the edit the answer implies and closes the question. */
-    fun onApply(suggestion: SuggestionUi) = viewModelScope.launch {
-        applyAnswer(suggestion.itemId, suggestion.answer, suggestion.weekStart)
+    fun onApply(suggestion: SuggestionUi, answer: ReviewAnswer = suggestion.answer) = viewModelScope.launch {
+        applyAnswer(suggestion.itemId, answer, suggestion.weekStart)
     }
 
-    private fun toUiState(insights: Insights): InsightsUiState {
+    private fun toUiState(insights: Insights, goal: GoalSnapshot?): InsightsUiState {
         val best = insights.bars.mapNotNull { it.fraction }.maxOrNull()
         val problemId = insights.suggestion?.itemId
 
@@ -169,10 +229,31 @@ class InsightsViewModel @Inject constructor(
             bars = insights.bars.map { toBar(it, insights.period, best) }.toImmutableList(),
             steps = insights.steps.map { toRow(it, problemId) }.toImmutableList(),
             skipReasons = toSkipRows(insights.skipReasons),
+            win = insights.win?.let { WinUi(it.itemId, it.title, it.kept, it.outOf, it.isPerfect) },
+            patterns = insights.patterns.map(::toPattern).toImmutableList(),
             suggestion = insights.suggestion?.let(::toSuggestion),
+            goal = goal?.let(::toGoalStrip),
+            hasHistory = insights.hasHistory,
             story = insights.story,
         )
     }
+
+    private fun toPattern(pattern: InsightPattern) = PatternUi(
+        itemId = pattern.itemId,
+        title = pattern.title,
+        misses = pattern.misses,
+        opportunities = pattern.opportunities,
+        cause = pattern.cause,
+        weekday = pattern.weekday?.getDisplayName(TextStyle.FULL, Locale.getDefault()),
+    )
+
+    private fun toGoalStrip(goal: GoalSnapshot) = GoalStripUi(
+        title = goal.goal.title,
+        percent = (goal.percent * PERCENT).toInt(),
+        standing = goal.standing,
+        daysLeft = goal.daysLeft,
+        hasData = goal.hasData,
+    )
 
     private fun toBar(bar: InsightBar, period: InsightsPeriod, best: Float?) = BarUi(
         label = if (period == InsightsPeriod.WEEK) {
@@ -209,6 +290,7 @@ class InsightsViewModel @Inject constructor(
         outOf = suggestion.outOf,
         slipMinutes = suggestion.slip?.inWholeMinutes?.toInt(),
         weekStart = suggestion.weekStart,
+        options = suggestion.options.toImmutableList(),
     )
 
     private companion object {

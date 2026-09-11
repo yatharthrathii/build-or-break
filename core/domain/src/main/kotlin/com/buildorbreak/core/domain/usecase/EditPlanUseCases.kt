@@ -7,15 +7,16 @@ import com.buildorbreak.core.domain.gateway.WidgetGateway
 import com.buildorbreak.core.domain.repository.ItemRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
+import com.buildorbreak.core.model.plan.Block
 import com.buildorbreak.core.model.plan.DayTemplate
 import com.buildorbreak.core.model.plan.Item
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
@@ -96,13 +97,17 @@ class ObservePlanUseCase @Inject constructor(
                 ?: chosen(available)
                 ?: return@flatMapLatest flowOf(PlanContents.None)
 
-            items.observeForTemplate(template.id).map { list ->
+            combine(
+                items.observeForTemplate(template.id),
+                items.observeBlocksForTemplate(template.id),
+            ) { list, blocks ->
                 PlanContents.Loaded(
                     planId = plan.id,
                     planName = plan.name,
                     template = template,
                     templates = available,
                     items = list,
+                    blocks = blocks,
                 )
             }
         }
@@ -146,5 +151,14 @@ sealed interface PlanContents {
         /** Every template on the plan, for the tabs. */
         val templates: List<DayTemplate>,
         val items: List<Item>,
+        /**
+         * The groups on this template, in their own order.
+         *
+         * Carried alongside the items rather than nested inside them because
+         * a group exists whether or not anything is in it: somebody who makes
+         * "Morning routine" and then goes looking for it must find it, not an
+         * empty screen and the impression that the app dropped it.
+         */
+        val blocks: List<Block> = emptyList(),
     ) : PlanContents
 }

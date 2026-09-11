@@ -65,6 +65,7 @@ private val ToleranceWidth = 150.dp
 @Composable
 fun SettingsScreen(
     onOpenReliability: () -> Unit,
+    onOpenGoal: () -> Unit,
     onImport: () -> Unit,
     onShare: (String) -> Unit,
     onOpenAlarmChannel: () -> Unit,
@@ -81,6 +82,7 @@ fun SettingsScreen(
     SettingsContent(
         state = state,
         onOpenReliability = onOpenReliability,
+        onOpenGoal = onOpenGoal,
         onThemeMode = viewModel::onThemeMode,
         onLateTolerance = viewModel::onLateTolerance,
         onOpenAlarmChannel = onOpenAlarmChannel,
@@ -97,6 +99,7 @@ fun SettingsScreen(
 fun SettingsContent(
     state: SettingsUiState,
     onOpenReliability: () -> Unit,
+    onOpenGoal: () -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
     onLateTolerance: (Int) -> Unit,
     onOpenAlarmChannel: () -> Unit,
@@ -125,8 +128,7 @@ fun SettingsContent(
             ReliabilityRow(state = state, onClick = onOpenReliability)
             AlarmRows(state = state, onOpenAlarmChannel = onOpenAlarmChannel, onLateTolerance = onLateTolerance)
 
-            SectionLabel(text = stringResource(R.string.settings_section_day), underlined = true)
-            ThemeRow(mode = state.themeMode, onThemeMode = onThemeMode)
+            DayRows(state = state, onOpenGoal = onOpenGoal, onThemeMode = onThemeMode)
 
             SectionLabel(text = stringResource(R.string.settings_section_data), underlined = true)
             DataRows(
@@ -151,6 +153,20 @@ fun SettingsContent(
             onDismiss = { confirmingWipe = false },
         )
     }
+}
+
+/** The goal and the palette: the two things that shape a day rather than deliver it. */
+@Composable
+private fun DayRows(state: SettingsUiState, onOpenGoal: () -> Unit, onThemeMode: (ThemeMode) -> Unit) {
+    SectionLabel(text = stringResource(R.string.settings_section_day), underlined = true)
+
+    SettingsRow(
+        title = stringResource(R.string.settings_goal),
+        body = stringResource(R.string.settings_goal_body),
+        onClick = onOpenGoal,
+    ) { Chevron() }
+
+    ThemeRow(mode = state.themeMode, onThemeMode = onThemeMode)
 }
 
 /**
@@ -415,6 +431,7 @@ private fun SettingsPreview() {
         SettingsContent(
             state = SettingsUiState.Initial.copy(fixCount = 1),
             onOpenReliability = {},
+            onOpenGoal = {},
             onThemeMode = {},
             onLateTolerance = {},
             onOpenAlarmChannel = {},

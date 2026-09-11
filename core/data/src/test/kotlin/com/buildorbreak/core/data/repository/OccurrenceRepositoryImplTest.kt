@@ -196,15 +196,6 @@ class OccurrenceRepositoryImplTest {
     }
 
     @Test
-    fun `nothing is reported as a missed alarm until it was actually scheduled`() = runTest {
-        repository.materialise(listOf(entryFor(storedItem(1))), date)
-
-        // A row exists and its time has passed, but no alarm was ever set for it,
-        // so there is nothing for the reconcile pass to put right.
-        assertThat(repository.pendingBefore(Instant.ofEpochMilli(9_999))).isEmpty()
-    }
-
-    @Test
     fun `an empty day is a success rather than an error`() = runTest {
         assertThat(repository.materialise(emptyList(), date)).isInstanceOf(Outcome.Success::class.java)
     }

@@ -199,10 +199,13 @@
 
     <string name="note_pinned">कभी नहीं हिलता</string>
     <string name="note_done_at">हो गया %1$s</string>
-    <string name="note_done_over">हो गया %1$s · %2$d मिनट लेट</string>
-    <string name="note_done_early">हो गया %1$s · %2$d मिनट जल्दी</string>
-    <string name="note_moved_later">+%1$d खिसका</string>
-    <string name="note_moved_earlier">−%1$d खिसका</string>
+    <string name="note_done_over">हो गया %1$s · %2$s लेट</string>
+    <string name="note_done_early">हो गया %1$s · %2$s जल्दी</string>
+    <string name="note_moved_later">+%1$s खिसका</string>
+    <string name="note_moved_earlier">−%1$s खिसका</string>
+    <string name="span_minutes">%1$d</string>
+    <string name="span_hours">%1$dघ</string>
+    <string name="span_hours_minutes">%1$dघ %2$dम</string>
     <string name="note_ends">%1$s तक</string>
     <string name="note_missed">छूट गया</string>
     <string name="note_skipped">छोड़ा</string>
@@ -263,6 +266,50 @@
     <string name="autostart_title">ऑटोस्टार्ट की अनुमति दें</string>
     <string name="autostart_body">आपका फोन अपनी लिस्ट रखता है कि कौन से ऐप खुद चल सकते हैं। यह ऐप वह लिस्ट नहीं देख सकता, तो बता नहीं सकता कि यह हो चुका है या नहीं। रात में अलार्म गायब हों तो अक्सर यही वजह है।</string>
     <string name="autostart_action">ऑटोस्टार्ट सेटिंग खोलें</string>
+
+    <!-- Catch up. -->
+    <string name="today_catch_up">अब भी मुमकिन</string>
+    <string name="today_catch_up_body">दिन फिसला। ये रहा ये कहाँ आ सकते हैं।</string>
+    <string name="today_catch_up_gone">वक्त नहीं बचा</string>
+    <string name="today_catch_up_takes">लगभग %1$d मिनट</string>
+    <string name="today_catch_up_smaller">छोटा वर्जन, लगभग %1$d मिनट</string>
+    <string name="today_catch_up_move">यहाँ लाएं</string>
+    <string name="today_catch_up_skip">आज नहीं</string>
+    <plurals name="today_catch_up_also">
+        <item quantity="one">%1$s भी छूटा। एक शाम में तीन से ज़्यादा नहीं समाते।</item>
+        <item quantity="other">%1$s भी छूटे। एक शाम में तीन से ज़्यादा नहीं समाते।</item>
+    </plurals>
+    <string name="today_catch_up_no_room">%1$s के लिए आज जगह नहीं बची।</string>
+
+    <!-- Milestones. -->
+    <string name="today_milestone">कहने लायक</string>
+    <string name="today_milestone_seen">ठीक है</string>
+    <string name="milestone_first_completion">पहला पूरा हुआ।</string>
+    <string name="milestone_first_completion_body">रूटीन शुरू हो गई। इसके बाद सब दोहराना है।</string>
+    <string name="milestone_first_full_day">पूरा दिन निभाया।</string>
+    <string name="milestone_first_full_day_body">प्लान का हर स्टेप पूरा। एक अच्छे दिन की शक्ल यही है।</string>
+    <string name="milestone_first_week">एक हफ़्ता पूरा।</string>
+    <string name="milestone_first_week_body">सात दिन दर्ज हुए। अब ऐप के पास कुछ काम की बात कहने भर का डेटा है।</string>
+    <string name="milestone_goal_quarter">एक चौथाई रास्ता।</string>
+    <string name="milestone_goal_half">आधा रास्ता।</string>
+    <string name="milestone_goal_three_quarters">तीन चौथाई रास्ता।</string>
+    <string name="milestone_goal_body">लक्ष्य आगे बढ़ रहा है क्योंकि दिन आगे बढ़ रहे हैं।</string>
+    <string name="milestone_goal_reached">लक्ष्य पूरा।</string>
+    <string name="milestone_goal_reached_body">अगला तब रखें जब तैयार हों। जल्दी कुछ नहीं।</string>
+    <string name="milestone_best_week">अब तक का सबसे अच्छा हफ़्ता।</string>
+    <string name="milestone_best_week_body">इससे पहले के हर सात दिन से बेहतर।</string>
+    <string name="milestone_thirty_day_run">लगातार तीस दिन।</string>
+    <string name="milestone_thirty_day_run_body">एक स्टेप, पूरे महीने। यह अब किस्मत नहीं है।</string>
+
+    <plurals name="today_consistency">
+        <item quantity="one">पिछले %2$d में से %1$d दिन अच्छा रहा</item>
+        <item quantity="other">पिछले %2$d में से %1$d दिन अच्छे रहे</item>
+    </plurals>
+
+    <!-- The number a completed step asks for. -->
+    <string name="today_number_body">ऐच्छिक। स्टेप तो पहले से पूरा है।</string>
+    <string name="today_number_save">दर्ज करें</string>
+    <string name="today_number_skip">अभी नहीं</string>
 
     <string name="plan_title">प्लान</string>
     <plurals name="plan_kicker">
@@ -355,7 +402,57 @@
     <string name="editor_pinned_body">पिन किया स्टेप पूरा दिन खिसकने पर भी नहीं हिलता।</string>
     <string name="editor_catchable_title">बाद में कर सकते हैं</string>
     <string name="editor_catchable_body">उन चीज़ों के लिए बंद रखें जो सिर्फ अपने टाइम पर ठीक हैं, जैसे उठना। ऐप इन्हें बाद में नहीं सुझाएगा।</string>
+    <string name="editor_detail_label">नोट</string>
+    <string name="editor_detail_hint">जो उस वक्त चाहिए होगा</string>
+    <string name="editor_detail_body">स्टेप आने पर कार्ड पर दिखता है। शेल्फ, पेज नंबर, बस रूट।</string>
+
+    <string name="editor_group">ग्रुप</string>
+    <string name="editor_group_none">किसी ग्रुप में नहीं</string>
+    <string name="editor_group_pick">कौन सा ग्रुप</string>
+    <string name="editor_group_body">ग्रुप के स्टेप कई बार नहीं, एक बार टोकते हैं।</string>
+    <string name="editor_group_in">%1$s में। ग्रुप का पहला स्टेप आवाज़ करता है, बाकी चुप रहते हैं।</string>
+    <string name="editor_salience_group">यह %1$s तय करता है। यहाँ सेट करने के लिए स्टेप को ग्रुप से बाहर निकालें।</string>
+    <string name="editor_chosen">चुना हुआ</string>
+
+    <string name="editor_measure">नंबर पूछें</string>
+    <string name="editor_measure_pick">किस तरह का नंबर</string>
+    <string name="editor_measure_body">ज़्यादातर के लिए बंद। उन स्टेप के लिए चालू जिनका आंकड़ा मायने रखता है।</string>
+    <string name="editor_measure_on">टिक करने पर पूछा जाएगा, ज़रूरी कभी नहीं।</string>
+    <string name="measure_none">कोई नहीं</string>
+    <string name="measure_weight">वज़न</string>
+    <string name="measure_reps">रेप्स</string>
+    <string name="measure_pages">पेज</string>
+    <string name="measure_minutes">मिनट</string>
+    <string name="measure_count">गिनती</string>
+    <string name="measure_number">नंबर</string>
+    <string name="unit_none"></string>
+    <string name="unit_kg">किग्रा</string>
+    <string name="unit_reps">रेप्स</string>
+    <string name="unit_pages">पेज</string>
+    <string name="unit_minutes">मिनट</string>
+
     <string name="editor_archive">यह स्टेप हटाएँ</string>
+
+    <!-- Groups. -->
+    <string name="plan_group_new_title">नया ग्रुप</string>
+    <string name="plan_group_edit_title">ग्रुप एडिट करें</string>
+    <string name="plan_group_name">नाम</string>
+    <string name="plan_group_name_hint">जैसे, सुबह की रूटीन</string>
+    <string name="plan_group_starts">शुरू</string>
+    <string name="plan_group_how_loud">कितनी आवाज़</string>
+    <string name="plan_group_how_loud_body">ग्रुप का पहला स्टेप इस तरह बुलाएगा। बाकी चुप रहेंगे, ताकि ग्रुप एक बार टोके, कई बार नहीं।</string>
+    <string name="plan_group_delete">ग्रुप हटाएं</string>
+    <plurals name="plan_group_delete_body">
+        <item quantity="one">ग्रुप हटाने पर उसका %1$d स्टेप प्लान में रहेगा, बिना ग्रुप के।</item>
+        <item quantity="other">ग्रुप हटाने पर उसके %1$d स्टेप प्लान में रहेंगे, बिना ग्रुप के।</item>
+    </plurals>
+    <string name="plan_group_empty">अभी खाली</string>
+    <plurals name="plan_group_steps">
+        <item quantity="one">%1$d स्टेप</item>
+        <item quantity="other">%1$d स्टेप</item>
+    </plurals>
+    <string name="plan_line_measured">नंबर पूछता है</string>
+    <string name="plan_line_note">नोट है</string>
 
     <string name="import_title">रूटीन पेस्ट करें</string>
     <string name="import_body">यह ऐप आपका बना हुआ प्लान चलाता है। आपके लिए प्लान नहीं लिखता।</string>
@@ -433,6 +530,8 @@
         <item quantity="one">%2$d में से %1$d दिन छूटा।</item>
         <item quantity="other">%2$d में से %1$d दिन छूटा।</item>
     </plurals>
+    <string name="insights_quiet_title">इस हफ़्ते अभी कुछ नहीं</string>
+    <string name="insights_quiet_body">हफ़्ता अभी शुरू ही हुआ है। पिछले चार देखने के लिए महीना चुनें।</string>
     <string name="insights_empty_title">अभी दिखाने को कुछ नहीं</string>
     <string name="insights_empty_body">कुछ स्टेप निभाएँ और यह भरता जाएगा। पहला हफ्ता जमने का होता है, नंबर चाहे जो कहें।</string>
     <string name="insights_no_plan_title">अभी कोई प्लान नहीं</string>
@@ -453,6 +552,124 @@
     <string name="story_losing_grip">हफ्ते दर हफ्ते फिसल रहा है। बड़े धक्के से पहले छोटा प्लान बेहतर।</string>
     <string name="story_settling_in">पहला हफ्ता। अभी कुछ कहना जल्दी है।</string>
     <string name="story_mixed">अभी कोई साफ पैटर्न नहीं।</string>
+
+    <!-- The week in words. -->
+    <string name="insights_reading">पढ़ने लायक</string>
+    <string name="insights_went_best">सबसे अच्छा रहा</string>
+    <string name="insights_went_worst">ठीक करने लायक</string>
+    <plurals name="insights_win">
+        <item quantity="one">%1$s, %3$d में से %2$d बार निभाया।</item>
+        <item quantity="other">%1$s, %3$d में से %2$d बार निभाया।</item>
+    </plurals>
+    <string name="insights_win_perfect">%1$s, हर बार निभाया। पूरे %2$d बार।</string>
+    <plurals name="insights_problem">
+        <item quantity="one">%1$s %3$d में से %2$d बार छूटा।</item>
+        <item quantity="other">%1$s %3$d में से %2$d बार छूटा।</item>
+    </plurals>
+    <string name="insights_patterns">बार-बार क्या हो रहा है</string>
+    <string name="insights_pattern_count">%1$d/%2$d</string>
+    <string name="insights_pattern_weekday">लगभग हमेशा %1$s को। यह संयोग नहीं, पैटर्न है।</string>
+    <string name="insights_other_options">कुछ और आज़माएं</string>
+    <string name="insights_hide_options">बाकी छिपाएं</string>
+    <string name="insights_goal">लक्ष्य</string>
+
+    <string name="story_head_on_track">हफ़्ता टिका रहा।</string>
+    <string name="story_head_plan_too_small">दिक्कत प्लान में है, आप में नहीं।</string>
+    <string name="story_head_timing_problem">कोई चीज़ गलत जगह पर है।</string>
+    <string name="story_head_reminder_problem">चीज़ें भूल रही हैं।</string>
+    <string name="story_head_losing_grip">यह हफ़्ता फिसला।</string>
+    <string name="story_head_settling_in">अभी जम रहा है।</string>
+    <string name="story_head_mixed">मिलाजुला हफ़्ता।</string>
+
+    <string name="cause_timing">उस वक्त कुछ और होता रहता है।</string>
+    <string name="cause_motivation">रास्ते में कुछ नहीं था। स्टेप शायद बहुत बड़ा है।</string>
+    <string name="cause_reminder">मना नहीं किया जा रहा, भूला जा रहा है।</string>
+    <string name="cause_unknown">वजह बताने लायक ज़्यादा कुछ नहीं कहा गया।</string>
+
+    <!-- The goal. -->
+    <string name="goal_title">लक्ष्य</string>
+    <string name="goal_none_title">अभी कोई लक्ष्य नहीं</string>
+    <string name="goal_none_body">रूटीन इसके बिना भी चलती है। लक्ष्य तब रखें जब चाहें कि दिन किसी एक चीज़ में जुड़ें।</string>
+    <string name="goal_set_one">लक्ष्य रखें</string>
+    <string name="goal_edit">एडिट</string>
+    <string name="goal_retire">बंद करें</string>
+    <string name="goal_so_far">अब तक</string>
+    <string name="goal_nothing_yet">अभी कुछ दर्ज नहीं। कहना जल्दबाजी होगी।</string>
+    <string name="goal_ahead">लकीर से आगे हैं।</string>
+    <string name="goal_on_pace">रफ़्तार सही है।</string>
+    <string name="goal_behind">लकीर से पीछे। अभी वक्त है।</string>
+    <string name="goal_over">तारीख निकल गई। अगला तब रखें जब तैयार हों।</string>
+    <string name="goal_reached">पूरा हुआ।</string>
+    <string name="goal_too_early">कहना अभी जल्दी होगा।</string>
+    <string name="goal_current_of">%2$s %3$s में से %1$s</string>
+    <string name="goal_pace_marker">निशान वहाँ है जहाँ सीधी लकीर कहती है: %1$d%%।</string>
+    <string name="goal_pace_target">लकीर के हिसाब से</string>
+    <string name="goal_projection">इस रफ़्तार से</string>
+    <string name="goal_no_rate_body">एक दिन पूरा होने तक आगे बढ़ाने को कुछ नहीं।</string>
+    <string name="goal_no_rate_yet">—</string>
+    <string name="goal_will_reach">समय पर पहुँच जाएगा।</string>
+    <string name="goal_will_miss">कुछ बदले बिना पीछे रह जाएगा।</string>
+    <string name="goal_time">बचा समय</string>
+    <string name="goal_day_of">दिन %1$d / %2$d</string>
+    <string name="goal_trail_range">%1$s से %2$s</string>
+    <plurals name="goal_days_left">
+        <item quantity="one">%1$d दिन बाकी</item>
+        <item quantity="other">%1$d दिन बाकी</item>
+    </plurals>
+
+    <string name="goal_form_title">लक्ष्य क्या है</string>
+    <string name="goal_form_title_hint">जैसे, बारह जिम सेशन</string>
+    <string name="goal_form_kind">किस तरह का</string>
+    <string name="goal_kind_number">पहुँचना</string>
+    <string name="goal_kind_count">गिनती</string>
+    <string name="goal_kind_duration">घंटे</string>
+    <string name="goal_kind_consistency">बनाए रखना</string>
+    <string name="goal_kind_number_hint">कोई मापा जाने वाला आंकड़ा: 78 किग्रा, रोज़ 40 पेज।</string>
+    <string name="goal_kind_count_hint">एक स्टेप को तय बार करना।</string>
+    <string name="goal_kind_duration_hint">एक स्टेप पर मिनट जोड़ना।</string>
+    <string name="goal_kind_consistency_hint">तय हिस्से दिनों में प्लान निभाना।</string>
+    <string name="goal_form_step">कौन सा स्टेप</string>
+    <string name="goal_form_step_none">स्टेप चुनें</string>
+    <string name="goal_form_step_body">लक्ष्य सिर्फ़ यही स्टेप गिनता है।</string>
+    <string name="goal_form_measures">क्या मापा जाता है</string>
+    <string name="goal_form_measures_body">इस तरह के किसी भी स्टेप पर दर्ज आंकड़े लक्ष्य में जाते हैं।</string>
+    <string name="goal_form_start">शुरुआती आंकड़ा</string>
+    <string name="goal_form_start_hint">आज आप कहाँ हैं</string>
+    <string name="goal_form_target_value">लक्ष्य आंकड़ा</string>
+    <string name="goal_form_target_times">कितनी बार</string>
+    <string name="goal_form_target_minutes">कितने मिनट</string>
+    <string name="goal_form_target_percent">कितने प्रतिशत दिन</string>
+    <string name="goal_form_target_hint">एक नंबर</string>
+    <string name="goal_form_length">कितने समय का</string>
+    <string name="goal_form_length_body">आज से गिना जाएगा। जो पूरा हो सके, वह लक्ष्य बेहतर है।</string>
+    <plurals name="goal_form_weeks">
+        <item quantity="one">%1$d हफ़्ता</item>
+        <item quantity="other">%1$d हफ़्ते</item>
+    </plurals>
+    <string name="goal_unit_times">बार</string>
+    <string name="goal_unit_percent">%%</string>
+    <string name="goal_reason_title">सेव करने के लिए लक्ष्य को नाम दें।</string>
+    <string name="goal_reason_target">लक्ष्य में नंबर डालें।</string>
+    <string name="goal_reason_start">बताएं कहाँ से शुरू कर रहे हैं।</string>
+    <string name="goal_reason_item">चुनें कि यह कौन सा स्टेप गिनता है।</string>
+    <string name="goal_reason_nowhere">शुरुआत और लक्ष्य एक ही हैं, तो पहुँचने को कुछ नहीं।</string>
+
+    <string name="settings_goal">लक्ष्य</string>
+    <string name="settings_goal_body">एक लक्ष्य जिसमें दिन जुड़ें। ऐच्छिक।</string>
+
+    <!-- What the alarms actually did. -->
+    <string name="reliability_measured">असल में क्या हुआ</string>
+    <string name="reliability_measured_none">अभी कोई अलार्म ड्यू नहीं हुआ, इसलिए मापने को कुछ नहीं। यह खुद भर जाएगा।</string>
+    <plurals name="reliability_measured_window">
+        <item quantity="one">पिछले %1$d दिन, इसी फ़ोन पर।</item>
+        <item quantity="other">पिछले %1$d दिन, इसी फ़ोन पर।</item>
+    </plurals>
+    <string name="reliability_on_time">समय पर आए</string>
+    <string name="reliability_of">%2$d में से %1$d</string>
+    <string name="reliability_late">देर से आए</string>
+    <string name="reliability_typically_late">आमतौर पर करीब %1$d मिनट पीछे।</string>
+    <string name="reliability_never_arrived">कभी नहीं आए</string>
+    <string name="reliability_never_arrived_body">आमतौर पर बैटरी मैनेजर। ऊपर के फिक्स इसे बदलते हैं।</string>
 
     <string name="settings_title">सेटिंग</string>
     <string name="settings_kicker">Build or Break · %1$s</string>

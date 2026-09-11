@@ -66,8 +66,35 @@ data class ResolvedEntry(
      * counts as the minimum, not as a partial failure.
      */
     val reduced: Boolean = false,
+    /**
+     * Whether this is the first step of its group.
+     *
+     * True for everything that is not in a group, which is what makes the
+     * salience rule below say nothing about the ordinary case. Set by the
+     * resolver, because only the resolver can see the siblings.
+     */
+    val isBlockLead: Boolean = true,
 ) {
-    val salience: Salience get() = block?.salience ?: item.salience
+    /**
+     * How loudly this entry announces itself, once its group has had its say.
+     *
+     * A group is five things between 08:00 and 08:30, and rules.md section 1
+     * rule 4 says that is one interruption, not five. So the group's salience
+     * belongs to its first step and every step after it runs silent: still
+     * scheduled, still visible, still settleable from the shade, just not
+     * another noise about a routine the user is already in the middle of.
+     *
+     * Silencing rather than dropping is deliberate. A step that was never
+     * handed to the scheduler is a step that quietly becomes MISSED for
+     * somebody who put the phone down, and losing a step is a far worse
+     * failure than making no sound about it.
+     */
+    val salience: Salience
+        get() = when {
+            block == null -> item.salience
+            isBlockLead -> block.salience
+            else -> Salience.SILENT
+        }
 
     val isInBlock: Boolean get() = block != null
 }

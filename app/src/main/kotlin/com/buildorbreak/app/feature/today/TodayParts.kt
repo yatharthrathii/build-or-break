@@ -72,7 +72,7 @@ private val SHIFT_OPTIONS = listOf(15, 30, 60, 90)
 private const val COUNT_MILLIS = 420
 
 @Composable
-internal fun RingRow(header: DayHeader, runDays: Int) {
+internal fun RingRow(header: DayHeader, runDays: Int, consistency: Consistency? = null) {
     Column {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
@@ -80,39 +80,63 @@ internal fun RingRow(header: DayHeader, runDays: Int) {
         ) {
             ProgressRing(fraction = header.fraction)
 
-            Column(modifier = Modifier.padding(start = 16.dp)) {
-                // Counted up rather than swapped. The number is the one thing
-                // on this screen that says the day is going well, and a digit
-                // that changes while the ring fills is worth watching; one that
-                // has already changed by the time the eye arrives is not.
-                val counted by animateIntAsState(
-                    targetValue = header.doneCount,
-                    animationSpec = tween(COUNT_MILLIS),
-                    label = "kept",
-                )
-
-                Text(
-                    text = stringResource(R.string.today_of, counted, header.total),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                Label(text = stringResource(R.string.today_steps_kept), modifier = Modifier.padding(top = 5.dp))
-
-                Text(
-                    text = if (runDays > 0) {
-                        pluralStringResource(R.plurals.today_run_days, runDays, runDays)
-                    } else {
-                        stringResource(R.string.today_run_none)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 9.dp),
-                )
-            }
+            RingCounts(header = header, runDays = runDays, consistency = consistency)
         }
 
         HairlineRule()
+    }
+}
+
+/** The three lines beside the ring: the count, the run, and the steadier number. */
+@Composable
+private fun RingCounts(header: DayHeader, runDays: Int, consistency: Consistency?) {
+    Column(modifier = Modifier.padding(start = 16.dp)) {
+        // Counted up rather than swapped. The number is the one thing on this
+        // screen that says the day is going well, and a digit that changes
+        // while the ring fills is worth watching; one that has already changed
+        // by the time the eye arrives is not.
+        val counted by animateIntAsState(
+            targetValue = header.doneCount,
+            animationSpec = tween(COUNT_MILLIS),
+            label = "kept",
+        )
+
+        Text(
+            text = stringResource(R.string.today_of, counted, header.total),
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        Label(text = stringResource(R.string.today_steps_kept), modifier = Modifier.padding(top = 5.dp))
+
+        Text(
+            text = if (runDays > 0) {
+                pluralStringResource(R.plurals.today_run_days, runDays, runDays)
+            } else {
+                stringResource(R.string.today_run_none)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 9.dp),
+        )
+
+        // The number that survives a bad day. A run resets to nothing the
+        // first morning somebody oversleeps; this goes down by one and can go
+        // back up tomorrow, which is the difference between a measure and a
+        // punishment.
+        if (consistency != null && consistency.hasEnough) {
+            Text(
+                text = pluralStringResource(
+                    R.plurals.today_consistency,
+                    consistency.days,
+                    consistency.goodDays,
+                    consistency.days,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 3.dp),
+            )
+        }
     }
 }
 
@@ -241,6 +265,32 @@ private fun NextUpPanel(
     }
 }
 
+/**
+ * The title, and the line the user wrote under it.
+ *
+ * The note is shown at the one moment it is worth anything: when the step has
+ * arrived and they are about to do it. On the plan it is a mark; here it is
+ * the sentence.
+ */
+@Composable
+private fun NextUpTitle(card: NextUp) {
+    Text(
+        text = card.title,
+        style = MaterialTheme.typography.headlineSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(horizontal = 12.dp).padding(top = 6.dp),
+    )
+
+    card.detail?.let { detail ->
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp).padding(top = 5.dp),
+        )
+    }
+}
+
 /** The kicker, the time, the title and the badges. Everything above the button. */
 @Composable
 private fun NextUpHeading(card: NextUp) {
@@ -259,12 +309,7 @@ private fun NextUpHeading(card: NextUp) {
         Text(text = card.time, style = TimeStyle, color = MaterialTheme.colorScheme.onSurface)
     }
 
-    Text(
-        text = card.title,
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(horizontal = 12.dp).padding(top = 6.dp),
-    )
+    NextUpTitle(card = card)
 
     Row(
         modifier = Modifier.padding(horizontal = 12.dp).padding(top = 7.dp, bottom = 12.dp),
@@ -505,19 +550,42 @@ internal fun kindText(kind: EntryKind): String = when (kind) {
     is EntryKind.Every -> stringResource(R.string.kind_every, kind.minutes)
 }
 
+/**
+ * A length of time, in the units a person would use for it.
+ *
+ * Minutes up to an hour, then hours and minutes. A snooze reads as "+10" and
+ * a step pulled back from the morning into the afternoon reads as "+8h 45m"
+ * rather than as "+525", which is a number nobody converts in their head.
+ */
+@Composable
+private fun spanText(minutes: Int): String {
+    if (minutes < MINUTES_PER_HOUR) return stringResource(R.string.span_minutes, minutes)
+
+    val hours = minutes / MINUTES_PER_HOUR
+    val rest = minutes % MINUTES_PER_HOUR
+
+    return if (rest == 0) {
+        stringResource(R.string.span_hours, hours)
+    } else {
+        stringResource(R.string.span_hours_minutes, hours, rest)
+    }
+}
+
+private const val MINUTES_PER_HOUR = 60
+
 @Composable
 internal fun noteText(note: EntryNote): String = when (note) {
     EntryNote.Pinned -> stringResource(R.string.note_pinned)
     is EntryNote.DoneAt -> when {
-        note.overMinutes > 0 -> stringResource(R.string.note_done_over, note.time, note.overMinutes)
-        note.overMinutes < 0 -> stringResource(R.string.note_done_early, note.time, -note.overMinutes)
+        note.overMinutes > 0 -> stringResource(R.string.note_done_over, note.time, spanText(note.overMinutes))
+        note.overMinutes < 0 -> stringResource(R.string.note_done_early, note.time, spanText(-note.overMinutes))
         else -> stringResource(R.string.note_done_at, note.time)
     }
 
     is EntryNote.Moved -> if (note.minutes > 0) {
-        stringResource(R.string.note_moved_later, note.minutes)
+        stringResource(R.string.note_moved_later, spanText(note.minutes))
     } else {
-        stringResource(R.string.note_moved_earlier, -note.minutes)
+        stringResource(R.string.note_moved_earlier, spanText(-note.minutes))
     }
 
     is EntryNote.Ends -> stringResource(R.string.note_ends, note.time)

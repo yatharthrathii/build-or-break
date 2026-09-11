@@ -36,6 +36,19 @@ data class Goal(
 
     val span: Double get() = targetValue - startValue
 
+    /**
+     * Whether the numbers make a goal at all.
+     *
+     * A measured goal whose start equals its target goes nowhere; the others
+     * need something to count up to. "NaN" and "Infinity" parse as doubles
+     * and would otherwise poison every average they touched.
+     */
+    val isWellFormed: Boolean
+        get() = startValue.isFinite() &&
+            targetValue.isFinite() &&
+            targetValue >= 0.0 &&
+            if (kind == GoalKind.NUMBER) span != 0.0 else targetValue > 0.0
+
     val isIncreasing: Boolean get() = span >= 0
 
     fun daysElapsed(on: LocalDate): Int = ChronoUnit.DAYS.between(startDate, on).toInt().coerceIn(0, totalDays)

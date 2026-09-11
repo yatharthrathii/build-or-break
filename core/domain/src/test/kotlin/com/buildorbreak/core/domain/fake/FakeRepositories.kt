@@ -99,12 +99,15 @@ class FakeTemplateRepository : TemplateRepository {
 
 class FakeItemRepository : ItemRepository {
     val items = MutableStateFlow<List<Item>>(emptyList())
+    val blocks = MutableStateFlow<List<Block>>(emptyList())
     private var nextId = 1L
+    private var nextBlockId = 1L
 
     override fun observeForTemplate(templateId: Long): Flow<List<Item>> =
         items.map { list -> list.filter { it.templateId == templateId && !it.isArchived }.sortedBy { it.sortOrder } }
 
-    override fun observeBlocksForTemplate(templateId: Long): Flow<List<Block>> = MutableStateFlow(emptyList())
+    override fun observeBlocksForTemplate(templateId: Long): Flow<List<Block>> =
+        blocks.map { list -> list.filter { it.templateId == templateId }.sortedBy { it.sortOrder } }
 
     override suspend fun byId(itemId: Long): Item? = items.value.firstOrNull { it.id == itemId }
 
@@ -115,7 +118,20 @@ class FakeItemRepository : ItemRepository {
         return Outcome.Success(id)
     }
 
-    override suspend fun upsertBlock(block: Block): Outcome<Long, DataError> = Outcome.Success(block.id)
+    override suspend fun upsertBlock(block: Block): Outcome<Long, DataError> {
+        val id = if (block.id == 0L) nextBlockId++ else block.id
+        blocks.value = blocks.value.filterNot { it.id == id } + block.copy(id = id)
+
+        return Outcome.Success(id)
+    }
+
+    /** Unlinks then removes, in the order the real one documents. */
+    override suspend fun deleteBlock(templateId: Long, blockId: Long): Outcome<Unit, DataError> {
+        items.value = items.value.map { if (it.blockId == blockId) it.copy(blockId = null) else it }
+        blocks.value = blocks.value.filterNot { it.id == blockId }
+
+        return Outcome.Success(Unit)
+    }
 
     override suspend fun archive(itemId: Long): Outcome<Unit, DataError> {
         items.value = items.value.map { if (it.id == itemId) it.copy(archivedAt = Instant.EPOCH) else it }
@@ -130,6 +146,20 @@ class FakeOccurrenceRepository : OccurrenceRepository {
 
     override fun observeForDate(date: LocalDate): Flow<List<Occurrence>> =
         occurrences.map { list -> list.filter { it.date == date } }
+
+    override suspend fun byId(id: Long): Occurrence? = occurrences.value.firstOrNull { it.id == id }
+
+    override suspend fun replan(id: Long, plannedAt: java.time.LocalDateTime): Outcome<Unit, DataError> {
+        occurrences.value = occurrences.value.map { if (it.id == id) it.copy(plannedAt = plannedAt) else it }
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun discard(ids: List<Long>): Outcome<Unit, DataError> {
+        occurrences.value = occurrences.value.filterNot { it.id in ids && !it.isSettled }
+
+        return Outcome.Success(Unit)
+    }
 
     /** Ignores anything already there, the same way the real insert does. */
     override suspend fun materialise(entries: List<ResolvedEntry>, date: LocalDate): Outcome<Unit, DataError> {
@@ -184,8 +214,6 @@ class FakeOccurrenceRepository : OccurrenceRepository {
             ?: Outcome.Failure(DataError.NotFound)
     }
 
-    override suspend fun pendingBefore(instant: Instant): List<Occurrence> = emptyList()
-
     override suspend fun between(from: LocalDate, to: LocalDate): List<Occurrence> =
         occurrences.value.filter { it.date in from..to }.sortedWith(compareBy({ it.date }, { it.plannedAt }))
 }
@@ -234,11 +262,6 @@ class RecordingAlarmGateway(private val tier: DeliveryTier = DeliveryTier.FULL_S
 
     override suspend fun cancel(occurrenceId: Long) {
         cancelled += occurrenceId
-    }
-
-    override suspend fun cancelAll() {
-        cancelled += scheduled
-        scheduled.clear()
     }
 }
 
@@ -335,24 +358,38 @@ class RecordingResetRepository : ResetRepository {
     }
 }
 
-/**
- * Skip reasons, kept in memory.
- *
- * Only the two calls the review path makes. Measurements themselves are not
- * used by any test that needs this fake, and a fake that implements more than
- * it is asked about is a fake that quietly drifts from the real thing.
- */
+/** Skip reasons and logged numbers, kept in memory. */
 class FakeMeasurementRepository : MeasurementRepository {
     val reasons = MutableStateFlow<List<SkipReason>>(emptyList())
+    val measurements = MutableStateFlow<List<Measurement>>(emptyList())
 
-    override fun observeForItem(itemId: Long): Flow<List<Measurement>> = MutableStateFlow(emptyList())
+    override fun observeForItem(itemId: Long): Flow<List<Measurement>> =
+        measurements.map { list -> list.filter { it.itemId == itemId }.sortedBy { it.date } }
 
-    override suspend fun readings(kind: ValueKind, from: LocalDate, to: LocalDate): List<Reading> = emptyList()
+    override suspend fun readings(
+        kind: ValueKind,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long?,
+    ): List<Reading> = measurements.value
+        .filter { it.kind == kind && it.date in from..to && (itemId == null || it.itemId == itemId) }
+        .sortedBy { it.date }
+        .map { Reading(it.date, it.value) }
 
-    override suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError> = Outcome.Success(Unit)
+    override suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError> {
+        measurements.value = measurements.value + measurement.copy(id = measurements.value.size + 1L)
+
+        return Outcome.Success(Unit)
+    }
 
     override suspend fun recordSkipReason(reason: SkipReason): Outcome<Unit, DataError> {
         reasons.value = reasons.value + reason.copy(id = reasons.value.size + 1L)
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun clearMeasurementFor(occurrenceId: Long): Outcome<Unit, DataError> {
+        measurements.value = measurements.value.filterNot { it.occurrenceId == occurrenceId }
 
         return Outcome.Success(Unit)
     }
