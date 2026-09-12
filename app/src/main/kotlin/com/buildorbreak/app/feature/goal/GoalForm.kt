@@ -69,7 +69,7 @@ internal fun GoalForm(draft: GoalDraft, items: List<GoalItemChoice>, onChange: (
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Theme.spacing.medium)
             .padding(top = 16.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
@@ -116,7 +116,7 @@ private fun KindSection(draft: GoalDraft, onChange: (GoalDraft) -> Unit) {
             text = stringResource(goalKindHint(draft.kind)),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 }
@@ -128,7 +128,7 @@ private fun ItemSection(draft: GoalDraft, items: List<GoalItemChoice>, onChange:
 
     DropField(
         label = stringResource(R.string.goal_form_step),
-        value = chosen?.title ?: stringResource(R.string.goal_form_step_none),
+        value = chosen?.let(::labelFor) ?: stringResource(R.string.goal_form_step_none),
         body = stringResource(R.string.goal_form_step_body),
         onClick = { choosing = true },
     )
@@ -136,7 +136,7 @@ private fun ItemSection(draft: GoalDraft, items: List<GoalItemChoice>, onChange:
     if (choosing) {
         PickDialog(title = stringResource(R.string.goal_form_step), onDismiss = { choosing = false }) {
             items.forEach { item ->
-                PickRow(text = item.title, chosen = item.id == draft.itemId) {
+                PickRow(text = labelFor(item), chosen = item.id == draft.itemId) {
                     onChange(draft.copy(itemId = item.id))
                     choosing = false
                 }
@@ -144,6 +144,10 @@ private fun ItemSection(draft: GoalDraft, items: List<GoalItemChoice>, onChange:
         }
     }
 }
+
+/** "Gym" on a one template plan, "Gym · Weekend" once there are two. */
+private fun labelFor(item: GoalItemChoice): String =
+    if (item.templateName.isBlank()) item.title else item.title + " · " + item.templateName
 
 @Composable
 private fun MeasuredSection(draft: GoalDraft, onChange: (GoalDraft) -> Unit) {
@@ -215,7 +219,7 @@ private fun LengthSection(draft: GoalDraft, onChange: (GoalDraft) -> Unit) {
             text = stringResource(R.string.goal_form_length_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 }
@@ -242,7 +246,7 @@ private fun DropField(
             text = body,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 }
@@ -252,7 +256,7 @@ private fun PickDialog(title: String, onDismiss: () -> Unit, content: @Composabl
     Dialog(onDismissRequest = onDismiss) {
         Panel {
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                Kicker(text = title, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
+                Kicker(text = title, modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 10.dp))
                 content()
             }
         }
@@ -268,10 +272,10 @@ private fun PickRow(text: String, chosen: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 13.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset),
     )
 
-    HairlineRule(Modifier.padding(horizontal = 16.dp))
+    HairlineRule(Modifier.padding(horizontal = Theme.spacing.medium))
 }
 
 /** The same bordered box the plan editor uses, with a number keyboard when asked. */
@@ -301,7 +305,7 @@ private fun GoalTextBox(
                 .padding(top = 6.dp)
                 .border(Theme.spacing.rule, MaterialTheme.colorScheme.onSurface)
                 .background(Theme.colours.raised)
-                .padding(horizontal = 10.dp, vertical = 13.dp),
+                .padding(horizontal = Theme.spacing.inset, vertical = Theme.spacing.inset),
             decorationBox = { inner ->
                 Box {
                     if (value.isEmpty() && placeholder != null) {

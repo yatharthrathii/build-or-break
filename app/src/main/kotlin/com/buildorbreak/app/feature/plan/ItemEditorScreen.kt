@@ -105,7 +105,7 @@ fun ItemEditorContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Theme.spacing.medium)
                 .padding(top = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
@@ -178,7 +178,7 @@ private fun EditorHeader(state: ItemEditorUiState, onSave: () -> Unit, onCancel:
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                .padding(start = Theme.spacing.medium, end = Theme.spacing.medium, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -197,7 +197,7 @@ private fun EditorHeader(state: ItemEditorUiState, onSave: () -> Unit, onCancel:
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 14.dp),
+                    .padding(start = Theme.spacing.inset),
             )
 
             FillButton(text = stringResource(R.string.editor_save), onClick = onSave, enabled = state.canSave)
@@ -226,7 +226,7 @@ private fun FailureLine() {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.error)
-            .padding(horizontal = 16.dp, vertical = 9.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.small),
     )
 }
 
@@ -240,7 +240,7 @@ private fun BlockerLine(blocker: SaveBlocker) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(horizontal = 16.dp, vertical = 9.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.small),
     )
 }
 
@@ -273,7 +273,7 @@ private fun SalienceSection(state: ItemEditorUiState, onChange: (ItemEditorUiSta
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 }
@@ -296,7 +296,7 @@ private fun WeekdaySection(state: ItemEditorUiState, onChange: (ItemEditorUiStat
                 text = stringResource(R.string.editor_no_days),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(top = 7.dp),
+                modifier = Modifier.padding(top = Theme.spacing.small),
             )
         }
     }
@@ -358,7 +358,7 @@ private fun ToggleRow(
                 text = body,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 3.dp),
+                modifier = Modifier.padding(top = Theme.spacing.tight),
             )
         }
 

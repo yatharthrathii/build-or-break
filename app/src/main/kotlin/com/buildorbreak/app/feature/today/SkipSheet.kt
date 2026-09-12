@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.buildorbreak.app.R
 import com.buildorbreak.core.designsystem.component.GhostButton
 import com.buildorbreak.core.designsystem.component.OutlineButton
+import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.enums.SkipChip
 import java.util.Locale
 
@@ -46,26 +47,15 @@ internal fun SkipSheet(
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = null,
     ) {
-        Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp)) {
-            Text(
-                text = stringResource(headline(mode)).uppercase(Locale.getDefault()),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-            )
-
-            Text(
-                text = stringResource(body(mode)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
+        Column(
+            modifier = Modifier.padding(
+                start = Theme.spacing.medium,
+                end = Theme.spacing.medium,
+                top = 22.dp,
+                bottom = 28.dp,
+            ),
+        ) {
+            SheetHeading(title = title, mode = mode)
 
             Chips(onPick = onSkip)
 
@@ -77,6 +67,30 @@ internal fun SkipSheet(
             )
         }
     }
+}
+
+/** What is being skipped, and why the sheet is asking. */
+@Composable
+private fun SheetHeading(title: String, mode: SkipAskMode) {
+    Text(
+        text = stringResource(headline(mode)).uppercase(Locale.getDefault()),
+        style = MaterialTheme.typography.headlineMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+
+    Text(
+        text = title,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = Theme.spacing.small, bottom = Theme.spacing.tight),
+    )
+
+    Text(
+        text = stringResource(body(mode)),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = Theme.spacing.medium),
+    )
 }
 
 /**

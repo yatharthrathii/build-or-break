@@ -38,6 +38,7 @@ import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.SectionLabel
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
+import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
 import com.buildorbreak.core.domain.review.DeliveryStats
 import com.buildorbreak.core.model.enums.DeliveryTier
@@ -63,13 +64,13 @@ private fun MeasuredSection(stats: DeliveryStats) {
             text = stringResource(R.string.reliability_measured_none),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
         )
 
         return
     }
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 4.dp)) {
         Text(
             text = pluralStringResource(R.plurals.reliability_measured_window, stats.days, stats.days),
             style = MaterialTheme.typography.bodySmall,
@@ -105,7 +106,7 @@ private fun MeasuredRow(
     accent: Boolean = false,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Theme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -273,7 +274,7 @@ private fun VendorRows(
 
 @Composable
 private fun TierSummary(tier: DeliveryTier) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 18.dp)) {
         Kicker(text = stringResource(R.string.reliability_kicker), color = MaterialTheme.colorScheme.primary)
 
         Text(
@@ -297,7 +298,7 @@ private fun TierSummary(tier: DeliveryTier) {
 internal fun BackHeader(title: String, onBack: () -> Unit) {
     Column {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -313,7 +314,7 @@ internal fun BackHeader(title: String, onBack: () -> Unit) {
                 text = title.uppercase(Locale.getDefault()),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 14.dp),
+                modifier = Modifier.padding(start = Theme.spacing.inset),
             )
         }
 
@@ -330,7 +331,7 @@ private fun FixRow(
     @StringRes secondary: Int? = null,
     onSecondary: () -> Unit = {},
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 15.dp)) {
         Text(
             text = stringResource(what),
             style = MaterialTheme.typography.titleMedium,
@@ -341,7 +342,7 @@ private fun FixRow(
             text = stringResource(why),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp, bottom = 11.dp),
+            modifier = Modifier.padding(top = 4.dp, bottom = Theme.spacing.inset),
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -351,7 +352,7 @@ private fun FixRow(
         }
     }
 
-    HairlineRule(Modifier.padding(horizontal = 16.dp))
+    HairlineRule(Modifier.padding(horizontal = Theme.spacing.medium))
 }
 
 // Copy lookups -----------------------------------------------------------------

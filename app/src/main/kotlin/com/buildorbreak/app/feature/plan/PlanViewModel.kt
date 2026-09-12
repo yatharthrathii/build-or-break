@@ -10,6 +10,7 @@ import com.buildorbreak.core.domain.usecase.DeleteBlockUseCase
 import com.buildorbreak.core.domain.usecase.DeleteTemplateUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
+import com.buildorbreak.core.domain.usecase.ReorderItemsUseCase
 import com.buildorbreak.core.domain.usecase.SaveBlockUseCase
 import com.buildorbreak.core.domain.usecase.SaveTemplateUseCase
 import com.buildorbreak.core.model.enums.DayMode
@@ -111,7 +112,7 @@ sealed interface PlanKind {
 
     data class After(val parentTitle: String, val offsetMinutes: Int) : PlanKind
 
-    data class Window(val from: String, val to: String, val minutesWide: Int) : PlanKind
+    data class Window(val from: String, val to: String) : PlanKind
 
     data class Every(val minutes: Int, val from: String, val to: String) : PlanKind
 }
@@ -139,6 +140,16 @@ data class PlanItemRow(
     val hasNote: Boolean = false,
     /** Whether it asks for a number when it is completed. */
     val measured: Boolean = false,
+    /**
+     * The minute of the day this step starts at, or [PlanOrder.NO_SLOT].
+     *
+     * Two rows with the same slot in the same group are a tie, and a tie is
+     * the only thing the handle can reorder: the clock decides everything
+     * else, and a time is changed in the editor, not by dragging.
+     */
+    val slot: Int = PlanOrder.NO_SLOT,
+    /** Whether the handle does anything on this row. */
+    val movable: Boolean = false,
 )
 
 /**
@@ -155,6 +166,7 @@ class PlanViewModel @Inject constructor(
     private val deleteTemplate: DeleteTemplateUseCase,
     private val saveBlock: SaveBlockUseCase,
     private val deleteBlock: DeleteBlockUseCase,
+    private val reorderItems: ReorderItemsUseCase,
     private val clock: ClockFormat,
 ) : ViewModel() {
 
@@ -234,6 +246,20 @@ class PlanViewModel @Inject constructor(
         deleteBlock(loaded.template.id, id)
     }
 
+    /**
+     * [tie] is a run of steps at the same minute, in the order the user just
+     * put them. The whole template is renumbered around it, top to bottom as
+     * drawn, so the stored order and the drawn order are the same list.
+     */
+    fun onReorder(tie: List<Long>) = viewModelScope.launch {
+        val drawn = state.value.sections.flatMap { section -> section.rows.map { it.id } }
+        val first = drawn.indexOfFirst { it in tie }
+        if (first < 0) return@launch
+
+        val rest = drawn.filterNot { it in tie }
+        reorderItems(rest.take(first) + tie + rest.drop(first))
+    }
+
     private fun toUiState(contents: PlanContents): PlanUiState = when (contents) {
         PlanContents.None -> PlanUiState.Empty
 
@@ -242,7 +268,7 @@ class PlanViewModel @Inject constructor(
             val titles = contents.items.associate { it.id to it.title }
             val starts = contents.items.mapNotNull { startOf(it.anchor) }
 
-            val rows = contents.items.map { toRow(it, titles, contents.items) }
+            val rows = withTies(PlanOrder.sorted(contents.items).map { toRow(it, titles, contents.items) })
             val groups = contents.blocks.map { toGroup(it, rows) }
 
             PlanUiState(
@@ -274,7 +300,17 @@ class PlanViewModel @Inject constructor(
         groupId = item.blockId,
         hasNote = !item.detail.isNullOrBlank(),
         measured = item.valueKind != ValueKind.NONE,
+        slot = PlanOrder.slotOf(item, all),
     )
+
+    /** A row can move when another row shares its minute and its group. */
+    private fun withTies(rows: List<PlanItemRow>): List<PlanItemRow> {
+        val sizes = rows.groupingBy { it.slot to it.groupId }.eachCount()
+
+        return rows.map { row ->
+            row.copy(movable = row.slot != PlanOrder.NO_SLOT && (sizes[row.slot to row.groupId] ?: 0) > 1)
+        }
+    }
 
     private fun toGroup(block: Block, rows: List<PlanItemRow>) = PlanGroupRow(
         id = block.id,
@@ -298,21 +334,34 @@ class PlanViewModel @Inject constructor(
         val byId = groups.associateBy { it.id }
         val sections = mutableListOf<PlanSection>()
         val placed = mutableSetOf<Long>()
+        // A run of loose steps is one section, not one section per step.
+        // Two steps at the same minute can only swap places inside a
+        // section, and a step alone in its own section has nothing to swap
+        // with.
+        val loose = mutableListOf<PlanItemRow>()
+        val flush = {
+            if (loose.isNotEmpty()) {
+                sections += PlanSection(null, loose.toImmutableList())
+                loose.clear()
+            }
+        }
 
         rows.forEach { row ->
             val group = row.groupId?.let(byId::get)
 
             when {
-                group == null -> sections += PlanSection(null, persistentListOf(row))
+                group == null -> loose += row
 
                 group.id in placed -> Unit
 
                 else -> {
+                    flush()
                     placed += group.id
                     sections += PlanSection(group, rows.filter { it.groupId == group.id }.toImmutableList())
                 }
             }
         }
+        flush()
 
         // A group with nothing in it yet still has to be visible, or making
         // one looks like it did nothing at all.
@@ -332,7 +381,6 @@ class PlanViewModel @Inject constructor(
         is Anchor.Window -> PlanKind.Window(
             from = clock.format(anchor.from),
             to = clock.format(anchor.to),
-            minutesWide = java.time.Duration.between(anchor.from, anchor.to).toMinutes().toInt(),
         )
 
         is Anchor.Interval -> PlanKind.Every(

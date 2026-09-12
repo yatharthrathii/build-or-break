@@ -25,6 +25,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -227,9 +228,15 @@ class AlarmRingerService : Service() {
                 // gentle pass gets to stop it before it wakes the whole room,
                 // and anybody who does not is dealt with a few seconds later.
                 setVolume(FIRST_VOLUME, FIRST_VOLUME)
-                prepare()
-                start()
-                rampUp()
+                // Prepared off the main thread. Opening a codec can take
+                // seconds on a slow phone, and the main thread is the one
+                // the platform is timing while it waits for the promotion
+                // this service has to make and the stop that may follow it.
+                setOnPreparedListener { ready ->
+                    ready.start()
+                    rampUp()
+                }
+                prepareAsync()
             } catch (failed: Exception) {
                 release()
                 player = null
@@ -289,14 +296,21 @@ class AlarmRingerService : Service() {
         timeout?.cancel()
         timeout = null
 
+        // Released off the main thread for the same reason it was prepared
+        // there: tearing down a codec is slow on a slow phone, and a stop
+        // that blocks the main thread for seconds delays the next start.
+        // Not cancellable: onDestroy cancels the scope right after this, and a
+        // release that never ran is a codec held open by a dead service.
         player?.let { open ->
-            @Suppress("SwallowedException")
-            try {
-                open.stop()
-            } catch (already: IllegalStateException) {
-                Unit
+            scope.launch(NonCancellable) {
+                @Suppress("SwallowedException")
+                try {
+                    open.stop()
+                } catch (already: IllegalStateException) {
+                    Unit
+                }
+                open.release()
             }
-            open.release()
         }
         player = null
 

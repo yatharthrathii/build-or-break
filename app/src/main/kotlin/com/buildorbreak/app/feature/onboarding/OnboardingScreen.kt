@@ -42,6 +42,7 @@ import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.StepBars
 import com.buildorbreak.core.designsystem.component.Wordmark
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
+import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.scheduler.alarm.TierBlocker
 import kotlinx.collections.immutable.persistentListOf
 
@@ -151,11 +152,11 @@ private fun StepHeader(state: OnboardingUiState, onBack: () -> Unit) {
             Wordmark(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                    .padding(horizontal = Theme.spacing.medium, vertical = 20.dp),
             )
         } else {
             Row(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -180,7 +181,7 @@ private fun StepHeader(state: OnboardingUiState, onBack: () -> Unit) {
 
 @Composable
 private fun StepFooter(state: OnboardingUiState, onNext: () -> Unit, onFinish: () -> Unit) {
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 16.dp)) {
         if (state.failed) {
             Text(
                 text = stringResource(R.string.onboarding_failed),

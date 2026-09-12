@@ -64,4 +64,7 @@ interface ItemDao {
      */
     @Query("UPDATE item SET archived_at = :at WHERE id = :id")
     suspend fun archive(id: Long, at: Instant)
+
+    @Query("UPDATE item SET sort_order = :order WHERE id = :id")
+    suspend fun setSortOrder(id: Long, order: Int)
 }

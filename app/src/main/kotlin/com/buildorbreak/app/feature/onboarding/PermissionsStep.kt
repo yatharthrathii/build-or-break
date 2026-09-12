@@ -58,7 +58,7 @@ internal fun PermissionsStep(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = Theme.spacing.medium)
             .padding(top = 22.dp, bottom = 12.dp),
     ) {
         Text(
@@ -71,7 +71,7 @@ internal fun PermissionsStep(
             text = stringResource(R.string.onboarding_permissions_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 9.dp, bottom = 20.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small, bottom = 20.dp),
         )
 
         HeavyRule()
@@ -161,7 +161,7 @@ private fun PermissionRow(
                     .padding(top = 1.dp),
             )
 
-            Column(modifier = Modifier.padding(start = 11.dp)) {
+            Column(modifier = Modifier.padding(start = Theme.spacing.inset)) {
                 Text(
                     text = stringResource(title),
                     style = MaterialTheme.typography.titleMedium,
@@ -178,7 +178,7 @@ private fun PermissionRow(
         }
 
         Row(
-            modifier = Modifier.padding(start = RowIndent, top = 11.dp),
+            modifier = Modifier.padding(start = RowIndent, top = Theme.spacing.inset),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (state == PermissionState.GRANTED) {
@@ -210,7 +210,7 @@ private fun RightNow(facts: PermissionFacts) {
             .fillMaxWidth()
             .padding(top = 16.dp)
             .background(Theme.colours.raised)
-            .padding(horizontal = 13.dp, vertical = 12.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = 12.dp),
     )
 
     Text(

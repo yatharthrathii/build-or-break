@@ -11,8 +11,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.BarChart
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavBackStack
@@ -30,7 +33,10 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.NavDisplay
 import com.buildorbreak.app.R
+import com.buildorbreak.app.feature.about.AboutScreen
+import com.buildorbreak.app.feature.about.LegalScreen
 import com.buildorbreak.app.feature.goal.GoalScreen
+import com.buildorbreak.app.feature.goal.ReadingsScreen
 import com.buildorbreak.app.feature.insights.InsightsScreen
 import com.buildorbreak.app.feature.onboarding.OnboardingScreen
 import com.buildorbreak.app.feature.onboarding.StartChoice
@@ -42,6 +48,7 @@ import com.buildorbreak.app.feature.settings.SettingsScreen
 import com.buildorbreak.app.feature.today.TodayScreen
 import com.buildorbreak.core.designsystem.component.BottomNavBar
 import com.buildorbreak.core.designsystem.component.NavDestination
+import com.buildorbreak.core.designsystem.component.readablePage
 import com.buildorbreak.scheduler.alarm.TierBlocker
 
 /** How far a screen slides in. A fraction of its width, so it reads as a nudge. */
@@ -88,22 +95,12 @@ fun BuildOrBreakNavGraph(startRoute: NavKey, actions: ShellActions, modifier: Mo
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        NavDisplay(
-            backStack = backStack,
-            modifier = Modifier.weight(1f),
-            onBack = { backStack.removeLastOrNull() },
-            // Saveable state per entry, so scroll positions survive a tab
-            // switch. No per entry ViewModel store on purpose: a tab tap
-            // clears the stack, and a ViewModel scoped to the entry would be
-            // destroyed and rebuilt on every switch, re resolving the whole
-            // day and showing an empty frame first. Scoped to the activity,
-            // Today and Insights come back exactly as they were left.
-            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
-            transitionSpec = { forward() },
-            popTransitionSpec = { backward() },
-            predictivePopTransitionSpec = { backward() },
-            entryProvider = entries(backStack, actions),
-        )
+        // Centred and capped, so a tablet or a phone on its side reads as one
+        // column of a timetable rather than as a table with the ink pushed
+        // to both edges. On a portrait phone the cap never bites.
+        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            NavHostPage(backStack = backStack, actions = actions)
+        }
 
         if (tabIndex >= 0) {
             BottomNavBar(
@@ -113,6 +110,26 @@ fun BuildOrBreakNavGraph(startRoute: NavKey, actions: ShellActions, modifier: Mo
             )
         }
     }
+}
+
+@Composable
+private fun NavHostPage(backStack: NavBackStack<NavKey>, actions: ShellActions) {
+    NavDisplay(
+        backStack = backStack,
+        modifier = Modifier.readablePage(),
+        onBack = { backStack.removeLastOrNull() },
+        // Saveable state per entry, so scroll positions survive a tab
+        // switch. No per entry ViewModel store on purpose: a tab tap
+        // clears the stack, and a ViewModel scoped to the entry would be
+        // destroyed and rebuilt on every switch, re resolving the whole
+        // day and showing an empty frame first. Scoped to the activity,
+        // Today and Insights come back exactly as they were left.
+        entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+        transitionSpec = { forward() },
+        popTransitionSpec = { backward() },
+        predictivePopTransitionSpec = { backward() },
+        entryProvider = entries(backStack, actions),
+    )
 }
 
 @Composable
@@ -170,6 +187,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
             onOpenPlan = { backStack.openTab(PlanRoute) },
             onImport = { backStack.add(ImportRoute) },
             onAddStep = { backStack.add(ItemEditorRoute(ItemEditorRoute.NEW_ITEM)) },
+            onOpenGoal = { backStack.add(GoalRoute) },
         )
     }
 
@@ -186,13 +204,22 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
     }
 
     entry<GoalRoute> {
-        GoalScreen(onBack = { backStack.removeLastOrNull() })
+        GoalScreen(
+            onOpenReadings = { backStack.add(ReadingsRoute) },
+            onBack = { backStack.removeLastOrNull() },
+        )
+    }
+
+    entry<ReadingsRoute> {
+        ReadingsScreen(onBack = { backStack.removeLastOrNull() })
     }
 
     entry<SettingsRoute> {
         SettingsScreen(
             onOpenReliability = { backStack.add(ReliabilityRoute) },
             onOpenGoal = { backStack.add(GoalRoute) },
+            onOpenAbout = { backStack.add(AboutRoute) },
+            onOpenLegal = { backStack.add(LegalRoute(it)) },
             onImport = { backStack.add(ImportRoute) },
             onShare = actions.share,
             onOpenAlarmChannel = actions.openAlarmChannel,
@@ -206,6 +233,14 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
             onOpenLockScreen = actions.openLockScreen,
             onBack = { backStack.removeLastOrNull() },
         )
+    }
+
+    entry<AboutRoute> {
+        AboutScreen(onOpenLegal = { backStack.add(LegalRoute(it)) }, onBack = { backStack.removeLastOrNull() })
+    }
+
+    entry<LegalRoute> { route ->
+        LegalScreen(document = route.document, onBack = { backStack.removeLastOrNull() })
     }
 
     entry<ImportRoute> {

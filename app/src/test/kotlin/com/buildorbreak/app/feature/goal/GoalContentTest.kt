@@ -40,12 +40,12 @@ class GoalContentTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun render(state: GoalUiState, onChange: (GoalDraft) -> Unit = {}) {
+    private fun render(state: GoalUiState, onNew: () -> Unit = {}, onChange: (GoalDraft) -> Unit = {}) {
         compose.setContent {
             BuildOrBreakTheme {
                 GoalContent(
                     state = state,
-                    onNew = {},
+                    onNew = onNew,
                     onEdit = {},
                     onChange = onChange,
                     onSave = {},
@@ -82,7 +82,7 @@ class GoalContentTest {
 
         compose.onNodeWithText("58%").assertIsDisplayed()
         compose.onNodeWithText("7 of 12 times").assertIsDisplayed()
-        compose.onNodeWithText("The mark is where a straight line says you should be: 67%.").assertIsDisplayed()
+        compose.onNodeWithText("The mark shows where you should be today: 67%.").assertIsDisplayed()
     }
 
     @Test
@@ -93,8 +93,8 @@ class GoalContentTest {
         val fresh = card().copy(hasData = false, hasProjection = false, willReach = false)
         render(GoalUiState.Empty.copy(loaded = true, goal = fresh))
 
-        compose.onNodeWithText("Nothing recorded yet. Too early to say.").assertIsDisplayed()
-        compose.onAllNodesWithText("Falls short unless something changes.").assertCountEquals(0)
+        compose.onNodeWithText("Nothing logged yet.").assertIsDisplayed()
+        compose.onAllNodesWithText("You will fall short unless something changes.").assertCountEquals(0)
     }
 
     @Test
@@ -102,7 +102,7 @@ class GoalContentTest {
         render(GoalUiState.Empty.copy(loaded = true, goal = card()))
 
         scrollTo("At this rate")
-        compose.onNodeWithText("Falls short unless something changes.").assertIsDisplayed()
+        compose.onNodeWithText("You will fall short unless something changes.").assertIsDisplayed()
     }
 
     @Test
@@ -154,6 +154,51 @@ class GoalContentTest {
         compose.onNodeWithText("+").performClick()
 
         assertThat(changed?.weeks).isEqualTo(9)
+    }
+
+    @Test
+    fun `a goal that reached its target says so and offers the next one`() {
+        var asked = false
+        render(
+            GoalUiState.Empty.copy(
+                loaded = true,
+                goal = card().copy(
+                    current = 12.0,
+                    percent = 100,
+                    standing = GoalStanding.REACHED,
+                    isFinished = true,
+                    reached = true,
+                ),
+            ),
+            onNew = { asked = true },
+        )
+
+        compose.onNodeWithText("GOAL FINISHED").assertIsDisplayed()
+        compose.onNodeWithText("Reached").assertIsDisplayed()
+        compose.onNodeWithText("You did 12 of 12 times.").assertIsDisplayed()
+
+        compose.onNodeWithText("SET A NEW GOAL").performClick()
+        assertThat(asked).isTrue()
+    }
+
+    @Test
+    fun `a goal that ran out of days says that instead of congratulating`() {
+        render(
+            GoalUiState.Empty.copy(
+                loaded = true,
+                goal = card().copy(standing = GoalStanding.OVER, daysLeft = 0, isFinished = true, reached = false),
+            ),
+        )
+
+        compose.onNodeWithText("Not reached").assertIsDisplayed()
+        compose.onAllNodesWithText("Reached").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a goal still running shows no verdict at all`() {
+        render(GoalUiState.Empty.copy(loaded = true, goal = card()))
+
+        compose.onAllNodesWithText("GOAL FINISHED").assertCountEquals(0)
     }
 
     @Suppress("MagicNumber")

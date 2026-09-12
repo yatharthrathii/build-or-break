@@ -27,6 +27,7 @@ import com.buildorbreak.core.designsystem.component.HairlineRule
 import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.component.PickerField
+import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.enums.ValueKind
 
 /**
@@ -65,7 +66,7 @@ internal fun GroupSection(state: ItemEditorUiState, onChange: (ItemEditorUiState
                 ?: stringResource(R.string.editor_group_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 
@@ -94,7 +95,7 @@ private fun GroupDialog(
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Kicker(
                     text = stringResource(R.string.editor_group_pick),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 10.dp),
                 )
 
                 ChoiceRow(
@@ -143,7 +144,7 @@ internal fun MeasureSection(state: ItemEditorUiState, onChange: (ItemEditorUiSta
             ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 
@@ -166,7 +167,7 @@ private fun MeasureDialog(selected: ValueKind, onPick: (ValueKind) -> Unit, onDi
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Kicker(
                     text = stringResource(R.string.editor_measure_pick),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 10.dp),
                 )
 
                 ValueKind.entries.forEach { kind ->
@@ -187,7 +188,7 @@ private fun ChoiceRow(text: String, chosen: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 13.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
@@ -205,7 +206,7 @@ private fun ChoiceRow(text: String, chosen: Boolean, onClick: () -> Unit) {
         }
     }
 
-    HairlineRule(Modifier.padding(horizontal = 16.dp))
+    HairlineRule(Modifier.padding(horizontal = Theme.spacing.medium))
 }
 
 internal fun valueKindLabel(kind: ValueKind): Int = when (kind) {

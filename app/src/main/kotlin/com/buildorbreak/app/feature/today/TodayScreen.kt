@@ -68,6 +68,7 @@ fun TodayScreen(
     onOpenPlan: () -> Unit,
     onImport: () -> Unit,
     onAddStep: () -> Unit,
+    onOpenGoal: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
@@ -94,6 +95,7 @@ fun TodayScreen(
             onOpenPlan = onOpenPlan,
             onImport = onImport,
             onAddStep = onAddStep,
+            onOpenGoal = onOpenGoal,
         ),
         modifier = modifier,
     )
@@ -121,6 +123,7 @@ data class TodayActions(
     val onOpenPlan: () -> Unit,
     val onImport: () -> Unit,
     val onAddStep: () -> Unit,
+    val onOpenGoal: () -> Unit = {},
 ) {
     companion object {
         val None = TodayActions(
@@ -344,6 +347,13 @@ private fun LazyListScope.top(
     onRunningLate: () -> Unit,
     onAnswerAsk: (Long) -> Unit,
 ) {
+    // The goal first, when there is one. It is why the routine exists, and
+    // the number on it is the one thing somebody three weeks in opens the
+    // app to see.
+    state.goal?.let { goal ->
+        item(key = "goal") { GoalHeroCard(goal = goal, onOpen = actions.onOpenGoal) }
+    }
+
     item { RingRow(header = state.header, runDays = state.runDays, consistency = state.consistency) }
 
     state.milestone?.let { notice ->
@@ -468,9 +478,12 @@ private fun LazyListScope.notices(state: TodayUiState, onOpenReliability: () -> 
         item(key = "failed") { NoticeBar(text = stringResource(R.string.today_action_failed)) }
     }
 
+    // Tinted, unlike the day's own status line above it: this one is a
+    // problem, and two grey strips stacked read as two pieces of the same
+    // furniture. The tint is what says one of them wants something.
     state.degradedTier?.let { tier ->
         item {
-            NoticeBar(text = stringResource(tierShortText(tier)), tinted = false) {
+            NoticeBar(text = stringResource(tierShortText(tier))) {
                 OutlineButton(text = stringResource(R.string.today_notice_fix), onClick = onOpenReliability)
             }
         }

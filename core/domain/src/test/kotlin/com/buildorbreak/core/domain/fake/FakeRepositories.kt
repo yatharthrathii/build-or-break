@@ -138,6 +138,15 @@ class FakeItemRepository : ItemRepository {
 
         return Outcome.Success(Unit)
     }
+
+    override suspend fun reorder(orderedIds: List<Long>): Outcome<Unit, DataError> {
+        items.value = items.value.map { item ->
+            val index = orderedIds.indexOf(item.id)
+            if (index < 0) item else item.copy(sortOrder = index)
+        }
+
+        return Outcome.Success(Unit)
+    }
 }
 
 class FakeOccurrenceRepository : OccurrenceRepository {
@@ -366,6 +375,17 @@ class FakeMeasurementRepository : MeasurementRepository {
     override fun observeForItem(itemId: Long): Flow<List<Measurement>> =
         measurements.map { list -> list.filter { it.itemId == itemId }.sortedBy { it.date } }
 
+    override fun observeReadings(
+        kind: ValueKind,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long?,
+    ): Flow<List<Reading>> = measurements.map { list ->
+        list.filter { it.kind == kind && it.date in from..to && (itemId == null || it.itemId == itemId) }
+            .sortedBy { it.date }
+            .map { Reading(it.date, it.value) }
+    }
+
     override suspend fun readings(
         kind: ValueKind,
         from: LocalDate,
@@ -376,8 +396,28 @@ class FakeMeasurementRepository : MeasurementRepository {
         .sortedBy { it.date }
         .map { Reading(it.date, it.value) }
 
+    override fun observeSeries(kind: ValueKind, itemId: Long?): Flow<List<Measurement>> = measurements.map { list ->
+        list.filter { it.kind == kind && (itemId == null || it.itemId == itemId) }
+            .sortedWith(compareByDescending<Measurement> { it.date }.thenByDescending { it.id })
+    }
+
+    // Upsert, not append. A row written with an id it already has replaces
+    // that row, the way Room's would: a test that corrects a reading and
+    // then reads two of them back is testing the fake, not the code.
     override suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError> {
-        measurements.value = measurements.value + measurement.copy(id = measurements.value.size + 1L)
+        val existing = measurements.value.indexOfFirst { it.id != 0L && it.id == measurement.id }
+
+        measurements.value = if (existing >= 0) {
+            measurements.value.toMutableList().also { it[existing] = measurement }
+        } else {
+            measurements.value + measurement.copy(id = measurements.value.size + 1L)
+        }
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun delete(measurementId: Long): Outcome<Unit, DataError> {
+        measurements.value = measurements.value.filterNot { it.id == measurementId }
 
         return Outcome.Success(Unit)
     }

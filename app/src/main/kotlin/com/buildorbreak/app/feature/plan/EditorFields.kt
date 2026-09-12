@@ -220,7 +220,7 @@ private fun LandsAt(state: ItemEditorUiState) {
             .fillMaxWidth()
             .padding(top = 12.dp)
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(horizontal = 11.dp, vertical = 10.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = 10.dp),
     )
 }
 
@@ -258,7 +258,7 @@ private fun ParentDialog(parents: List<ParentChoice>, onPick: (Long) -> Unit, on
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Kicker(
                     text = stringResource(R.string.editor_pick_parent_title),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 10.dp),
                 )
 
                 if (parents.isEmpty()) {
@@ -266,7 +266,7 @@ private fun ParentDialog(parents: List<ParentChoice>, onPick: (Long) -> Unit, on
                         text = stringResource(R.string.editor_no_parents),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 10.dp),
                     )
                 }
 
@@ -278,9 +278,9 @@ private fun ParentDialog(parents: List<ParentChoice>, onPick: (Long) -> Unit, on
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(role = Role.Button) { onPick(parent.id) }
-                            .padding(horizontal = 16.dp, vertical = 13.dp),
+                            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset),
                     )
-                    HairlineRule(Modifier.padding(horizontal = 16.dp))
+                    HairlineRule(Modifier.padding(horizontal = Theme.spacing.medium))
                 }
             }
         }
@@ -309,7 +309,7 @@ internal fun WeekdayRow(weekdays: Weekdays, onChange: (Weekdays) -> Unit, modifi
                         if (selected) MaterialTheme.colorScheme.onSurface else Theme.colours.faint,
                     )
                     .clickable(role = Role.Checkbox) { onChange(if (selected) weekdays - day else weekdays + day) }
-                    .padding(vertical = 11.dp),
+                    .padding(vertical = Theme.spacing.inset),
             )
         }
     }
@@ -356,7 +356,7 @@ internal fun TextBox(
                 .border(Theme.spacing.rule, MaterialTheme.colorScheme.onSurface)
                 .background(Theme.colours.raised)
                 .heightIn(min = 44.dp)
-                .padding(horizontal = 10.dp, vertical = 12.dp),
+                .padding(horizontal = Theme.spacing.inset, vertical = 12.dp),
             decorationBox = { inner ->
                 Box {
                     if (value.isEmpty() && placeholder != null) {

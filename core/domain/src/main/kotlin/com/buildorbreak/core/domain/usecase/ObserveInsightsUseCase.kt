@@ -72,6 +72,7 @@ class ObserveInsightsUseCase @Inject constructor(
     private val sources: InsightsSources,
     private val settings: SettingsRepository,
     private val reviews: WeeklyReviewBuilder,
+    private val observeGoal: ObserveGoalUseCase,
     private val time: TimeProvider,
     private val dispatchers: AppDispatchers,
 ) {
@@ -195,6 +196,12 @@ class ObserveInsightsUseCase @Inject constructor(
     ): WeeklyReview {
         val weekEnd = weekStart.plusDays(DAYS_IN_WEEK - 1)
         val lastWeekStart = weekStart.minusWeeks(1)
+        // The one story the builder could never tell. PLAN_TOO_SMALL needs
+        // both of these and the review was built without either, so a week
+        // where every step was kept and the goal had not moved came back as
+        // ON_TRACK: the report congratulated somebody for keeping a plan
+        // that was not working, which is the exact case the story exists for.
+        val goal = observeGoal().first()
 
         return reviews.build(
             ReviewInput(
@@ -211,6 +218,8 @@ class ObserveInsightsUseCase @Inject constructor(
                 // why and then not reading the answer is the worst of both:
                 // the user is interrupted and the report learns nothing.
                 reasons = reasonsFor(recent),
+                goalPercent = goal?.percent,
+                goalPaceFraction = goal?.paceFraction,
             ),
         )
     }

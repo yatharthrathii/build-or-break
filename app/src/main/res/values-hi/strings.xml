@@ -24,70 +24,70 @@
     <string name="onboarding_start_day">मेरा दिन शुरू करें</string>
     <string name="onboarding_failed">सेव नहीं हो पाया। फिर से कोशिश करें।</string>
 
-    <string name="onboarding_welcome_title">आप 40 मिनट\nलेट उठे।</string>
-    <string name="onboarding_welcome_body">बाकी हर रूटीन ऐप अब आपको लाल निशानों की लाइन दिखाएगा। यह ऐप बचा हुआ दिन खुद आगे खिसका देता है, और बताता है कि क्या खिसकाया।</string>
-    <string name="onboarding_before_kicker">आम तौर पर क्या होता है</string>
-    <string name="onboarding_before_body">नौ अलार्म उन्हीं टाइम पर बजते हैं जो आपने पिछले महीने सेट किए थे। छह छूट जाते हैं, सुबह नौ बजे तक पिछड़ने का एहसास हो जाता है, और गुरुवार तक ऐप म्यूट।</string>
-    <string name="onboarding_after_kicker">यहाँ क्या होता है</string>
-    <string name="onboarding_after_body">आप बताते हैं कि लेट हैं। जिम अपनी जगह रहता है, क्योंकि वह बुक है। उससे जुड़ा हर स्टेप आपके साथ खिसकता है। जो कर लिया, उसका अलार्म दोबारा नहीं बजता।</string>
-    <string name="onboarding_point_1_title">स्टेप जो एक-दूसरे को जानते हैं</string>
-    <string name="onboarding_point_1_body">फिक्स टाइम, "जिम के 20 मिनट बाद", या एक विंडो जिसमें कभी भी। एक खिसकाओ, सही वाले साथ चलते हैं।</string>
-    <string name="onboarding_point_2_title">अलार्म जो सच में उठाते हैं</string>
-    <string name="onboarding_point_2_body">पूरी स्क्रीन, बढ़ती आवाज़, लॉक स्क्रीन से ही बंद। और अगर फोन की सेटिंग यह रोक रही है तो ऐप आपको बता देगा।</string>
-    <string name="onboarding_point_3_title">कुछ भी इस फोन से बाहर नहीं</string>
-    <string name="onboarding_point_3_body">न अकाउंट, न सिंक, न एनालिटिक्स, न इंटरनेट परमिशन। आपका रूटीन इसी फोन की एक फाइल है।</string>
+    <string name="onboarding_welcome_title">ऐसा रूटीन ऐप\nजो आपके साथ चलता है।</string>
+    <string name="onboarding_welcome_body">अपनी रोज़ की रूटीन एक बार लिखें। ऐप हर स्टेप सही समय पर याद दिलाता है। अगर आप लेट हो जाएँ, तो बाकी दिन आपके लिए आगे खिसका देता है और बताता है कि क्या खिसकाया।</string>
+    <string name="onboarding_before_kicker">दूसरे ऐप में</string>
+    <string name="onboarding_before_body">आप 40 मिनट लेट उठते हैं। नौ अलार्म अब भी पुराने समय पर बजते हैं। ज़्यादातर छूट जाते हैं, पूरी सुबह पिछड़े हुए लगते हैं, और गुरुवार तक ऐप म्यूट।</string>
+    <string name="onboarding_after_kicker">इस ऐप में</string>
+    <string name="onboarding_after_body">आप Running late दबाते हैं। हर स्टेप 40 मिनट आगे। जिम वहीं रहता है, क्योंकि वह बुक है। जो कर लिया, उसका अलार्म नहीं बजता।</string>
+    <string name="onboarding_point_1_title">स्टेप जो एक-दूसरे के पीछे चलते हैं</string>
+    <string name="onboarding_point_1_body">समय सेट करें, या कहें जिम के 20 मिनट बाद, या एक विंडो दें। एक स्टेप खिसकाएँ, उसके बाद वाले साथ खिसकते हैं।</string>
+    <string name="onboarding_point_2_title">अलार्म जो सच में जगाते हैं</string>
+    <string name="onboarding_point_2_body">पूरी स्क्रीन, बढ़ती आवाज़, लॉक स्क्रीन से ही बंद। ऐप आपके फ़ोन की सेटिंग जाँचता है और बताता है अगर कुछ इसे रोकेगा।</string>
+    <string name="onboarding_point_3_title">आपका डेटा आपके फ़ोन पर रहता है</string>
+    <string name="onboarding_point_3_body">न अकाउंट। न इंटरनेट। कुछ भी कहीं अपलोड नहीं होता।</string>
 
     <string name="onboarding_start_title">आप क्या बनाना\nचाहते हैं?</string>
-    <string name="onboarding_start_body">जो सबसे करीब लगे वह चुनें। खाली स्क्रीन नहीं, पूरा दिन मिलेगा जिसे आप बदल सकते हैं। हर स्टेप बाद में बदला जा सकता है।</string>
+    <string name="onboarding_start_body">एक चुनें। आपको तैयार दिन मिलता है जिसे आप कभी भी बदल सकते हैं।</string>
     <string name="onboarding_choice_morning_kicker">ज़्यादातर लोग यहीं से शुरू करते हैं</string>
-    <string name="onboarding_choice_morning_title">सुबह जो हाथ से न निकले</string>
-    <string name="onboarding_choice_morning_body">उठना, स्ट्रेच, नाश्ता, और रात को टाइम पर दिन खत्म करना।</string>
+    <string name="onboarding_choice_morning_title">बेहतर सुबह</string>
+    <string name="onboarding_choice_morning_body">उठना, स्ट्रेच, नाश्ता, और रात का विंड-डाउन ताकि समय पर सो सकें।</string>
     <string name="onboarding_choice_study_kicker">एग्ज़ाम, कोर्स, कोई स्किल</string>
     <string name="onboarding_choice_study_title">पढ़ाई जो सच में होती है</string>
-    <string name="onboarding_choice_study_body">दो डीप ब्लॉक, रिवीज़न, प्रैक्टिस, और खराब दिन के लिए हर एक का छोटा वर्ज़न।</string>
+    <string name="onboarding_choice_study_body">दो फ़ोकस ब्लॉक, रिवीज़न, प्रैक्टिस। हर एक का छोटा वर्ज़न भी है, बुरे दिन के लिए।</string>
     <string name="onboarding_choice_fitness_kicker">ट्रेनिंग और खाना</string>
     <string name="onboarding_choice_fitness_title">जिम, खाना और नींद</string>
-    <string name="onboarding_choice_fitness_body">पिन किया जिम स्लॉट, उसके बाद प्रोटीन, शाम की वॉक और फिक्स सोने का टाइम।</string>
+    <string name="onboarding_choice_fitness_body">जिम का पक्का स्लॉट, उसके बाद प्रोटीन, शाम की सैर, और समय पर लाइट बंद।</string>
     <string name="onboarding_choice_paste_kicker">सबसे तेज़, अगर पहले से है</string>
     <string name="onboarding_choice_paste_title">AI चैट से रूटीन पेस्ट करें</string>
-    <string name="onboarding_choice_paste_body">टेक्स्ट डालें। ऐप टाइम, ऑफसेट और विंडो पढ़ेगा, और सेव करने से पहले दिखाएगा कि क्या समझा।</string>
+    <string name="onboarding_choice_paste_body">टेक्स्ट पेस्ट करें। ऐप समय पढ़ता है और सेव करने से पहले दिखाता है कि उसने क्या समझा।</string>
     <string name="onboarding_paste_example" tools:ignore="TypographyDashes">07:30 | Gym | 60m\n+15m | Protein + shower\n18:00-20:00 | Language drill</string>
     <string name="onboarding_choice_write_kicker">पूरा कंट्रोल</string>
     <string name="onboarding_choice_write_title">खुद लिखूँगा</string>
-    <string name="onboarding_choice_write_body">खाली प्लान। पहला स्टेप जोड़ें और चलें।</string>
+    <string name="onboarding_choice_write_body">खाली से शुरू करें। पहला स्टेप जोड़ें और चलें।</string>
 
     <string name="onboarding_preview_title">यह रहा\nआपका दिन।</string>
-    <string name="onboarding_preview_body">अभी कुछ सेव नहीं हुआ है। अंदर जाकर कोई भी स्टेप बदल या हटा सकते हैं।</string>
+    <string name="onboarding_preview_body">अभी कुछ सेव नहीं हुआ। बाद में कोई भी स्टेप बदल या हटा सकते हैं।</string>
     <plurals name="onboarding_preview_count">
         <item quantity="one">%1$d स्टेप · %2$d बजेगा</item>
         <item quantity="other">%1$d स्टेप · %2$d बजेंगे</item>
     </plurals>
     <string name="onboarding_preview_paste_title">अब आपका\nअपना रूटीन।</string>
-    <string name="onboarding_preview_paste_body">परमिशन वाली स्क्रीन के बाद इम्पोर्ट खुलेगा। टेक्स्ट पेस्ट करें, और सेव होने से पहले ऐप हर वह लाइन दिखाएगा जो उसने समझी।</string>
+    <string name="onboarding_preview_paste_body">अनुमति वाली स्क्रीन के बाद अपना टेक्स्ट पेस्ट करें। सेव करने से पहले ऐप हर समझी हुई लाइन दिखाता है।</string>
     <string name="onboarding_preview_write_title">अब आपका\nपहला स्टेप।</string>
-    <string name="onboarding_preview_write_body">परमिशन वाली स्क्रीन के बाद खाली स्टेप का एडिटर खुलेगा। नाम और टाइम दीजिए, दिन वहीं से बनना शुरू होगा।</string>
+    <string name="onboarding_preview_write_body">अनुमति वाली स्क्रीन के बाद पहला स्टेप जोड़ें। नाम और समय दें। दिन वहीं से बनता है।</string>
     <string name="onboarding_preview_after">ऊपर वाले स्टेप के बाद</string>
     <string name="onboarding_preview_window">%1$s से पहले कभी भी</string>
-    <string name="onboarding_preview_every">विंडो में बार-बार</string>
+    <string name="onboarding_preview_every">दोहराता है</string>
     <string name="onboarding_preview_rings">बजेगा, और पूरी स्क्रीन लेगा</string>
     <string name="onboarding_preview_pinned">दिन खिसके तो भी अपनी जगह</string>
 
-    <string name="onboarding_permissions_title">तीन परमिशन,\nहर एक की वजह</string>
-    <string name="onboarding_permissions_body">कोई भी छोड़ सकते हैं। ऐप फिर भी चलेगा, बस थोड़ा चुप रहेगा।</string>
+    <string name="onboarding_permissions_title">तीन अनुमतियाँ।\nवजह यह है।</string>
+    <string name="onboarding_permissions_body">इनमें से कोई भी छोड़ सकते हैं। ऐप फिर भी चलता है, बस चुपचाप।</string>
     <string name="perm_alarms_title">अलार्म और रिमाइंडर</string>
-    <string name="perm_alarms_body">ताकि स्टेप ठीक उसी मिनट बजे, और दिन खिसकने पर नए मिनट पर फिर बजे।</string>
+    <string name="perm_alarms_body">ताकि स्टेप ठीक उसी मिनट बजे, दिन खिसकने के बाद भी।</string>
     <string name="perm_notifications_title">नोटिफिकेशन</string>
-    <string name="perm_notifications_body">"अगला स्टेप" की याद और लॉक स्क्रीन पर एक टैप में Done के लिए।</string>
-    <string name="perm_battery_title">बैटरी ऑप्टिमाइज़ेशन बंद</string>
-    <string name="perm_battery_body">Android बैटरी बचाने के लिए लेट अलार्म चुप कर सकता है। यह 06:40 के अलार्म को 06:40 पर रखता है।</string>
+    <string name="perm_notifications_body">अगले स्टेप की याद और लॉक स्क्रीन पर Done बटन के लिए।</string>
+    <string name="perm_battery_title">बैकग्राउंड में चलने दें</string>
+    <string name="perm_battery_body">वरना फ़ोन बैटरी बचाने के लिए अलार्म देर से या चुप कर सकता है।</string>
     <string name="perm_autostart_done">हो गया</string>
     <string name="perm_autostart_title">ऑटोस्टार्ट</string>
-    <string name="perm_autostart_body">आपका फोन अपनी लिस्ट रखता है कि कौन से ऐप खुद चल सकते हैं। ऐप वह लिस्ट नहीं देख सकता, इसलिए यह लाइन कभी हरी नहीं होगी। रात में अलार्म गायब हों तो अक्सर यही वजह है।</string>
+    <string name="perm_autostart_body">कुछ फ़ोन अपनी अलग सूची रखते हैं कि कौन से ऐप खुद चालू हो सकते हैं। ऐप वह सूची नहीं देख सकता, इसलिए यह पंक्ति कभी हरी नहीं होती। अगर रात में अलार्म गायब हों, तो वजह आमतौर पर यही है।</string>
     <string name="perm_allow">अनुमति दें</string>
     <string name="perm_open_settings">सेटिंग खोलें</string>
     <string name="perm_granted">मिल गई</string>
     <string name="onboarding_right_now">अभी: %1$s</string>
-    <string name="onboarding_privacy_note">न अकाउंट, न एनालिटिक्स, न इंटरनेट कॉल। आपका प्लान इसी फोन की एक फाइल में रहता है।</string>
+    <string name="onboarding_privacy_note">न अकाउंट, न इंटरनेट। आपका प्लान इसी फ़ोन पर रहता है।</string>
 
     <!--
         One step per line, and the line breaks have to be escaped.
@@ -121,7 +121,7 @@
         <item quantity="one">टाइम पर। %1$d दिन निभाया।</item>
         <item quantity="other">टाइम पर। लगातार %1$d दिन।</item>
     </plurals>
-    <string name="today_run_none">आज निभाएँ और सिलसिला शुरू।</string>
+    <string name="today_run_none">आज निभाएँ, और सिलसिला शुरू।</string>
     <plurals name="today_shift_line">
         <item quantity="one">दिन +%1$d मिनट खिसका · %2$d अलार्म हिला</item>
         <item quantity="other">दिन +%1$d मिनट खिसका · %2$d अलार्म हिले</item>
@@ -137,11 +137,11 @@
     <string name="today_done_minimum">छोटा वर्ज़न</string>
     <string name="today_snooze_10">10 मिनट बाद</string>
     <string name="skip_title_ahead">आज यह नहीं करना?</string>
-    <string name="skip_body_ahead">इसका समय अभी आया नहीं है। अभी तय करना ठीक है, और वजह से हफ़्ते की रिपोर्ट बेहतर बनती है।</string>
+    <string name="skip_body_ahead">अभी समय नहीं हुआ। अभी तय करना ठीक है। आपकी वजह साप्ताहिक रिव्यू में काम आती है।</string>
     <string name="skip_title">क्या हुआ?</string>
-    <string name="skip_body">एक टैप, और हफ्ते की रिपोर्ट काम की बन जाएगी। न बताना हो तो छोड़ दें।</string>
+    <string name="skip_body">एक टैप। इससे साप्ताहिक रिव्यू असली दिक्कत पकड़ पाता है। चाहें तो छोड़ दें।</string>
     <string name="skip_no_reason">बिना कारण स्किप</string>
-    <string name="skip_body_after">यह आपने नोटिफिकेशन से स्किप किया था। एक टैप, और हफ्ते की रिपोर्ट इसका इस्तेमाल कर पाएगी।</string>
+    <string name="skip_body_after">आपने इसे नोटिफ़िकेशन से छोड़ा। यहाँ एक टैप साप्ताहिक रिव्यू में काम आता है।</string>
     <string name="skip_rather_not_say">नहीं बताना</string>
     <string name="skip_work">काम आ गया</string>
     <string name="skip_forgot">भूल गया</string>
@@ -158,23 +158,23 @@
     <string name="today_undo_skipped">छोड़ा</string>
 
     <string name="today_ask_kicker">नोटिफिकेशन से छोड़ा गया</string>
-    <string name="today_ask_body">कारण बताने से ही हफ्ते की रिपोर्ट ऐसी बनती है जिस पर कुछ किया जा सके।</string>
+    <string name="today_ask_body">वजह बताएँ, और साप्ताहिक रिव्यू असली दिक्कत दिखा सकेगा।</string>
     <string name="today_ask_answer">कारण बताएँ</string>
     <string name="today_ask_dismiss">अभी नहीं</string>
     <string name="today_action_failed">यह सेव नहीं हुआ। कुछ नहीं बदला। फिर से कोशिश करें।</string>
     <string name="today_all_done_kicker">दिन पूरा</string>
-    <string name="today_all_done_title">पटरी पर कुछ बाकी नहीं।</string>
-    <string name="today_all_done_body">हर स्टेप निपट गया। कल फिर प्लान से शुरू।</string>
+    <string name="today_all_done_title">आज का सब हो गया।</string>
+    <string name="today_all_done_body">हर स्टेप हो गया या तय हो गया। कल प्लान से नई शुरुआत।</string>
     <string name="today_all_settled_kicker">दिन बंद</string>
-    <string name="today_all_settled_title">आज कुछ भी नहीं हुआ।</string>
-    <string name="today_all_settled_body">यह सिर्फ दर्ज हुआ है, इस पर कोई फैसला नहीं। कल फिर प्लान से शुरू, और पैटर्न बनेगा तो रिपोर्ट बता देगी।</string>
+    <string name="today_all_settled_title">आज कुछ नहीं हुआ।</string>
+    <string name="today_all_settled_body">यह दर्ज है, कोई फ़ैसला नहीं। कल नई शुरुआत। अगर यह बार-बार हो, तो Insights बताएगा।</string>
     <string name="today_late_title">कितना लेट?</string>
-    <string name="today_late_body">जो स्टेप पिन नहीं है, वह इतना खिसकेगा। ऊपर की पट्टी से कभी भी वापस कर सकते हैं।</string>
+    <string name="today_late_body">हर स्टेप जो पिन नहीं है, इतना आगे खिसकेगा। बार से कभी भी वापस ले सकते हैं।</string>
     <string name="today_late_option">+%1$d</string>
     <string name="today_the_day">पूरा दिन</string>
     <string name="today_different_day">आज अलग दिन चलाएँ</string>
     <string name="today_sick_day">बीमार दिन</string>
-    <string name="today_sick_body">जिस स्टेप का छोटा वर्ज़न है, आज वही चलेगा। कुछ भी आपके खिलाफ नहीं गिना जाएगा।</string>
+    <string name="today_sick_body">हर स्टेप जिसका छोटा वर्ज़न है, उसी रूप में चलेगा। कुछ भी आपके खिलाफ़ नहीं गिना जाएगा।</string>
     <plurals name="today_sick_line">
         <item quantity="one">बीमार दिन · %1$d स्टेप छोटे रूप में</item>
         <item quantity="other">बीमार दिन · %1$d स्टेप छोटे रूप में</item>
@@ -188,7 +188,7 @@
     <string name="today_paste">रूटीन पेस्ट करें</string>
     <string name="today_write">खुद लिखूँगा</string>
     <string name="today_starts_tomorrow_title">कल से शुरू</string>
-    <string name="today_starts_tomorrow_body">यह प्लान बनाते समय आज के स्टेप निकल चुके थे। कल से यह शुरू से चलेगा।</string>
+    <string name="today_starts_tomorrow_body">जब आपने यह प्लान बनाया, आज के स्टेप निकल चुके थे। कल से यह शुरू से चलेगा।</string>
     <string name="today_empty_title">आज कुछ नहीं</string>
     <string name="today_empty_body">इस प्लान में आज के दिन के लिए कोई स्टेप नहीं है।</string>
 
@@ -231,16 +231,16 @@
     <string name="reliability_title">भरोसा</string>
     <string name="reliability_kicker">फोन क्या करने देता है</string>
     <string name="tier_full_screen_headline">अलार्म काम करेंगे</string>
-    <string name="tier_full_screen_body">अलार्म वाला स्टेप स्क्रीन पर आएगा, बजेगा और तब तक तेज़ होता रहेगा जब तक आप कुछ न करें।</string>
+    <string name="tier_full_screen_body">अलार्म वाले स्टेप बजेंगे, स्क्रीन पर आएँगे, और तब तक तेज़ होंगे जब तक आप जवाब न दें।</string>
     <string name="tier_full_screen_short">अलार्म बजेंगे और स्क्रीन पर आएँगे।</string>
     <string name="tier_heads_up_headline">अलार्म टाइम पर आएँगे</string>
-    <string name="tier_heads_up_body">अलार्म सही मिनट पर आवाज़ के साथ आएँगे, पर स्क्रीन पर छा नहीं सकते। याद दिलाने के लिए काफी, नींद में अनसुना करना आसान।</string>
+    <string name="tier_heads_up_body">अलार्म समय पर आवाज़ के साथ आते हैं, पर स्क्रीन पर नहीं आ सकते। रिमाइंडर के लिए ठीक, पर सोते में छूट सकते हैं।</string>
     <string name="tier_heads_up_short">अलार्म टाइम पर आएँगे पर स्क्रीन पर नहीं छाएँगे।</string>
     <string name="tier_inexact_headline">अलार्म लेट हो सकते हैं</string>
-    <string name="tier_inexact_body">Android इस ऐप के अलार्म इकट्ठे कर रहा है, तो 06:30 का स्टेप 06:45 या बाद में आ सकता है। ऐप इसे छिपाएगा नहीं।</string>
+    <string name="tier_inexact_body">Android इस ऐप के अलार्म देर से दे रहा है। 06:30 का स्टेप 06:45 या बाद में बज सकता है। ऐप इसे छिपाएगा नहीं।</string>
     <string name="tier_inexact_short">अलार्म कई मिनट लेट आ सकते हैं।</string>
     <string name="tier_in_app_headline">कुछ भी नहीं पहुँचेगा</string>
-    <string name="tier_in_app_body">नोटिफिकेशन बंद हैं, तो रूटीन सिर्फ ऐप खुले रहने तक है। कुछ भी डिलीवर नहीं होगा।</string>
+    <string name="tier_in_app_body">नोटिफ़िकेशन बंद हैं। ऐप खुला न हो तो कुछ नहीं पहुँचेगा।</string>
     <string name="tier_in_app_short">ऐप के बाहर कुछ नहीं पहुँचेगा।</string>
 
     <string name="reliability_what_would_change">इससे क्या बदलेगा</string>
@@ -250,34 +250,34 @@
     <string name="fix_channel_what">Alarms चैनल की आवाज़ वापस चालू करें</string>
     <string name="fix_channel_why">यह साइलेंट पर है, तो अलार्म बिना आवाज़ के आते हैं।</string>
     <string name="fix_exact_what">अलार्म और रिमाइंडर की अनुमति दें</string>
-    <string name="fix_exact_why">इसके बिना Android खुद तय करता है कब देना है, जो पंद्रह मिनट लेट हो सकता है।</string>
+    <string name="fix_exact_why">इसके बिना Android तय करता है कब बजे, जो 15 मिनट लेट हो सकता है।</string>
     <string name="fix_full_screen_what">फुल स्क्रीन अलार्म की अनुमति दें</string>
     <string name="fix_full_screen_why">अलार्म बजेंगे तो, पर स्क्रीन नहीं जगाएँगे।</string>
     <string name="fix_battery_what">बैटरी की रोक हटाएँ</string>
-    <string name="fix_battery_why">बाकी सब अनुमति के बाद भी फोन रात में इस ऐप को रोक सकता है।</string>
+    <string name="fix_battery_why">फ़ोन बैटरी बचाने के लिए रात में इस ऐप को रोक सकता है।</string>
     <string name="fix_open_notification_settings">नोटिफिकेशन सेटिंग खोलें</string>
     <string name="fix_open_alarm_settings">अलार्म सेटिंग खोलें</string>
     <string name="fix_open_app_settings">ऐप सेटिंग खोलें</string>
     <string name="fix_open_battery_settings">बैटरी सेटिंग खोलें</string>
 
     <string name="lock_screen_title">लॉक स्क्रीन पर दिखाएँ</string>
-    <string name="lock_screen_body">इस फ़ोन में अलग स्विच है कि कोई ऐप लॉक स्क्रीन के ऊपर दिख सकती है या नहीं। इसके बिना अलार्म बजेगा पर बंद करने के लिए फ़ोन खोलना पड़ेगा। लॉक स्क्रीन डिस्प्ले और बैकग्राउंड पॉप-अप चालू करें।</string>
+    <string name="lock_screen_body">इस फ़ोन में लॉक स्क्रीन के ऊपर ऐप दिखाने की अपनी सेटिंग है। इसके बिना अलार्म बजता है, पर जवाब देने के लिए फ़ोन अनलॉक करना पड़ता है। Show on lock screen और Background pop-ups चालू करें।</string>
     <string name="lock_screen_action">परमिशन स्क्रीन खोलें</string>
     <string name="autostart_title">ऑटोस्टार्ट की अनुमति दें</string>
-    <string name="autostart_body">आपका फोन अपनी लिस्ट रखता है कि कौन से ऐप खुद चल सकते हैं। यह ऐप वह लिस्ट नहीं देख सकता, तो बता नहीं सकता कि यह हो चुका है या नहीं। रात में अलार्म गायब हों तो अक्सर यही वजह है।</string>
+    <string name="autostart_body">आपके फ़ोन में अपनी सूची है कि कौन से ऐप खुद चालू हो सकते हैं। यह ऐप वह सूची नहीं देख सकता। अगर रात में अलार्म गायब हों, तो वजह आमतौर पर यही है।</string>
     <string name="autostart_action">ऑटोस्टार्ट सेटिंग खोलें</string>
 
     <!-- Catch up. -->
     <string name="today_catch_up">अब भी मुमकिन</string>
-    <string name="today_catch_up_body">दिन फिसला। ये रहा ये कहाँ आ सकते हैं।</string>
+    <string name="today_catch_up_body">कुछ स्टेप छूट गए। आज वे यहाँ फ़िट हो सकते हैं।</string>
     <string name="today_catch_up_gone">वक्त नहीं बचा</string>
     <string name="today_catch_up_takes">लगभग %1$d मिनट</string>
     <string name="today_catch_up_smaller">छोटा वर्जन, लगभग %1$d मिनट</string>
     <string name="today_catch_up_move">यहाँ लाएं</string>
     <string name="today_catch_up_skip">आज नहीं</string>
     <plurals name="today_catch_up_also">
-        <item quantity="one">%1$s भी छूटा। एक शाम में तीन से ज़्यादा नहीं समाते।</item>
-        <item quantity="other">%1$s भी छूटे। एक शाम में तीन से ज़्यादा नहीं समाते।</item>
+        <item quantity="one">%1$s भी छूटा। एक शाम में तीन काफ़ी हैं।</item>
+        <item quantity="other">%1$s भी छूटे। एक शाम में तीन काफ़ी हैं।</item>
     </plurals>
     <string name="today_catch_up_no_room">%1$s के लिए आज जगह नहीं बची।</string>
 
@@ -285,21 +285,21 @@
     <string name="today_milestone">कहने लायक</string>
     <string name="today_milestone_seen">ठीक है</string>
     <string name="milestone_first_completion">पहला पूरा हुआ।</string>
-    <string name="milestone_first_completion_body">रूटीन शुरू हो गई। इसके बाद सब दोहराना है।</string>
+    <string name="milestone_first_completion_body">रूटीन शुरू हो गई। अब बात दोहराने की है।</string>
     <string name="milestone_first_full_day">पूरा दिन निभाया।</string>
-    <string name="milestone_first_full_day_body">प्लान का हर स्टेप पूरा। एक अच्छे दिन की शक्ल यही है।</string>
+    <string name="milestone_first_full_day_body">प्लान का हर स्टेप हो गया। अच्छा दिन ऐसा दिखता है।</string>
     <string name="milestone_first_week">एक हफ़्ता पूरा।</string>
-    <string name="milestone_first_week_body">सात दिन दर्ज हुए। अब ऐप के पास कुछ काम की बात कहने भर का डेटा है।</string>
+    <string name="milestone_first_week_body">सात दिन दर्ज। अब ऐप के पास पैटर्न दिखाने लायक डेटा है।</string>
     <string name="milestone_goal_quarter">एक चौथाई रास्ता।</string>
     <string name="milestone_goal_half">आधा रास्ता।</string>
     <string name="milestone_goal_three_quarters">तीन चौथाई रास्ता।</string>
-    <string name="milestone_goal_body">लक्ष्य आगे बढ़ रहा है क्योंकि दिन आगे बढ़ रहे हैं।</string>
+    <string name="milestone_goal_body">गोल बढ़ रहा है क्योंकि आपके दिन बढ़ रहे हैं।</string>
     <string name="milestone_goal_reached">लक्ष्य पूरा।</string>
     <string name="milestone_goal_reached_body">अगला तब रखें जब तैयार हों। जल्दी कुछ नहीं।</string>
     <string name="milestone_best_week">अब तक का सबसे अच्छा हफ़्ता।</string>
     <string name="milestone_best_week_body">इससे पहले के हर सात दिन से बेहतर।</string>
     <string name="milestone_thirty_day_run">लगातार तीस दिन।</string>
-    <string name="milestone_thirty_day_run_body">एक स्टेप, पूरे महीने। यह अब किस्मत नहीं है।</string>
+    <string name="milestone_thirty_day_run_body">एक स्टेप, एक महीने तक रोज़। अब यह आदत है।</string>
 
     <plurals name="today_consistency">
         <item quantity="one">पिछले %2$d में से %1$d दिन अच्छा रहा</item>
@@ -307,7 +307,7 @@
     </plurals>
 
     <!-- The number a completed step asks for. -->
-    <string name="today_number_body">ऐच्छिक। स्टेप तो पहले से पूरा है।</string>
+    <string name="today_number_body">वैकल्पिक। स्टेप पहले ही Done है।</string>
     <string name="today_number_save">दर्ज करें</string>
     <string name="today_number_skip">अभी नहीं</string>
 
@@ -322,6 +322,7 @@
     <string name="plan_none_body">जो रूटीन आपके पास है वह लाएँ, या पहला स्टेप खुद लिखें।</string>
     <string name="plan_import">रूटीन पेस्ट करें</string>
     <string name="plan_write">खुद लिखूँगा</string>
+    <string name="plan_reorder">क्रम बदलने के लिए खींचें</string>
     <string name="plan_add_step">स्टेप जोड़ें</string>
     <string name="plan_template_new">नया</string>
     <string name="plan_template_edit">यह दिन बदलें</string>
@@ -331,16 +332,15 @@
     <string name="plan_template_name_hint">वीकेंड</string>
     <string name="plan_template_days">किन दिनों चले</string>
     <string name="plan_template_delete">हटाएँ</string>
-    <string name="plan_template_delete_body">हटाने से इस दिन के स्टेप और उनकी हिस्ट्री भी जाएगी। बाकी दिन रहेंगे।</string>
+    <string name="plan_template_delete_body">इससे इस दिन के स्टेप और उनका इतिहास मिट जाएगा। बाकी दिन रहेंगे।</string>
     <string name="plan_time_relative">+%1$d</string>
-    <string name="plan_time_every">हर</string>
     <string name="plan_line_fixed">फिक्स</string>
     <string name="plan_line_after">%1$s के बाद</string>
-    <string name="plan_line_window">विंडो · %1$d मिनट चौड़ी</string>
-    <string name="plan_line_every">हर %1$d मिनट</string>
+    <string name="plan_line_window">विंडो · %1$s तक</string>
+    <string name="plan_line_every">हर %1$d मिनट, %2$s तक</string>
     <plurals name="plan_line_anchor">
-        <item quantity="one">%1$d स्टेप इसके बाद</item>
-        <item quantity="other">%1$d स्टेप इसके बाद</item>
+        <item quantity="one">%1$d स्टेप इसके पीछे</item>
+        <item quantity="other">%1$d स्टेप इसके पीछे</item>
     </plurals>
     <string name="plan_line_alarm">अलार्म चालू</string>
     <string name="plan_line_pinned">पिन</string>
@@ -355,7 +355,7 @@
     <string name="editor_title_label">नाम</string>
     <string name="editor_title_hint">यह स्टेप क्या है</string>
     <string name="editor_reason_title">सेव करने के लिए नाम डालें।</string>
-    <string name="editor_reason_parent">चुनें कि यह किस स्टेप के बाद आता है।</string>
+    <string name="editor_reason_parent">वह स्टेप चुनें जिसके बाद यह आता है।</string>
     <string name="editor_reason_window">खत्म होने का टाइम शुरू से पहले है।</string>
 
     <string name="editor_timing">टाइमिंग</string>
@@ -372,11 +372,11 @@
     <string name="editor_minutes_value">%1$d मिनट</string>
     <string name="editor_pick_parent">स्टेप चुनें</string>
     <string name="editor_pick_parent_title">किस स्टेप के बाद</string>
-    <string name="editor_no_parents">इस प्लान में और कोई स्टेप नहीं जिसके बाद इसे लगाएँ। पहले एक फिक्स स्टेप जोड़ें।</string>
-    <string name="editor_lands_at">आज यह %1$s पर आता है।</string>
+    <string name="editor_no_parents">पहले एक पक्के समय वाला स्टेप जोड़ें। इसे किसी स्टेप के पीछे चलना है।</string>
+    <string name="editor_lands_at">आज यह %1$s पर होगा।</string>
     <plurals name="editor_lands_at_anchor">
-        <item quantity="one">आज यह %1$s पर आता है। %2$d स्टेप इसके बाद है।</item>
-        <item quantity="other">आज यह %1$s पर आता है। %2$d स्टेप इसके बाद हैं।</item>
+        <item quantity="one">आज यह %1$s पर होगा। %2$d स्टेप इसके पीछे।</item>
+        <item quantity="other">आज यह %1$s पर होगा। %2$d स्टेप इसके पीछे।</item>
     </plurals>
 
     <string name="editor_how_loud">कितना ज़ोर से</string>
@@ -384,40 +384,40 @@
     <string name="salience_notify">रिमाइंड</string>
     <string name="salience_silent">चुप</string>
     <string name="salience_timeline">सिर्फ लिस्ट</string>
-    <string name="editor_salience_hint_alarm">बजता है, स्क्रीन पर छा जाता है, और तब तक तेज़ होता है जब तक आप कुछ न करें।</string>
+    <string name="editor_salience_hint_alarm">बजता है, स्क्रीन पर आता है, और तब तक तेज़ होता है जब तक आप जवाब न दें।</string>
     <string name="editor_salience_hint_notify">सही मिनट पर आवाज़ के साथ नोटिफिकेशन।</string>
-    <string name="editor_salience_hint_silent">बिना आवाज़ का नोटिफिकेशन। देखेंगे तो मिलेगा।</string>
-    <string name="editor_salience_hint_timeline">सिर्फ टाइमलाइन पर दिखता है। कुछ डिलीवर नहीं होता।</string>
+    <string name="editor_salience_hint_silent">बिना आवाज़ की नोटिफ़िकेशन। देखेंगे तो मिलेगी।</string>
+    <string name="editor_salience_hint_timeline">सिर्फ़ सूची में दिखता है। कोई रिमाइंडर नहीं।</string>
 
     <string name="editor_which_days">किन दिनों</string>
-    <string name="editor_no_days">किसी दिन नहीं, तो यह स्टेप कभी नहीं चलेगा।</string>
+    <string name="editor_no_days">कोई दिन नहीं चुना, तो यह स्टेप कभी नहीं चलेगा।</string>
     <string name="editor_duration">कितनी देर</string>
     <string name="editor_duration_none">तय नहीं</string>
 
     <string name="editor_minimum_title">छोटा वर्ज़न</string>
-    <string name="editor_minimum_body">अभी तय करें, बुरे दिन पर काम आएगा। बुरे दिन में कोई यह तय करने की हालत में नहीं होता कि छोटा वर्ज़न क्या हो।</string>
+    <string name="editor_minimum_body">छोटा वर्ज़न अभी तय करें। बुरे दिन ऐप कुछ नहीं की जगह यही देगा।</string>
     <string name="editor_minimum_hint">जैसे, दस मिनट</string>
 
-    <string name="editor_pinned_title">अपनी जगह रहे</string>
-    <string name="editor_pinned_body">पिन किया स्टेप पूरा दिन खिसकने पर भी नहीं हिलता।</string>
-    <string name="editor_catchable_title">बाद में कर सकते हैं</string>
-    <string name="editor_catchable_body">उन चीज़ों के लिए बंद रखें जो सिर्फ अपने टाइम पर ठीक हैं, जैसे उठना। ऐप इन्हें बाद में नहीं सुझाएगा।</string>
+    <string name="editor_pinned_title">अपनी जगह रहता है</string>
+    <string name="editor_pinned_body">पिन किया स्टेप पूरा दिन खिसकाने पर भी नहीं हिलता।</string>
+    <string name="editor_catchable_title">छूटे तो बाद में सुझाएँ</string>
+    <string name="editor_catchable_body">उन स्टेप के लिए बंद करें जो सिर्फ़ अपने समय पर मायने रखते हैं, जैसे उठना।</string>
     <string name="editor_detail_label">नोट</string>
     <string name="editor_detail_hint">जो उस वक्त चाहिए होगा</string>
-    <string name="editor_detail_body">स्टेप आने पर कार्ड पर दिखता है। शेल्फ, पेज नंबर, बस रूट।</string>
+    <string name="editor_detail_body">स्टेप आने पर कार्ड पर दिखता है। कोई शेल्फ़, पेज नंबर, बस रूट।</string>
 
     <string name="editor_group">ग्रुप</string>
     <string name="editor_group_none">किसी ग्रुप में नहीं</string>
     <string name="editor_group_pick">कौन सा ग्रुप</string>
-    <string name="editor_group_body">ग्रुप के स्टेप कई बार नहीं, एक बार टोकते हैं।</string>
-    <string name="editor_group_in">%1$s में। ग्रुप का पहला स्टेप आवाज़ करता है, बाकी चुप रहते हैं।</string>
-    <string name="editor_salience_group">यह %1$s तय करता है। यहाँ सेट करने के लिए स्टेप को ग्रुप से बाहर निकालें।</string>
+    <string name="editor_group_body">ग्रुप के स्टेप कई की जगह एक रिमाइंडर बनकर आते हैं।</string>
+    <string name="editor_group_in">%1$s में। ग्रुप का पहला स्टेप आवाज़ करता है; बाकी चुप रहते हैं।</string>
+    <string name="editor_salience_group">यह %1$s तय करता है। यहाँ बदलने के लिए स्टेप को ग्रुप से बाहर करें।</string>
     <string name="editor_chosen">चुना हुआ</string>
 
     <string name="editor_measure">नंबर पूछें</string>
     <string name="editor_measure_pick">किस तरह का नंबर</string>
-    <string name="editor_measure_body">ज़्यादातर के लिए बंद। उन स्टेप के लिए चालू जिनका आंकड़ा मायने रखता है।</string>
-    <string name="editor_measure_on">टिक करने पर पूछा जाएगा, ज़रूरी कभी नहीं।</string>
+    <string name="editor_measure_body">उन स्टेप के लिए चालू करें जिन्हें नंबर से मापना हो: वज़न, रेप्स, पेज।</string>
+    <string name="editor_measure_on">Done करने पर पूछा जाता है। कभी ज़रूरी नहीं।</string>
     <string name="measure_none">कोई नहीं</string>
     <string name="measure_weight">वज़न</string>
     <string name="measure_reps">रेप्स</string>
@@ -440,11 +440,11 @@
     <string name="plan_group_name_hint">जैसे, सुबह की रूटीन</string>
     <string name="plan_group_starts">शुरू</string>
     <string name="plan_group_how_loud">कितनी आवाज़</string>
-    <string name="plan_group_how_loud_body">ग्रुप का पहला स्टेप इस तरह बुलाएगा। बाकी चुप रहेंगे, ताकि ग्रुप एक बार टोके, कई बार नहीं।</string>
+    <string name="plan_group_how_loud_body">ग्रुप का पहला स्टेप आवाज़ करता है। बाकी चुप रहते हैं, इसलिए ग्रुप कई की जगह एक रिमाइंडर है।</string>
     <string name="plan_group_delete">ग्रुप हटाएं</string>
     <plurals name="plan_group_delete_body">
-        <item quantity="one">ग्रुप हटाने पर उसका %1$d स्टेप प्लान में रहेगा, बिना ग्रुप के।</item>
-        <item quantity="other">ग्रुप हटाने पर उसके %1$d स्टेप प्लान में रहेंगे, बिना ग्रुप के।</item>
+        <item quantity="one">%1$d स्टेप प्लान पर रहेगा, बस ग्रुप में नहीं।</item>
+        <item quantity="other">%1$d स्टेप प्लान पर रहेंगे, बस ग्रुप में नहीं।</item>
     </plurals>
     <string name="plan_group_empty">अभी खाली</string>
     <plurals name="plan_group_steps">
@@ -455,17 +455,17 @@
     <string name="plan_line_note">नोट है</string>
 
     <string name="import_title">रूटीन पेस्ट करें</string>
-    <string name="import_body">यह ऐप आपका बना हुआ प्लान चलाता है। आपके लिए प्लान नहीं लिखता।</string>
+    <string name="import_body">यह ऐप आपकी पहले से बनी रूटीन चलाता है। आपके लिए लिखता नहीं।</string>
     <string name="import_prompt_kicker">सबसे आसान तरीका</string>
     <string name="import_prompt_title">प्रॉम्प्ट कॉपी करें, जवाब पेस्ट करें</string>
-    <string name="import_prompt_body">यह उस टूल को दें जिसने आपका रूटीन लिखा। जो वापस आए वह पेस्ट करें, हर लाइन सही पढ़ी जाएगी।</string>
+    <string name="import_prompt_body">यह प्रॉम्प्ट उस AI टूल को दें जिसने आपकी रूटीन लिखी। उसका जवाब यहाँ पेस्ट करें, हर लाइन सही पढ़ी जाएगी।</string>
     <string name="import_copy_prompt">प्रॉम्प्ट कॉपी करें</string>
     <string name="import_clip_label">रूटीन फॉर्मेट प्रॉम्प्ट</string>
     <string name="import_paste_label">आपका रूटीन</string>
     <string name="import_paste_placeholder" tools:ignore="TypographyDashes">06:30 | Wake up\n+10m | Drink water\n07:30-09:30 | Study block</string>
     <string name="import_review">पढ़ें</string>
     <string name="import_review_title">जाँच लें</string>
-    <string name="import_nothing_understood">यहाँ कुछ भी स्टेप जैसा नहीं लगा। पीछे जाकर देखें कि हर लाइन पर टाइम है।</string>
+    <string name="import_nothing_understood">कोई स्टेप नहीं मिला। देखें कि हर लाइन में समय हो।</string>
     <string name="import_note_pinned">पिन</string>
     <string name="import_note_minimum">छोटा वर्ज़न है</string>
     <string name="import_note_separator">" · "</string>
@@ -511,7 +511,7 @@
     <string name="insights_kept_per_week">हर हफ्ते कितना</string>
     <string name="insights_why_skipped">स्टेप क्यों स्किप हुए</string>
     <string name="insights_step_by_step">स्टेप दर स्टेप</string>
-    <string name="insights_table_legend">"पूरा" यानी कितनी बार हुआ। "देरी" यानी अपने तय टाइम से आम तौर पर कितनी देर बाद शुरू होता है।</string>
+    <string name="insights_table_legend">Kept: कितनी बार हुआ। Slip: आमतौर पर कितनी देर से शुरू हुआ।</string>
     <string name="insights_col_step">स्टेप</string>
     <string name="insights_col_kept">किया</string>
     <string name="insights_col_slip">लेट</string>
@@ -523,8 +523,8 @@
     <string name="insights_apply">लागू करें</string>
     <string name="insights_not_this_week">इस हफ्ते नहीं</string>
     <plurals name="insights_suggestion_slipped">
-        <item quantity="one">यह करीब %1$d मिनट लेट चला और %3$d में से %2$d दिन छूटा। प्लान दिन से देर का है।</item>
-        <item quantity="other">यह करीब %1$d मिनट लेट चला और %3$d में से %2$d दिन छूटा। प्लान दिन से देर का है।</item>
+        <item quantity="one">यह आमतौर पर %1$d मिनट लेट चला और %3$d में से %2$d दिन छूटा। प्लान का समय आपके असली समय से मेल नहीं खाता।</item>
+        <item quantity="other">यह आमतौर पर %1$d मिनट लेट चला और %3$d में से %2$d दिन छूटे। प्लान का समय आपके असली समय से मेल नहीं खाता।</item>
     </plurals>
     <plurals name="insights_suggestion_missed">
         <item quantity="one">%2$d में से %1$d दिन छूटा।</item>
@@ -533,7 +533,7 @@
     <string name="insights_quiet_title">इस हफ़्ते अभी कुछ नहीं</string>
     <string name="insights_quiet_body">हफ़्ता अभी शुरू ही हुआ है। पिछले चार देखने के लिए महीना चुनें।</string>
     <string name="insights_empty_title">अभी दिखाने को कुछ नहीं</string>
-    <string name="insights_empty_body">कुछ स्टेप निभाएँ और यह भरता जाएगा। पहला हफ्ता जमने का होता है, नंबर चाहे जो कहें।</string>
+    <string name="insights_empty_body">कुछ स्टेप निभाएँ और यह भर जाएगा। पहला हफ़्ता अभी बस बैठ रहा है, नंबर चाहे जो कहें।</string>
     <string name="insights_no_plan_title">अभी कोई प्लान नहीं</string>
     <string name="insights_no_plan_body">प्लान चलने लगे तो हफ्ता यहाँ दिखेगा।</string>
 
@@ -545,12 +545,12 @@
     <string name="suggestion_leave_it">%1$s को रहने दें</string>
     <string name="suggestion_remove_item">%1$s को प्लान से हटाएँ</string>
 
-    <string name="story_on_track">चल रहा है। कुछ बदलने की ज़रूरत नहीं।</string>
-    <string name="story_plan_too_small">प्लान निभा रहे हैं पर लक्ष्य नहीं हिल रहा। दिक्कत प्लान में है, आप में नहीं।</string>
-    <string name="story_timing_problem">छूटे स्टेप एक जगह इकट्ठे हैं। टाइम गलत है, इरादा नहीं।</string>
-    <string name="story_reminder_problem">छूटे स्टेप बिखरे हैं और ज़्यादातर भूले गए। ज़ोर से बजाना मदद करेगा।</string>
-    <string name="story_losing_grip">हफ्ते दर हफ्ते फिसल रहा है। बड़े धक्के से पहले छोटा प्लान बेहतर।</string>
-    <string name="story_settling_in">पहला हफ्ता। अभी कुछ कहना जल्दी है।</string>
+    <string name="story_on_track">सब ठीक चल रहा है। कुछ बदलने की ज़रूरत नहीं।</string>
+    <string name="story_plan_too_small">आप प्लान निभा रहे हैं, पर गोल नहीं बढ़ रहा। प्लान छोटा है, आप नहीं।</string>
+    <string name="story_timing_problem">छूटना एक ही समय पर हो रहा है। समय गलत है, आपकी मेहनत नहीं।</string>
+    <string name="story_reminder_problem">छूटना बिखरा हुआ है और ज़्यादातर भूल से। तेज़ रिमाइंडर मदद करेगा।</string>
+    <string name="story_losing_grip">हफ़्ते दर हफ़्ते फिसल रहा है। ज़ोर लगाने से पहले छोटा प्लान आज़माएँ।</string>
+    <string name="story_settling_in">पहला हफ़्ता। अभी कुछ कहना जल्दी है।</string>
     <string name="story_mixed">अभी कोई साफ पैटर्न नहीं।</string>
 
     <!-- The week in words. -->
@@ -558,57 +558,88 @@
     <string name="insights_went_best">सबसे अच्छा रहा</string>
     <string name="insights_went_worst">ठीक करने लायक</string>
     <plurals name="insights_win">
-        <item quantity="one">%1$s, %3$d में से %2$d बार निभाया।</item>
-        <item quantity="other">%1$s, %3$d में से %2$d बार निभाया।</item>
+        <item quantity="one">%1$s: %3$d में से %2$d बार हुआ।</item>
+        <item quantity="other">%1$s: %3$d में से %2$d बार हुआ।</item>
     </plurals>
-    <string name="insights_win_perfect">%1$s, हर बार निभाया। पूरे %2$d बार।</string>
+    <string name="insights_win_perfect">%1$s: हर बार हुआ, पूरे %2$d।</string>
     <plurals name="insights_problem">
-        <item quantity="one">%1$s %3$d में से %2$d बार छूटा।</item>
-        <item quantity="other">%1$s %3$d में से %2$d बार छूटा।</item>
+        <item quantity="one">%1$s: %3$d में से %2$d बार छूटा।</item>
+        <item quantity="other">%1$s: %3$d में से %2$d बार छूटा।</item>
     </plurals>
     <string name="insights_patterns">बार-बार क्या हो रहा है</string>
     <string name="insights_pattern_count">%1$d/%2$d</string>
-    <string name="insights_pattern_weekday">लगभग हमेशा %1$s को। यह संयोग नहीं, पैटर्न है।</string>
+    <string name="insights_pattern_weekday">लगभग हमेशा %1$s को। यह पैटर्न है, बदकिस्मती नहीं।</string>
     <string name="insights_other_options">कुछ और आज़माएं</string>
     <string name="insights_hide_options">बाकी छिपाएं</string>
     <string name="insights_goal">लक्ष्य</string>
 
     <string name="story_head_on_track">हफ़्ता टिका रहा।</string>
     <string name="story_head_plan_too_small">दिक्कत प्लान में है, आप में नहीं।</string>
-    <string name="story_head_timing_problem">कोई चीज़ गलत जगह पर है।</string>
-    <string name="story_head_reminder_problem">चीज़ें भूल रही हैं।</string>
+    <string name="story_head_timing_problem">कुछ स्टेप गलत समय पर हैं।</string>
+    <string name="story_head_reminder_problem">स्टेप भूले जा रहे हैं।</string>
     <string name="story_head_losing_grip">यह हफ़्ता फिसला।</string>
     <string name="story_head_settling_in">अभी जम रहा है।</string>
     <string name="story_head_mixed">मिलाजुला हफ़्ता।</string>
 
     <string name="cause_timing">उस वक्त कुछ और होता रहता है।</string>
     <string name="cause_motivation">रास्ते में कुछ नहीं था। स्टेप शायद बहुत बड़ा है।</string>
-    <string name="cause_reminder">मना नहीं किया जा रहा, भूला जा रहा है।</string>
-    <string name="cause_unknown">वजह बताने लायक ज़्यादा कुछ नहीं कहा गया।</string>
+    <string name="cause_reminder">यह भूला जा रहा है, मना नहीं किया जा रहा।</string>
+    <string name="cause_unknown">बताने लायक वजहें नहीं दी गईं।</string>
 
     <!-- The goal. -->
+    <string name="goal_hero_target">लक्ष्य</string>
+    <string name="goal_hero_today">आज</string>
+    <string name="goal_hero_since">%2$s से %1$s</string>
+    <string name="goal_hero_average">7 दिन औसत</string>
+    <string name="goal_hero_start">शुरुआत</string>
+    <string name="goal_hero_done">हुए</string>
+    <string name="goal_hero_left">बाकी</string>
+    <string name="goal_hero_settling">पहला हफ़्ता। औसत अभी बन रहा है।</string>
     <string name="goal_title">लक्ष्य</string>
     <string name="goal_none_title">अभी कोई लक्ष्य नहीं</string>
-    <string name="goal_none_body">रूटीन इसके बिना भी चलती है। लक्ष्य तब रखें जब चाहें कि दिन किसी एक चीज़ में जुड़ें।</string>
+    <string name="goal_none_body">रूटीन बिना गोल के भी चलती है। जब चाहें कि दिन किसी चीज़ में जुड़ें, तब गोल सेट करें।</string>
     <string name="goal_set_one">लक्ष्य रखें</string>
     <string name="goal_edit">एडिट</string>
-    <string name="goal_retire">बंद करें</string>
+    <string name="goal_retire">गोल हटाएँ</string>
+    <string name="action_cancel">रहने दें</string>
+    <string name="readings_title">रीडिंग</string>
+    <plurals name="readings_count">
+        <item quantity="one">%1$d रीडिंग</item>
+        <item quantity="other">%1$d रीडिंग</item>
+    </plurals>
+    <string name="readings_body">आपने जो भी नंबर लिखे हैं. ठीक करने या हटाने के लिए किसी पर टैप करें.</string>
+    <string name="readings_today">आज</string>
+    <string name="readings_save">सेव करें</string>
+    <string name="readings_delete">हटाएं</string>
+    <string name="readings_failed">सेव नहीं हुआ. फिर कोशिश करें.</string>
+    <string name="readings_rebuilds">ये बदलने पर उस दिन से आगे का औसत दोबारा बनेगा.</string>
+    <string name="readings_none_title">अभी कोई रीडिंग नहीं</string>
+    <string name="readings_none_body">जो स्टेप नंबर मांगता है, उसे पूरा करने पर नंबर यहाँ दिखेंगे.</string>
+    <string name="goal_see_readings">सभी रीडिंग देखें</string>
     <string name="goal_so_far">अब तक</string>
-    <string name="goal_nothing_yet">अभी कुछ दर्ज नहीं। कहना जल्दबाजी होगी।</string>
-    <string name="goal_ahead">लकीर से आगे हैं।</string>
-    <string name="goal_on_pace">रफ़्तार सही है।</string>
-    <string name="goal_behind">लकीर से पीछे। अभी वक्त है।</string>
-    <string name="goal_over">तारीख निकल गई। अगला तब रखें जब तैयार हों।</string>
+    <string name="goal_hero_finished">पूरा</string>
+    <string name="goal_finished_kicker">गोल पूरा हुआ</string>
+    <string name="goal_finished_reached">पूरा हो गया</string>
+    <string name="goal_finished_missed">पूरा नहीं हुआ</string>
+    <string name="goal_finished_measured">%1$s से %2$s तक. लक्ष्य %3$s था.</string>
+    <string name="goal_finished_counted">%2$s में से %1$s हुए.</string>
+    <string name="goal_finished_keeps">आपका पुराना रिकॉर्ड रहेगा.</string>
+    <string name="goal_finished_new">नया गोल सेट करें</string>
+    <string name="goal_nothing_yet">अभी कुछ दर्ज नहीं।</string>
+    <string name="goal_ahead">समय से आगे।</string>
+    <string name="goal_on_pace">सही रफ़्तार पर।</string>
+    <string name="goal_behind">समय से पीछे। अभी वक़्त है।</string>
+    <string name="goal_over">आख़िरी तारीख निकल गई। तैयार हों तो नया गोल सेट करें।</string>
     <string name="goal_reached">पूरा हुआ।</string>
     <string name="goal_too_early">कहना अभी जल्दी होगा।</string>
     <string name="goal_current_of">%2$s %3$s में से %1$s</string>
-    <string name="goal_pace_marker">निशान वहाँ है जहाँ सीधी लकीर कहती है: %1$d%%।</string>
-    <string name="goal_pace_target">लकीर के हिसाब से</string>
+    <string name="goal_pace_marker">निशान बताता है आज आपको कहाँ होना चाहिए: %1$d%%।</string>
+    <string name="goal_pace_target">होना चाहिए</string>
     <string name="goal_projection">इस रफ़्तार से</string>
-    <string name="goal_no_rate_body">एक दिन पूरा होने तक आगे बढ़ाने को कुछ नहीं।</string>
+    <string name="goal_no_rate_body">अनुमान के लिए एक पूरा दिन चाहिए।</string>
     <string name="goal_no_rate_yet">—</string>
-    <string name="goal_will_reach">समय पर पहुँच जाएगा।</string>
-    <string name="goal_will_miss">कुछ बदले बिना पीछे रह जाएगा।</string>
+    <string name="goal_will_reach">आप समय पर पहुँच जाएँगे।</string>
+    <string name="goal_will_miss">कुछ न बदला तो आप पीछे रह जाएँगे।</string>
     <string name="goal_time">बचा समय</string>
     <string name="goal_day_of">दिन %1$d / %2$d</string>
     <string name="goal_trail_range">%1$s से %2$s</string>
@@ -624,15 +655,15 @@
     <string name="goal_kind_count">गिनती</string>
     <string name="goal_kind_duration">घंटे</string>
     <string name="goal_kind_consistency">बनाए रखना</string>
-    <string name="goal_kind_number_hint">कोई मापा जाने वाला आंकड़ा: 78 किग्रा, रोज़ 40 पेज।</string>
-    <string name="goal_kind_count_hint">एक स्टेप को तय बार करना।</string>
+    <string name="goal_kind_number_hint">किसी नंबर तक पहुँचना: 78 किलो, या रोज़ 40 पेज।</string>
+    <string name="goal_kind_count_hint">एक स्टेप तय बार करना।</string>
     <string name="goal_kind_duration_hint">एक स्टेप पर मिनट जोड़ना।</string>
-    <string name="goal_kind_consistency_hint">तय हिस्से दिनों में प्लान निभाना।</string>
+    <string name="goal_kind_consistency_hint">तय प्रतिशत दिनों में प्लान निभाना।</string>
     <string name="goal_form_step">कौन सा स्टेप</string>
     <string name="goal_form_step_none">स्टेप चुनें</string>
-    <string name="goal_form_step_body">लक्ष्य सिर्फ़ यही स्टेप गिनता है।</string>
+    <string name="goal_form_step_body">सिर्फ़ यही स्टेप गोल में गिना जाएगा।</string>
     <string name="goal_form_measures">क्या मापा जाता है</string>
-    <string name="goal_form_measures_body">इस तरह के किसी भी स्टेप पर दर्ज आंकड़े लक्ष्य में जाते हैं।</string>
+    <string name="goal_form_measures_body">किसी भी स्टेप पर दर्ज इस तरह का हर नंबर गिना जाएगा।</string>
     <string name="goal_form_start">शुरुआती आंकड़ा</string>
     <string name="goal_form_start_hint">आज आप कहाँ हैं</string>
     <string name="goal_form_target_value">लक्ष्य आंकड़ा</string>
@@ -641,7 +672,7 @@
     <string name="goal_form_target_percent">कितने प्रतिशत दिन</string>
     <string name="goal_form_target_hint">एक नंबर</string>
     <string name="goal_form_length">कितने समय का</string>
-    <string name="goal_form_length_body">आज से गिना जाएगा। जो पूरा हो सके, वह लक्ष्य बेहतर है।</string>
+    <string name="goal_form_length_body">आज से गिनती। जो गोल पूरा हो सके वह उससे बेहतर है जो सिर्फ़ फ़ेल हो सके।</string>
     <plurals name="goal_form_weeks">
         <item quantity="one">%1$d हफ़्ता</item>
         <item quantity="other">%1$d हफ़्ते</item>
@@ -655,11 +686,11 @@
     <string name="goal_reason_nowhere">शुरुआत और लक्ष्य एक ही हैं, तो पहुँचने को कुछ नहीं।</string>
 
     <string name="settings_goal">लक्ष्य</string>
-    <string name="settings_goal_body">एक लक्ष्य जिसमें दिन जुड़ें। ऐच्छिक।</string>
+    <string name="settings_goal_body">एक लक्ष्य जिसमें आपके दिन जुड़ते हैं। वैकल्पिक।</string>
 
     <!-- What the alarms actually did. -->
     <string name="reliability_measured">असल में क्या हुआ</string>
-    <string name="reliability_measured_none">अभी कोई अलार्म ड्यू नहीं हुआ, इसलिए मापने को कुछ नहीं। यह खुद भर जाएगा।</string>
+    <string name="reliability_measured_none">अभी कोई अलार्म बजना बाकी था ही नहीं, तो मापने को कुछ नहीं। यह अपने आप भरेगा।</string>
     <plurals name="reliability_measured_window">
         <item quantity="one">पिछले %1$d दिन, इसी फ़ोन पर।</item>
         <item quantity="other">पिछले %1$d दिन, इसी फ़ोन पर।</item>
@@ -669,7 +700,7 @@
     <string name="reliability_late">देर से आए</string>
     <string name="reliability_typically_late">आमतौर पर करीब %1$d मिनट पीछे।</string>
     <string name="reliability_never_arrived">कभी नहीं आए</string>
-    <string name="reliability_never_arrived_body">आमतौर पर बैटरी मैनेजर। ऊपर के फिक्स इसे बदलते हैं।</string>
+    <string name="reliability_never_arrived_body">आमतौर पर फ़ोन का बैटरी सेवर। ऊपर के सुधार इसे बदलते हैं।</string>
 
     <string name="settings_title">सेटिंग</string>
     <string name="settings_kicker">Build or Break · %1$s</string>
@@ -684,7 +715,7 @@
     <string name="settings_dnd">Do Not Disturb में भी बजे</string>
     <string name="settings_dnd_body">उसी पेज पर Override Do Not Disturb चालू करें।</string>
     <string name="settings_tolerance">लेट की छूट</string>
-    <string name="settings_tolerance_body">स्टेप इतना लेट पूरा हो तो उसके बाद वाले अपनी जगह रहते हैं।</string>
+    <string name="settings_tolerance_body">अगर आप स्टेप इतना लेट पूरा करें, तो उसके बाद वाले वहीं रहेंगे।</string>
     <string name="settings_tolerance_off">बंद</string>
     <string name="settings_section_day">दिन</string>
     <string name="settings_theme">थीम</string>
@@ -693,20 +724,68 @@
     <string name="theme_dark">डार्क</string>
     <string name="settings_section_demo">डेमो डेटा (टेस्टिंग)</string>
     <string name="settings_demo_seed">छह हफ्ते का इतिहास डालें</string>
-    <string name="settings_demo_seed_body">आज से पहले के बनाए हुए दिन, ताकि Insights में कुछ दिखे। आपका प्लान वैसा ही रहेगा।</string>
+    <string name="settings_demo_seed_body">आज से पहले के बनावटी दिन, ताकि Insights में कुछ दिखे। आपका प्लान नहीं बदलता।</string>
     <string name="settings_demo_written">%1$s स्टेप का इतिहास बना।</string>
     <string name="settings_demo_clear">डेमो इतिहास मिटाएँ</string>
     <string name="settings_demo_clear_body">आज से पहले के सारे दिन हटा देता है। आज और आपका प्लान रहेगा।</string>
     <string name="settings_section_data">आपका डेटा</string>
     <string name="settings_export">प्लान और हिस्ट्री एक्सपोर्ट</string>
-    <string name="settings_export_body">एक JSON फाइल, जहाँ चाहें शेयर करें।</string>
+    <string name="settings_export_body">आपके प्लान और इतिहास की एक फ़ाइल। जहाँ चाहें भेजें।</string>
     <string name="settings_export_chooser">अपना प्लान शेयर करें</string>
     <string name="settings_import">टेक्स्ट से इंपोर्ट</string>
     <string name="settings_delete">सब कुछ मिटाएँ</string>
-    <string name="settings_delete_body">प्लान, हिस्ट्री, अलार्म। इसकी कोई कॉपी कहीं और नहीं है।</string>
+    <string name="settings_delete_body">प्लान, इतिहास, अलार्म। कहीं और कोई कॉपी नहीं है।</string>
     <string name="settings_delete_confirm_title">सब कुछ मिटाएँ?</string>
-    <string name="settings_delete_confirm_body">हर प्लान, हिस्ट्री का हर दिन और हर अलार्म चला जाएगा। वापस लाने के लिए कोई सर्वर कॉपी नहीं है।</string>
+    <string name="settings_delete_confirm_body">हर प्लान, इतिहास का हर दिन और हर अलार्म मिट जाएगा। किसी सर्वर पर कोई बैकअप नहीं है।</string>
     <string name="settings_delete_confirm">मिटाएँ</string>
     <string name="settings_delete_cancel">रहने दें</string>
-    <string name="settings_footer">सब कुछ इसी फोन पर रहता है। न अकाउंट, न सर्वर, न एनालिटिक्स।</string>
+    <string name="settings_footer">सब कुछ इसी फ़ोन पर रहता है। न अकाउंट, न सर्वर, न ट्रैकिंग।</string>
+    <string name="settings_section_about">ऐप के बारे में</string>
+    <string name="settings_about">इस ऐप के बारे में</string>
+    <string name="settings_about_body">यह क्या करता है, क्या नहीं करता, और आपका डेटा कहाँ है।</string>
+    <string name="about_kicker">Build or Break · %1$s</string>
+    <string name="about_title">ऐप के बारे में</string>
+    <string name="about_what">Build or Break आपकी रोज़ की रूटीन चलाता है। आप अपने स्टेप एक बार लिखते हैं, ऐप हर स्टेप सही समय पर याद दिलाता है, और अगर दिन लेट हो जाए तो बाकी दिन आपके लिए आगे खिसका देता है।</string>
+    <string name="about_not">यह आपके लिए रूटीन नहीं लिखता, इसे अकाउंट नहीं चाहिए, और यह इंटरनेट इस्तेमाल नहीं करता।</string>
+    <string name="about_data">आप जो भी डालते हैं वह इसी फ़ोन पर रहता है। आपका प्लान, इतिहास और नंबर यहीं एक फ़ाइल में हैं। कुछ भी कहीं अपलोड नहीं होता।</string>
+    <string name="about_section_documents">दस्तावेज़</string>
+    <string name="about_privacy">प्राइवेसी पॉलिसी</string>
+    <string name="about_terms">इस्तेमाल की शर्तें</string>
+    <string name="about_section_made">बनाया है</string>
+    <string name="about_made_by">यथार्थ राठी ने, अकेले, भारत में। सवाल या दिक्कत: yatharthmaheshwari01@gmail.com</string>
+    <string name="about_licence">कोड MIT लाइसेंस के तहत ओपन सोर्स है।</string>
+    <string name="legal_updated">अपडेट %1$s</string>
+    <string name="legal_updated_on">11 सितंबर 2026</string>
+
+    <string name="privacy_short_title">छोटा जवाब</string>
+    <string name="privacy_short_body">यह ऐप आपके बारे में कुछ भी इकट्ठा नहीं करता। इसमें न अकाउंट है, न सर्वर, न इंटरनेट की अनुमति। आप जो भी टाइप करते हैं वह आपके फ़ोन पर रहता है।</string>
+    <string name="privacy_stored_title">फ़ोन पर क्या रखा जाता है</string>
+    <string name="privacy_stored_body">आपकी रूटीन, कौन से स्टेप हुए या छूटे, आपने जो वजह दी, जो नंबर लिखे (जैसे वज़न या मिनट), आपका गोल, और अलार्म कब सेट हुआ और कब बजा इसका छोटा सा रिकॉर्ड। यह सब इस डिवाइस पर ऐप की निजी स्टोरेज में है।</string>
+    <string name="privacy_leaves_title">फ़ोन से बाहर क्या जाता है</string>
+    <string name="privacy_leaves_body">कुछ नहीं, जब तक आप खुद एक्सपोर्ट न करें। एक्सपोर्ट एक फ़ाइल बनाता है और उसे आपके चुने ऐप को देता है, जैसे ईमेल या ड्राइव। उसके बाद फ़ाइल उस ऐप के नियमों में है, हमारे नहीं। न एनालिटिक्स है, न क्रैश रिपोर्ट, न विज्ञापन।</string>
+    <string name="privacy_permissions_title">अनुमतियाँ और उनकी वजह</string>
+    <string name="privacy_permissions_body">अलार्म और रिमाइंडर: ताकि स्टेप ठीक मिनट पर बजे। नोटिफ़िकेशन: ताकि याद दिलाया जा सके। फ़ुल स्क्रीन अलार्म: ताकि अलार्म लॉक स्क्रीन के ऊपर दिखे। बैटरी: ताकि फ़ोन बिजली बचाने के लिए अलार्म चुप न करे। हर एक वैकल्पिक है। इनके बिना भी ऐप चलता है, बस चुपचाप।</string>
+    <string name="privacy_delete_title">अपना डेटा मिटाना</string>
+    <string name="privacy_delete_body">सेटिंग्स में \"सब कुछ मिटाएँ\" बटन है। यह हर प्लान, इतिहास का हर दिन और हर अलार्म हटा देता है। ऐप अनइंस्टॉल करने से भी यही होता है। कहीं और कोई कॉपी नहीं है जो मिटानी हो।</string>
+    <string name="privacy_children_title">बच्चे</string>
+    <string name="privacy_children_body">यह ऐप 13 साल से कम उम्र के बच्चों के लिए नहीं है और किसी से भी, किसी भी उम्र में, जानबूझकर कुछ इकट्ठा नहीं करता।</string>
+    <string name="privacy_changes_title">इस पॉलिसी में बदलाव</string>
+    <string name="privacy_changes_body">अगर यह पॉलिसी बदली, तो नया वर्ज़न ऐप में ऊपर नई तारीख के साथ होगा। यह वादा कि कुछ भी फ़ोन से बाहर नहीं जाता, नहीं बदलेगा।</string>
+    <string name="privacy_contact_title">संपर्क</string>
+    <string name="privacy_contact_body">यथार्थ राठी, yatharthmaheshwari01@gmail.com</string>
+
+    <string name="terms_use_title">ऐप का इस्तेमाल</string>
+    <string name="terms_use_body">Build or Break आपकी अपनी रूटीन के लिए मुफ़्त है। इसे वैसे ही इस्तेमाल करें जैसे बनाया गया है, इसे तोड़ने या अपना बताकर कॉपी करने की कोशिश न करें।</string>
+    <string name="terms_alarms_title">अलार्म फ़ेल हो सकते हैं</string>
+    <string name="terms_alarms_body">ऐप समय पर बजने की पूरी कोशिश करता है, और आपको साफ़ बताता है कि आपका फ़ोन क्या करने दे रहा है। लेकिन फ़ोन बनाने वाले, बैटरी सेवर और खुद Android अलार्म देर से या चुप कर सकते हैं। ऐसी किसी चीज़ के लिए सिर्फ़ इस ऐप पर भरोसा न करें जहाँ अलार्म छूटने से नुकसान हो, जैसे दवा या फ़्लाइट।</string>
+    <string name="terms_health_title">यह मेडिकल सलाह नहीं है</string>
+    <string name="terms_health_body">इस ऐप में रूटीन, गोल, वज़न और मिनट आपके अपने नंबर हैं। ऐप कोई स्वास्थ्य, फ़िटनेस या मेडिकल सलाह नहीं देता। उसके लिए किसी जानकार से बात करें।</string>
+    <string name="terms_data_title">आपका डेटा आपका है</string>
+    <string name="terms_data_body">आप जो भी डालते हैं वह आपका है और आपके फ़ोन पर रहता है। आप इसे कभी भी एक्सपोर्ट या मिटा सकते हैं। सर्वर पर कॉपी नहीं है, इसलिए फ़ोन खोने पर डेटा भी जाता है, जब तक आपने एक्सपोर्ट न किया हो।</string>
+    <string name="terms_licence_title">ओपन सोर्स</string>
+    <string name="terms_licence_body">ऐप का कोड MIT लाइसेंस के तहत प्रकाशित है। यह जैसा है वैसा दिया गया है, बिना किसी वारंटी के। इसके इस्तेमाल से हुए नुकसान के लिए कोई ज़िम्मेदार नहीं है, जहाँ तक कानून इजाज़त देता है।</string>
+    <string name="terms_changes_title">बदलाव</string>
+    <string name="terms_changes_body">ये शर्तें ऐप के नए वर्ज़न के साथ बदल सकती हैं। ऊपर की तारीख बताती है कब।</string>
+    <string name="terms_contact_title">संपर्क</string>
+    <string name="terms_contact_body">यथार्थ राठी, yatharthmaheshwari01@gmail.com</string>
 </resources>

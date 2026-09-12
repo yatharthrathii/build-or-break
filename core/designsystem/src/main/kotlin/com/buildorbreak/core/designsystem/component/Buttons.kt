@@ -155,7 +155,7 @@ fun OutlineButton(
                     onClick()
                 },
             )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = 10.dp),
     )
 }
 
@@ -198,7 +198,7 @@ fun FillButton(
                     onClick()
                 },
             )
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = 10.dp),
     )
 }
 
@@ -221,6 +221,6 @@ fun GhostButton(
                 feedback.tap()
                 onClick()
             }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = Theme.spacing.inset),
     )
 }

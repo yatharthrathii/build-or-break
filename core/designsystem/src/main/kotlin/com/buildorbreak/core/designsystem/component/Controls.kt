@@ -110,7 +110,7 @@ private fun Segment(
                 feedback.tick()
                 onClick()
             }
-            .padding(horizontal = 13.dp, vertical = 12.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = Theme.spacing.inset),
     )
 }
 
@@ -237,11 +237,11 @@ fun PickerField(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp)
+                .padding(top = Theme.spacing.small)
                 .border(Theme.spacing.rule, MaterialTheme.colorScheme.onSurface)
                 .clickable(role = Role.Button, onClick = onClick)
                 .height(FieldHeight)
-                .padding(horizontal = 10.dp),
+                .padding(horizontal = Theme.spacing.inset),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

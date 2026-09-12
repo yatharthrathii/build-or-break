@@ -75,7 +75,7 @@ private const val COUNT_MILLIS = 420
 internal fun RingRow(header: DayHeader, runDays: Int, consistency: Consistency? = null) {
     Column {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ProgressRing(fraction = header.fraction)
@@ -90,7 +90,7 @@ internal fun RingRow(header: DayHeader, runDays: Int, consistency: Consistency? 
 /** The three lines beside the ring: the count, the run, and the steadier number. */
 @Composable
 private fun RingCounts(header: DayHeader, runDays: Int, consistency: Consistency?) {
-    Column(modifier = Modifier.padding(start = 16.dp)) {
+    Column(modifier = Modifier.padding(start = Theme.spacing.medium)) {
         // Counted up rather than swapped. The number is the one thing on this
         // screen that says the day is going well, and a digit that changes
         // while the ring fills is worth watching; one that has already changed
@@ -107,7 +107,7 @@ private fun RingCounts(header: DayHeader, runDays: Int, consistency: Consistency
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        Label(text = stringResource(R.string.today_steps_kept), modifier = Modifier.padding(top = 5.dp))
+        Label(text = stringResource(R.string.today_steps_kept), modifier = Modifier.padding(top = Theme.spacing.tight))
 
         Text(
             text = if (runDays > 0) {
@@ -117,7 +117,7 @@ private fun RingCounts(header: DayHeader, runDays: Int, consistency: Consistency
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 9.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
 
         // The number that survives a bad day. A run resets to nothing the
@@ -134,7 +134,7 @@ private fun RingCounts(header: DayHeader, runDays: Int, consistency: Consistency
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 3.dp),
+                modifier = Modifier.padding(top = Theme.spacing.tight),
             )
         }
     }
@@ -220,7 +220,7 @@ internal fun NextUpCard(
         },
         label = "next",
     ) { card ->
-        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Box(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 14.dp)) {
             when {
                 card != null -> NextUpPanel(card, onDone, onDoneMinimum, onSnooze, onSkip)
                 allDone -> DayDonePanel(keptNothing = keptNothing)
@@ -286,7 +286,7 @@ private fun NextUpTitle(card: NextUp) {
             text = detail,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp).padding(top = 5.dp),
+            modifier = Modifier.padding(horizontal = 12.dp).padding(top = Theme.spacing.tight),
         )
     }
 }
@@ -297,7 +297,7 @@ private fun NextUpHeading(card: NextUp) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 11.dp),
+            .padding(start = 12.dp, end = 12.dp, top = Theme.spacing.inset),
         verticalAlignment = Alignment.Bottom,
     ) {
         Kicker(
@@ -312,7 +312,7 @@ private fun NextUpHeading(card: NextUp) {
     NextUpTitle(card = card)
 
     Row(
-        modifier = Modifier.padding(horizontal = 12.dp).padding(top = 7.dp, bottom = 12.dp),
+        modifier = Modifier.padding(horizontal = 12.dp).padding(top = Theme.spacing.small, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -393,7 +393,7 @@ private fun ActionCell(
                 feedback.tap()
                 onClick()
             }
-            .padding(horizontal = 8.dp, vertical = 11.dp),
+            .padding(horizontal = Theme.spacing.small, vertical = Theme.spacing.inset),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -446,7 +446,7 @@ private fun DayDonePanel(keptNothing: Boolean) {
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 5.dp),
+                modifier = Modifier.padding(top = Theme.spacing.tight),
             )
         }
     }
@@ -473,7 +473,14 @@ internal fun RunningLateSheet(
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = null,
     ) {
-        Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp)) {
+        Column(
+            modifier = Modifier.padding(
+                start = Theme.spacing.medium,
+                end = Theme.spacing.medium,
+                top = 22.dp,
+                bottom = 28.dp,
+            ),
+        ) {
             Text(
                 text = stringResource(R.string.today_late_title).uppercase(Locale.getDefault()),
                 style = MaterialTheme.typography.headlineMedium,

@@ -73,7 +73,7 @@ internal fun WelcomeStep() {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = Theme.spacing.medium)
             .padding(top = 26.dp, bottom = 8.dp),
     ) {
         Rise(shown = shown, order = 0) {
@@ -206,7 +206,7 @@ internal fun ChooseStep(choice: StartChoice, onChoose: (StartChoice) -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = Theme.spacing.medium)
             .padding(top = 22.dp, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -317,7 +317,7 @@ private fun ChoiceCard(
             text = stringResource(body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 5.dp),
+            modifier = Modifier.padding(top = Theme.spacing.tight),
         )
 
         extra()
@@ -362,7 +362,7 @@ private fun PasteExample() {
             .padding(top = 10.dp)
             .background(MaterialTheme.colorScheme.surface)
             .border(Theme.spacing.hairline, Theme.colours.faint)
-            .padding(horizontal = 10.dp, vertical = 9.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = Theme.spacing.small),
     )
 }
 
@@ -391,14 +391,14 @@ internal fun PreviewStep(state: OnboardingUiState) {
             text = stringResource(previewTitle(state.choice)).uppercase(Locale.getDefault()),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier.padding(horizontal = Theme.spacing.medium),
         )
 
         Text(
             text = stringResource(previewBody(state.choice)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 20.dp).padding(top = 10.dp),
+            modifier = Modifier.padding(horizontal = Theme.spacing.medium).padding(top = 10.dp),
         )
 
         if (state.preview.isNotEmpty()) {
@@ -409,7 +409,7 @@ internal fun PreviewStep(state: OnboardingUiState) {
                     state.preview.size,
                     state.ringCount,
                 ),
-                modifier = Modifier.padding(horizontal = 20.dp).padding(top = 18.dp, bottom = 10.dp),
+                modifier = Modifier.padding(horizontal = Theme.spacing.medium).padding(top = 18.dp, bottom = 10.dp),
             )
 
             HeavyRule()
@@ -432,7 +432,7 @@ private fun PreviewLine(row: PreviewRow) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 11.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset),
     ) {
         Text(
             text = row.time,

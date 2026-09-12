@@ -4,8 +4,8 @@ import android.app.ActivityManager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import com.buildorbreak.scheduler.alarm.AlarmRingerService
 import com.buildorbreak.scheduler.alarm.AlarmScheduling
 import com.google.common.truth.Truth.assertThat
@@ -54,6 +54,11 @@ class AlarmDeliveryTest {
         // platform then kills it for the delay it caused itself. A real alarm
         // never meets this: the broadcast thaws the app before the start.
         shell("am unfreeze --sticky ${'$'}{context.packageName}")
+
+        // The previous test's stop may still be tearing the service down.
+        // A start that lands on an instance on its way out inherits its
+        // promotion deadline, so each test begins with the ringer gone.
+        waitFor { !isRingerRunning() }
         Thread.sleep(SETTLE_MILLIS)
     }
 
@@ -145,12 +150,18 @@ class AlarmDeliveryTest {
     private fun notificationsAllowed(): Boolean =
         context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
 
-    /** Kept so a run can be looked at, not only passed. */
+    /**
+     * Kept so a run can be looked at, not only passed.
+     *
+     * Through UiAutomator rather than the instrumentation's own capture:
+     * that one goes through the app's window and comes back black on an
+     * emulator, which is the one result worse than no screenshot, because
+     * a black rectangle looks like the screen it was taken of.
+     */
     private fun shot(name: String) {
         val folder = File(context.getExternalFilesDir(null), "walkthrough").apply { mkdirs() }
-        val image = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
 
-        File(folder, "$name.png").outputStream().use { out -> image.compress(Bitmap.CompressFormat.PNG, 100, out) }
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(File(folder, "$name.png"))
     }
 
     private fun ringIntent() = Intent(AlarmRingerService.ACTION_RING)

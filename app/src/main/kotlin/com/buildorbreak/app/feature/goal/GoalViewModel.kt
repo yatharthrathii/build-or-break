@@ -9,7 +9,7 @@ import com.buildorbreak.core.domain.goal.GoalSnapshot
 import com.buildorbreak.core.domain.goal.GoalStanding
 import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
-import com.buildorbreak.core.domain.usecase.PlanContents
+import com.buildorbreak.core.domain.usecase.PlanItemChoice
 import com.buildorbreak.core.domain.usecase.RetireGoalUseCase
 import com.buildorbreak.core.domain.usecase.SaveGoalUseCase
 import com.buildorbreak.core.model.enums.GoalKind
@@ -34,9 +34,15 @@ private const val DAYS_PER_WEEK = 7L
 /** Eight weeks. Long enough for a habit to prove itself, short enough to finish. */
 private const val DEFAULT_WEEKS = 8
 
-/** A step a counting or accumulating goal can be attached to. */
+/**
+ * A step a counting or accumulating goal can be attached to.
+ *
+ * [templateName] is shown only when the plan has more than one template, and
+ * then only because two templates usually carry a step of the same name and
+ * they are two different steps.
+ */
 @Immutable
-data class GoalItemChoice(val id: Long, val title: String)
+data class GoalItemChoice(val id: Long, val title: String, val templateName: String = "")
 
 /**
  * Everything a goal is, while it is being written.
@@ -133,6 +139,10 @@ data class GoalCardUi(
     val totalDays: Int,
     val willReach: Boolean,
     val hasData: Boolean,
+    /** The target date has passed, or the target was met. Either way it is over. */
+    val isFinished: Boolean = false,
+    /** True when it was met. Only meaningful once [isFinished]. */
+    val reached: Boolean = false,
     /** Whether a finished day exists to carry a rate forward from. */
     val hasProjection: Boolean,
     val trail: ImmutableList<Double>,
@@ -152,7 +162,7 @@ data class GoalCardUi(
 @HiltViewModel
 class GoalViewModel @Inject constructor(
     observeGoal: ObserveGoalUseCase,
-    observePlan: ObservePlanUseCase,
+    private val observePlan: ObservePlanUseCase,
     private val saveGoal: SaveGoalUseCase,
     private val retireGoal: RetireGoalUseCase,
     private val time: TimeProvider,
@@ -162,14 +172,12 @@ class GoalViewModel @Inject constructor(
     private val failed = MutableStateFlow(false)
 
     val state: StateFlow<GoalUiState> =
-        combine(observeGoal(), observePlan(), draft, failed) { snapshot, plan, editing, failure ->
+        combine(observeGoal(), observePlan.allItems(), draft, failed) { snapshot, steps, editing, failure ->
             GoalUiState(
                 loaded = true,
                 goal = snapshot?.let(::toCard),
                 draft = editing,
-                items = (plan as? PlanContents.Loaded)?.items.orEmpty()
-                    .map { GoalItemChoice(it.id, it.title) }
-                    .toImmutableList(),
+                items = choicesOf(steps),
                 saveFailed = failure,
             )
         }.stateIn(
@@ -177,6 +185,21 @@ class GoalViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = GoalUiState.Empty,
         )
+
+    /**
+     * Every step on the plan, named so two of them can be told apart.
+     *
+     * A single template plan is the common case and its steps need no
+     * qualifier; the moment there are two, "Gym" on the weekday plan and
+     * "Gym" on the weekend plan are two rows that have to read differently.
+     */
+    private fun choicesOf(steps: List<PlanItemChoice>): ImmutableList<GoalItemChoice> {
+        val manyTemplates = steps.map { it.templateName }.distinct().size > 1
+
+        return steps
+            .map { GoalItemChoice(it.id, it.title, if (manyTemplates) it.templateName else "") }
+            .toImmutableList()
+    }
 
     /** Opens the form on a blank goal, starting today. */
     fun onNew() {
@@ -263,6 +286,8 @@ class GoalViewModel @Inject constructor(
         totalDays = snapshot.totalDays,
         willReach = snapshot.willReach,
         hasData = snapshot.hasData,
+        isFinished = snapshot.isFinished,
+        reached = snapshot.standing == GoalStanding.REACHED,
         hasProjection = snapshot.hasProjection,
         trail = snapshot.trail.toImmutableList(),
         startValue = snapshot.goal.startValue,

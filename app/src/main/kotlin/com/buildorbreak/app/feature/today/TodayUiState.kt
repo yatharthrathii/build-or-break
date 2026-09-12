@@ -1,7 +1,9 @@
 package com.buildorbreak.app.feature.today
 
 import androidx.compose.runtime.Immutable
+import com.buildorbreak.core.domain.goal.GoalStanding
 import com.buildorbreak.core.model.enums.DeliveryTier
+import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.ValueKind
 import kotlinx.collections.immutable.ImmutableList
@@ -81,6 +83,15 @@ data class TodayUiState(
     val consistency: Consistency? = null,
     /** A number owed for a step that was just completed. Always skippable. */
     val askNumber: MeasurePrompt? = null,
+    /**
+     * The one goal, at the top of the day.
+     *
+     * Null when there is no goal, and then nothing is drawn: an empty "0 of
+     * 55 kg" card on a routine that has no goal would be a nag. With a goal
+     * it is the first thing on the screen, because it is the reason the
+     * routine exists.
+     */
+    val goal: GoalHeroUi? = null,
     /**
      * The last thing the user asked for did not happen.
      *
@@ -211,6 +222,51 @@ data class CatchUpRow(
     /** Which repeat of an interval item. Every repeat is its own miss. */
     val sequenceInDay: Int = 0,
 )
+
+/**
+ * The goal as the top of Today draws it.
+ *
+ * [current] is the honest number: a seven day average for a measured goal, a
+ * tally for a counting one. [todayReading] is what was typed this morning,
+ * shown beside it so the two never look like a mistake. Everything here is
+ * a fact; the words come from resources on the screen.
+ */
+@Immutable
+data class GoalHeroUi(
+    val title: String,
+    val kind: GoalKind,
+    val valueKind: ValueKind,
+    val current: Double,
+    val target: Double,
+    val startValue: Double,
+    /** Where the goal began, for "since 1 Sep". Already formatted. */
+    val startDate: String,
+    val changeSinceStart: Double,
+    val todayReading: Double?,
+    /** Zero to a hundred. */
+    val percent: Int,
+    /** Where the straight line says the goal should be today, zero to a hundred. */
+    val pacePercent: Int,
+    val standing: GoalStanding,
+    val daysLeft: Int,
+    val daysElapsed: Int,
+    /** The target date has passed, or the target was met. */
+    val isFinished: Boolean = false,
+    val hasData: Boolean,
+    /** The recent line, oldest first. Empty until there is one. */
+    val trail: ImmutableList<Double>,
+) {
+    /**
+     * A measured goal's average is built from a week. Before the week is in,
+     * the number moves with every weigh in and the card says so rather than
+     * letting somebody read a two day average as a trend.
+     */
+    val isSettling: Boolean get() = kind == GoalKind.NUMBER && daysElapsed < SETTLING_DAYS
+
+    companion object {
+        const val SETTLING_DAYS = 7
+    }
+}
 
 /** Something earned. The screen turns the enum into a sentence. */
 @Immutable

@@ -58,7 +58,7 @@ class InsightsContentTest {
         render(state())
 
         scrollTo("THE READING")
-        compose.onNodeWithText("Something is in the wrong place.").assertIsDisplayed()
+        compose.onNodeWithText("Some steps are at the wrong time.").assertIsDisplayed()
     }
 
     @Test
@@ -66,7 +66,7 @@ class InsightsContentTest {
         render(state())
 
         scrollTo("WENT BEST")
-        compose.onNodeWithText("Wake + water, kept every time. All 7 of them.").assertIsDisplayed()
+        compose.onNodeWithText("Wake + water: done every time, all 7 of them.").assertIsDisplayed()
     }
 
     @Test
@@ -74,7 +74,7 @@ class InsightsContentTest {
         render(state())
 
         scrollTo("WENT BEST")
-        compose.onNodeWithText("kept every time", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("done every time", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -133,7 +133,7 @@ class InsightsContentTest {
 
         scrollTo("Twelve gym sessions")
         compose.onNodeWithText("Twelve gym sessions").assertIsDisplayed()
-        compose.onNodeWithText("On pace.").assertIsDisplayed()
+        compose.onNodeWithText("On track.").assertIsDisplayed()
     }
 
     @Test

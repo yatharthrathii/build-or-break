@@ -45,7 +45,17 @@ data class GoalSnapshot(
      */
     val hasProjection: Boolean,
     val on: LocalDate,
+    /**
+     * What was typed today, unsmoothed. Measured goals only.
+     *
+     * Shown beside [current], never instead of it. Somebody who weighed 50.5
+     * this morning and reads 49.8 on the card will think the app is wrong
+     * unless the card also says what it saw today and why the two differ.
+     */
+    val todayReading: Double? = null,
 ) {
+    /** How far [current] has come from where the goal began. */
+    val changeSinceStart: Double get() = current - goal.startValue
 
     val totalDays: Int get() = goal.totalDays
 
@@ -74,6 +84,18 @@ data class GoalSnapshot(
             percent < paceFraction - ON_PACE_BAND -> GoalStanding.BEHIND
             else -> GoalStanding.ON_PACE
         }
+
+    /**
+     * Whether this goal is over, one way or the other.
+     *
+     * Reached counts as over even with days to spare: a goal that has been
+     * met is finished, and a screen that keeps showing days left over a full
+     * bar is asking somebody to keep working at something they have already
+     * done. The screen says which of the two it was; this only says that it
+     * is time to ask about the next one.
+     */
+    val isFinished: Boolean
+        get() = standing == GoalStanding.REACHED || standing == GoalStanding.OVER
 
     /** Whether the current rate gets there in time. */
     val willReach: Boolean

@@ -68,14 +68,11 @@ internal fun GroupDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Panel {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = stringResource(
-                        if (existing == null) R.string.plan_group_new_title else R.string.plan_group_edit_title,
-                    ).uppercase(Locale.getDefault()),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+            Column(
+                modifier = Modifier.padding(Theme.spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                DialogTitle(isNew = existing == null)
 
                 GroupFields(
                     name = name,
@@ -99,6 +96,16 @@ internal fun GroupDialog(
             }
         }
     }
+}
+
+@Composable
+private fun DialogTitle(isNew: Boolean) {
+    Text(
+        text = stringResource(if (isNew) R.string.plan_group_new_title else R.string.plan_group_edit_title)
+            .uppercase(Locale.getDefault()),
+        style = MaterialTheme.typography.headlineSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
 }
 
 @Composable
@@ -137,7 +144,7 @@ private fun GroupFields(
             text = stringResource(R.string.plan_group_how_loud_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 
@@ -189,7 +196,7 @@ internal fun GroupHeader(group: PlanGroupRow, onEdit: (Long) -> Unit) {
                 .fillMaxWidth()
                 .background(Theme.colours.raised)
                 .clickable(role = Role.Button) { onEdit(group.id) }
-                .padding(horizontal = 16.dp, vertical = 11.dp),
+                .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -204,7 +211,7 @@ internal fun GroupHeader(group: PlanGroupRow, onEdit: (Long) -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 11.dp),
+                    .padding(start = Theme.spacing.inset),
             )
 
             Text(

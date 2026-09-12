@@ -113,6 +113,35 @@ class ObservePlanUseCase @Inject constructor(
         }
     }
 
+    /**
+     * Every step on the plan, whatever template it sits on, with that
+     * template's name beside it.
+     *
+     * For the goal picker, which used to offer only the default template's
+     * steps: a goal counting gym sessions could not be attached to the gym
+     * step if the gym lived on the weekend template, and the picker gave no
+     * hint that the step it wanted existed somewhere else.
+     *
+     * The template name travels with the row because two templates commonly
+     * carry a step of the same name, and they are two different steps: a
+     * goal follows one of them. A picker showing "Gym" twice with nothing to
+     * tell them apart is worse than one showing neither.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun allItems(): Flow<List<PlanItemChoice>> = plans.observeActive().flatMapLatest { plan ->
+        if (plan == null) return@flatMapLatest flowOf(emptyList())
+
+        templates.observeForPlan(plan.id).flatMapLatest { available ->
+            if (available.isEmpty()) return@flatMapLatest flowOf(emptyList())
+
+            combine(available.map { template -> items.observeForTemplate(template.id) }) { lists ->
+                available.zip(lists.toList()).flatMap { (template, list) ->
+                    list.map { PlanItemChoice(it.id, it.title, template.name) }
+                }
+            }
+        }
+    }
+
     /** One item, for an editor opening on an id it was handed. */
     suspend fun itemById(itemId: Long): Item? = items.byId(itemId)
 
@@ -133,6 +162,9 @@ class ObservePlanUseCase @Inject constructor(
     private fun chosen(available: List<DayTemplate>): DayTemplate? =
         available.firstOrNull { it.isDefault } ?: available.firstOrNull()
 }
+
+/** One step somewhere on the plan, and the template it lives on. */
+data class PlanItemChoice(val id: Long, val title: String, val templateName: String)
 
 /**
  * Either there is a plan to edit or there is not.

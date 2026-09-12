@@ -33,16 +33,28 @@ fun Label(text: String, modifier: Modifier = Modifier, color: Color = MaterialTh
 
 /** The smaller label that sits above a title or inside a button. */
 @Composable
-fun Kicker(text: String, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+fun Kicker(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    /** Two where the line is a sentence about a step rather than a label. */
+    maxLines: Int = 1,
+) {
     Text(
         text = text.uppercase(Locale.getDefault()),
         style = MaterialTheme.typography.labelMedium,
         color = color,
         modifier = modifier,
-        maxLines = 1,
+        maxLines = maxLines,
+        // Tracked capitals need the room back between the lines that the
+        // label line height takes out, or two lines touch.
+        lineHeight = MaterialTheme.typography.labelMedium.fontSize * LINE_GAP,
         overflow = TextOverflow.Ellipsis,
     )
 }
+
+/** A tracked capital is wider than it is tall; its lines need more air, not less. */
+private const val LINE_GAP = 1.45f
 
 /**
  * A square badge: FIXED, WINDOW, +15 AFTER GYM.

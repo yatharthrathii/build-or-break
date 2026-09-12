@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.buildorbreak.core.designsystem.theme.Theme
 import java.util.Locale
 
 private val NavIconSize = 20.dp
@@ -103,7 +104,7 @@ private fun RowScope.NavCell(destination: NavDestination, selected: Boolean, onC
             // bar reads as four identical buttons.
             .semantics(mergeDescendants = true) { this.selected = selected }
             .testTag(navTag(destination.label))
-            .padding(top = 9.dp, bottom = 11.dp),
+            .padding(top = Theme.spacing.small, bottom = Theme.spacing.inset),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(5.dp),
     ) {

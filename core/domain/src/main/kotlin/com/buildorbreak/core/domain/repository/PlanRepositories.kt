@@ -72,4 +72,13 @@ interface ItemRepository {
 
     /** Archived rather than deleted, so past occurrences keep their meaning. */
     suspend fun archive(itemId: Long): Outcome<Unit, DataError>
+
+    /**
+     * Writes [orderedIds] as the sort order, first to last.
+     *
+     * Order decides ties only: the timeline is placed by time, and two steps
+     * at the same minute land in this order. Ids not on the list keep the
+     * order they had.
+     */
+    suspend fun reorder(orderedIds: List<Long>): Outcome<Unit, DataError>
 }

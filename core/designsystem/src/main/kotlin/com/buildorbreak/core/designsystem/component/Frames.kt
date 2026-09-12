@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +24,18 @@ import com.buildorbreak.core.designsystem.theme.Theme
 import java.util.Locale
 
 private val HeaderMark = 12.dp
+
+/**
+ * The widest a page of this app is allowed to get.
+ *
+ * Every screen here is a column of rows read top to bottom, and a row six
+ * hundred pixels wide is a row the eye can run down. Stretched across a
+ * tablet or a phone on its side, the same row puts its title at one edge and
+ * its time at the other with a hand's width of nothing between them, and the
+ * timeline stops reading as a timeline. Phones in portrait are narrower than
+ * this and are untouched.
+ */
+private val PageWidth = 600.dp
 
 /**
  * The top of every screen: a kicker, a title, a heavy rule.
@@ -165,7 +179,7 @@ fun NoticeBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(ground)
-                .padding(horizontal = Theme.spacing.medium, vertical = 11.dp),
+                .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small),
         ) {
@@ -200,7 +214,7 @@ fun EmptyState(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = Theme.spacing.section),
+            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.section),
         verticalArrangement = Arrangement.spacedBy(Theme.spacing.medium, Alignment.CenterVertically),
     ) {
         Text(
@@ -218,3 +232,12 @@ fun EmptyState(
         actions()
     }
 }
+
+/**
+ * Holds a screen to a readable column and centres it.
+ *
+ * Applied once, around the navigation host, rather than screen by screen: a
+ * width rule that each screen has to remember is a width rule the next screen
+ * forgets.
+ */
+fun Modifier.readablePage(): Modifier = this.fillMaxHeight().widthIn(max = PageWidth)

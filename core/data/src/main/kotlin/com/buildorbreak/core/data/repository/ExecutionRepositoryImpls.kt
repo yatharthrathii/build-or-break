@@ -41,8 +41,25 @@ class MeasurementRepositoryImpl @Inject constructor(
         measurements.readings(kind.name, from, to, itemId).map { it.toReading() }
     }
 
+    override fun observeReadings(
+        kind: ValueKind,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long?,
+    ): Flow<List<Reading>> = measurements.observeReadings(kind.name, from, to, itemId)
+        .map { rows -> rows.map { it.toReading() } }
+        .flowOn(dispatchers.io)
+
+    override fun observeSeries(kind: ValueKind, itemId: Long?): Flow<List<Measurement>> =
+        measurements.observeSeries(kind.name, itemId)
+            .map { rows -> rows.map { it.toModel() } }
+            .flowOn(dispatchers.io)
+
     override suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { measurements.upsert(measurement.toEntity()) }
+
+    override suspend fun delete(measurementId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { measurements.delete(measurementId) }
 
     override suspend fun recordSkipReason(reason: SkipReason): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { measurements.upsertSkipReason(reason.toEntity()) }

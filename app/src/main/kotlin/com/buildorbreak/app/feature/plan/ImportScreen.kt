@@ -160,7 +160,7 @@ fun ImportContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(Theme.spacing.medium),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             when (state.stage) {
@@ -175,7 +175,7 @@ fun ImportContent(
 private fun ImportHeader(title: String, onBack: () -> Unit) {
     Column {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -191,7 +191,7 @@ private fun ImportHeader(title: String, onBack: () -> Unit) {
                 text = title.uppercase(Locale.getDefault()),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 14.dp),
+                modifier = Modifier.padding(start = Theme.spacing.inset),
             )
         }
 
@@ -263,7 +263,7 @@ private fun PromptCard(onCopy: () -> Unit) {
                 text = stringResource(R.string.import_prompt_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 5.dp, bottom = 12.dp),
+                modifier = Modifier.padding(top = Theme.spacing.tight, bottom = 12.dp),
             )
 
             FillButton(text = stringResource(R.string.import_copy_prompt), onClick = onCopy)
@@ -452,7 +452,7 @@ private fun UnderstoodRow(preview: ParsedPreview, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 11.dp),
+            .padding(vertical = Theme.spacing.inset),
     ) {
         Text(
             text = preview.title,
@@ -461,7 +461,7 @@ private fun UnderstoodRow(preview: ParsedPreview, onClick: () -> Unit) {
         )
 
         Row(
-            modifier = Modifier.padding(top = 5.dp),
+            modifier = Modifier.padding(top = Theme.spacing.tight),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {

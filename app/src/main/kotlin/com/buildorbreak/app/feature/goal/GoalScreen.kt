@@ -45,6 +45,7 @@ import com.buildorbreak.core.designsystem.component.HeavyRule
 import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.Label
 import com.buildorbreak.core.designsystem.component.OutlineButton
+import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.component.SectionLabel
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.HeroNumberStyle
@@ -74,11 +75,17 @@ private const val MIN_BAR = 0.015f
  * A goal is optional. The empty state is an offer, never a nag.
  */
 @Composable
-fun GoalScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: GoalViewModel = hiltViewModel()) {
+fun GoalScreen(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    onOpenReadings: () -> Unit = {},
+    viewModel: GoalViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     GoalContent(
         state = state,
+        onOpenReadings = onOpenReadings,
         onNew = viewModel::onNew,
         onEdit = viewModel::onEdit,
         onChange = viewModel::onChange,
@@ -94,6 +101,7 @@ fun GoalScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: Goa
 fun GoalContent(
     state: GoalUiState,
     onNew: () -> Unit,
+    onOpenReadings: () -> Unit = {},
     onEdit: () -> Unit,
     onChange: (GoalDraft) -> Unit,
     onSave: () -> Unit,
@@ -113,7 +121,13 @@ fun GoalContent(
 
         when {
             state.draft != null -> GoalForm(draft = state.draft, items = state.items, onChange = onChange)
-            state.goal != null -> GoalBody(goal = state.goal, onEdit = onEdit, onRetire = onRetire)
+            state.goal != null -> GoalBody(
+                goal = state.goal,
+                onNew = onNew,
+                onEdit = onEdit,
+                onRetire = onRetire,
+                onOpenReadings = onOpenReadings,
+            )
             state.loaded -> NoGoal(onNew = onNew)
             // Nothing, rather than "no goal yet", before the first read.
             else -> Unit
@@ -132,7 +146,7 @@ private fun GoalHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                .padding(start = Theme.spacing.medium, end = Theme.spacing.medium, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -150,7 +164,7 @@ private fun GoalHeader(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 14.dp),
+                    .padding(start = Theme.spacing.inset),
             )
 
             if (state.draft != null) {
@@ -183,13 +197,21 @@ private fun BlockerLine(text: String, error: Boolean = false) {
             .background(
                 if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
             )
-            .padding(horizontal = 16.dp, vertical = 9.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.small),
     )
 }
 
 @Composable
-private fun GoalBody(goal: GoalCardUi, onEdit: () -> Unit, onRetire: () -> Unit) {
+private fun GoalBody(
+    goal: GoalCardUi,
+    onNew: () -> Unit,
+    onEdit: () -> Unit,
+    onRetire: () -> Unit,
+    onOpenReadings: () -> Unit,
+) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        if (goal.isFinished) Finished(goal = goal, onNew = onNew)
+
         GoalHero(goal = goal)
         PaceBar(goal = goal)
         GoalNumbers(goal = goal)
@@ -199,8 +221,19 @@ private fun GoalBody(goal: GoalCardUi, onEdit: () -> Unit, onRetire: () -> Unit)
             Trail(values = goal.trail)
         }
 
+        // Only a measured goal has readings. A count of gym sessions is
+        // corrected by un-ticking the step, not by editing a figure.
+        if (goal.kind == GoalKind.NUMBER) {
+            GhostButton(
+                text = stringResource(R.string.goal_see_readings),
+                onClick = onOpenReadings,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(start = Theme.spacing.tight, top = Theme.spacing.small),
+            )
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(Theme.spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             OutlineButton(text = stringResource(R.string.goal_edit), onClick = onEdit)
@@ -213,46 +246,128 @@ private fun GoalBody(goal: GoalCardUi, onEdit: () -> Unit, onRetire: () -> Unit)
     }
 }
 
+/**
+ * The verdict, once the goal is over.
+ *
+ * It says which of the two happened and then offers the next one, because
+ * the moment a goal ends is the only moment somebody is actually thinking
+ * about setting another. Left to itself the screen would sit on a full bar
+ * and "0 days left" for as long as the goal was never retired, which reads
+ * as an app that has not noticed.
+ *
+ * Nothing here is congratulatory about a miss and nothing is grudging about
+ * a win. It is the same two lines either way, with the numbers changed.
+ */
+@Composable
+private fun Finished(goal: GoalCardUi, onNew: () -> Unit) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset)) {
+        Panel {
+            Column {
+                Verdict(goal = goal)
+
+                BlockButton(text = stringResource(R.string.goal_finished_new), onClick = onNew)
+            }
+        }
+    }
+}
+
+/** Which of the two happened, and the numbers that say so. */
+@Composable
+private fun Verdict(goal: GoalCardUi) {
+    val unit = stringResource(goalUnit(goal.valueKind, goal.kind))
+
+    Column(modifier = Modifier.padding(Theme.spacing.inset)) {
+        Kicker(text = stringResource(R.string.goal_finished_kicker), color = MaterialTheme.colorScheme.primary)
+
+        Text(
+            text = stringResource(if (goal.reached) R.string.goal_finished_reached else R.string.goal_finished_missed),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = Theme.spacing.small),
+        )
+
+        Text(
+            text = verdictLine(goal = goal, unit = unit),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Theme.spacing.small),
+        )
+
+        Text(
+            text = stringResource(R.string.goal_finished_keeps),
+            style = MaterialTheme.typography.bodySmall,
+            color = Theme.colours.faint,
+            modifier = Modifier.padding(top = Theme.spacing.small),
+        )
+    }
+}
+
+/** A measured goal travelled between two levels; every other kind counted up to one. */
+@Composable
+private fun verdictLine(goal: GoalCardUi, unit: String): String = if (goal.kind == GoalKind.NUMBER) {
+    stringResource(
+        R.string.goal_finished_measured,
+        format(goal.startValue) + " " + unit,
+        format(goal.current) + " " + unit,
+        format(goal.target) + " " + unit,
+    )
+} else {
+    stringResource(R.string.goal_finished_counted, format(goal.current), format(goal.target) + " " + unit)
+}
+
 @Composable
 private fun GoalHero(goal: GoalCardUi) {
-    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 14.dp)) {
+    Column(
+        modifier = Modifier.padding(
+            start = Theme.spacing.medium,
+            end = Theme.spacing.medium,
+            top = Theme.spacing.medium,
+            bottom = Theme.spacing.inset,
+        ),
+    ) {
         Kicker(text = goal.title.uppercase(Locale.getDefault()), color = MaterialTheme.colorScheme.primary)
 
-        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 6.dp)) {
+        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = Theme.spacing.small)) {
             Text(
                 text = stringResource(R.string.insights_percent, goal.percent),
                 style = HeroNumberStyle,
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
-            Column(modifier = Modifier.padding(start = 16.dp, bottom = 6.dp)) {
-                Text(
-                    text = stringResource(
-                        R.string.goal_current_of,
-                        format(goal.current),
-                        format(goal.target),
-                        stringResource(goalUnit(goal.valueKind, goal.kind)),
-                    ),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                Text(
-                    text = if (goal.hasData) {
-                        stringResource(standingText(goal.standing))
-                    } else {
-                        stringResource(R.string.goal_nothing_yet)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (goal.standing == GoalStanding.BEHIND || goal.standing == GoalStanding.OVER) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    },
-                    modifier = Modifier.padding(top = 3.dp),
-                )
-            }
+            HeroFigures(goal = goal)
         }
+    }
+}
+
+/** The two small lines beside the big percentage: where it is, and how that reads. */
+@Composable
+private fun HeroFigures(goal: GoalCardUi) {
+    Column(modifier = Modifier.padding(start = Theme.spacing.medium, bottom = Theme.spacing.small)) {
+        Text(
+            text = stringResource(
+                R.string.goal_current_of,
+                format(goal.current),
+                format(goal.target),
+                stringResource(goalUnit(goal.valueKind, goal.kind)),
+            ),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        Text(
+            text = if (goal.hasData) {
+                stringResource(standingText(goal.standing))
+            } else {
+                stringResource(R.string.goal_nothing_yet)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (goal.standing == GoalStanding.BEHIND || goal.standing == GoalStanding.OVER) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            },
+            modifier = Modifier.padding(top = Theme.spacing.tight),
+        )
     }
 }
 
@@ -271,14 +386,14 @@ private fun PaceBar(goal: GoalCardUi) {
         label = "goal",
     )
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium)) {
         Bar(filled = filled, pace = (goal.pacePercent / HUNDRED).coerceIn(0f, 1f))
 
         Text(
             text = stringResource(R.string.goal_pace_marker, goal.pacePercent),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
     }
 }
@@ -351,7 +466,7 @@ private fun NumberRow(label: String, value: String, note: String? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -387,7 +502,7 @@ private fun Trail(values: List<Double>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = Theme.spacing.medium, vertical = 12.dp)
             .height(TrailHeight),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.Bottom,
@@ -406,7 +521,7 @@ private fun Trail(values: List<Double>) {
 
     Label(
         text = stringResource(R.string.goal_trail_range, format(bottom), format(top)),
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier.padding(horizontal = Theme.spacing.medium),
     )
 }
 
@@ -447,32 +562,7 @@ private fun goalBlockerText(blocker: GoalBlocker): Int = when (blocker) {
 private fun GoalPreview() {
     BuildOrBreakTheme {
         GoalContent(
-            state = GoalUiState(
-                loaded = true,
-                goal = GoalCardUi(
-                    id = 1,
-                    title = "Twelve gym sessions",
-                    kind = GoalKind.COUNT,
-                    valueKind = ValueKind.NONE,
-                    itemId = 3,
-                    current = 7.0,
-                    target = 12.0,
-                    paceTarget = 8.0,
-                    projected = 10.5,
-                    percent = 58,
-                    pacePercent = 67,
-                    standing = GoalStanding.BEHIND,
-                    daysLeft = 19,
-                    daysElapsed = 37,
-                    totalDays = 56,
-                    willReach = false,
-                    hasData = true,
-                    hasProjection = true,
-                    trail = persistentListOf(1.0, 2.0, 2.0, 3.0, 4.0, 5.0, 5.0, 6.0, 7.0),
-                ),
-                draft = null,
-                items = persistentListOf(),
-            ),
+            state = GoalUiState(loaded = true, goal = previewGoal(), draft = null, items = persistentListOf()),
             onNew = {},
             onEdit = {},
             onChange = {},
@@ -483,3 +573,29 @@ private fun GoalPreview() {
         )
     }
 }
+
+// Fixture data, literal on purpose so the preview can be read at a glance.
+@Suppress("MagicNumber")
+private fun previewGoal() = GoalCardUi(
+    id = 1,
+    title = "Twelve gym sessions",
+    kind = GoalKind.COUNT,
+    valueKind = ValueKind.NONE,
+    itemId = 3,
+    current = 7.0,
+    target = 12.0,
+    paceTarget = 8.0,
+    projected = 10.5,
+    percent = 58,
+    pacePercent = 67,
+    standing = GoalStanding.BEHIND,
+    daysLeft = 19,
+    daysElapsed = 37,
+    totalDays = 56,
+    willReach = false,
+    hasData = true,
+    isFinished = false,
+    reached = false,
+    hasProjection = true,
+    trail = persistentListOf(1.0, 2.0, 2.0, 3.0, 4.0, 5.0, 5.0, 6.0, 7.0),
+)

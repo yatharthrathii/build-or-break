@@ -1,6 +1,5 @@
 package com.buildorbreak.app
 
-import android.graphics.Bitmap
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasScrollAction
@@ -13,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import com.buildorbreak.core.designsystem.component.navTag
 import com.google.common.truth.Truth.assertThat
 import java.io.File
@@ -61,13 +61,22 @@ class WalkthroughTest {
     fun everyScreenOpensAndDoesSomething() {
         firstRun()
 
-        today()
+        val dayIsLive = today()
         plan()
         insightsBeforeHistory()
         loadDemoHistory()
         insightsAfterHistory()
-        runningLate()
-        skipAsksWhy()
+
+        // Run after the last step of the starter day, there is no day left to
+        // drive: the screen says it starts tomorrow, and shifting or skipping
+        // nothing is not a thing the app offers. The screens above are still
+        // worth walking, so the run reports what it saw rather than failing on
+        // the clock.
+        if (dayIsLive) {
+            runningLate()
+            skipAsksWhy()
+        }
+
         clearDemoHistory()
     }
 
@@ -110,14 +119,29 @@ class WalkthroughTest {
         tap("START MY DAY")
     }
 
-    private fun today() {
+    /**
+     * Today, and whether there is any of it left.
+     *
+     * Returns false on a day whose steps have all gone by, which is what a
+     * new plan looks like if it is made at midnight. The screen still has to
+     * say something true, and that is what is checked in that case.
+     */
+    private fun today(): Boolean {
         tab(TODAY)
-        await("STEPS KEPT TODAY")
+        awaitEither("STEPS KEPT TODAY", "Starts tomorrow")
         shot("today")
+
+        if (!exists("STEPS KEPT TODAY")) {
+            assertThat(exists("From tomorrow it runs from the top")).isTrue()
+
+            return false
+        }
 
         // The day is drawn, not merely the frame around it.
         assertThat(exists("THE DAY")).isTrue()
         assertThat(exists("RUNNING LATE")).isTrue()
+
+        return true
     }
 
     /**
@@ -307,12 +331,15 @@ class WalkthroughTest {
      * A bottom sheet is its own window, so capturing the root would either miss
      * the sheet or fail with two roots to choose from. The screen is what the
      * user sees and is the thing worth keeping.
+     *
+     * Through UiAutomator, which screenshots at the shell rather than through
+     * the app's own window. The instrumentation's capture returns black on an
+     * emulator, and a folder of black rectangles is worse than an empty one.
      */
     private fun shot(name: String) {
         val file = File(shots, "%02d-%s.png".format(step++, name))
-        val image = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
 
-        file.outputStream().use { out -> image.compress(Bitmap.CompressFormat.PNG, QUALITY, out) }
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).takeScreenshot(file)
     }
 
     private companion object {
@@ -326,6 +353,5 @@ class WalkthroughTest {
 
         const val DEFAULT_TIMEOUT = 15_000L
         const val SEED_TIMEOUT = 180_000L
-        const val QUALITY = 100
     }
 }

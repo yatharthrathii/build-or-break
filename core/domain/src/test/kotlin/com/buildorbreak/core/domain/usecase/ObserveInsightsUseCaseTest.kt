@@ -2,20 +2,25 @@ package com.buildorbreak.core.domain.usecase
 
 import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.domain.fake.FakeDayCloseRepository
+import com.buildorbreak.core.domain.fake.FakeGoalRepository
 import com.buildorbreak.core.domain.fake.FakeItemRepository
 import com.buildorbreak.core.domain.fake.FakeMeasurementRepository
 import com.buildorbreak.core.domain.fake.FakeOccurrenceRepository
 import com.buildorbreak.core.domain.fake.FakePlanRepository
 import com.buildorbreak.core.domain.fake.FakeSettingsRepository
 import com.buildorbreak.core.domain.fake.FakeTemplateRepository
+import com.buildorbreak.core.domain.goal.DefaultGoalCalculator
 import com.buildorbreak.core.domain.review.DefaultWeeklyReviewBuilder
 import com.buildorbreak.core.domain.review.InsightsPeriod
 import com.buildorbreak.core.domain.review.SkipCount
+import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.enums.OccurrenceState
+import com.buildorbreak.core.model.enums.ReviewStory
 import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.execution.SkipReason
 import com.buildorbreak.core.model.plan.Plan
 import com.buildorbreak.core.testing.fixtures.ExecutionFixtures
+import com.buildorbreak.core.testing.fixtures.GoalFixtures
 import com.buildorbreak.core.testing.fixtures.PlanFixtures
 import com.buildorbreak.core.testing.time.FakeTimeProvider
 import com.google.common.truth.Truth.assertThat
@@ -53,6 +58,7 @@ class ObserveInsightsUseCaseTest {
     }
 
     private val measurements = FakeMeasurementRepository()
+    private val goals = FakeGoalRepository()
 
     private val observeInsights = ObserveInsightsUseCase(
         sources = InsightsSources(
@@ -65,6 +71,14 @@ class ObserveInsightsUseCaseTest {
         ),
         settings = settings,
         reviews = DefaultWeeklyReviewBuilder(),
+        observeGoal = ObserveGoalUseCase(
+            plans = plans,
+            goals = goals,
+            today = GoalToday(occurrences, measurements, items, time),
+            calculator = DefaultGoalCalculator(),
+            time = time,
+            dispatchers = dispatchers,
+        ),
         time = time,
         dispatchers = dispatchers,
     )
@@ -74,6 +88,30 @@ class ObserveInsightsUseCaseTest {
         templates.upsert(PlanFixtures.template(id = 0, planId = 1))
         items.upsert(PlanFixtures.item(id = 0, templateId = 1, title = "Walk"))
         items.upsert(PlanFixtures.item(id = 0, templateId = 1, title = "Read"))
+    }
+
+    @Test
+    fun `keeping the plan while the goal does not move says the plan is too small`() = runTest {
+        seedPlan()
+        // A whole previous week and most of this one kept, so the person is
+        // doing the work, and a goal sitting at a tenth of the way through
+        // with two thirds of the time gone, so the work is not enough.
+        closes.closes.value = GoalFixtures.closes(from = monday.minusWeeks(1), days = 7) +
+            GoalFixtures.closes(from = monday, days = 5)
+        goals.upsert(
+            GoalFixtures.goal(
+                kind = GoalKind.NUMBER,
+                startValue = 0.0,
+                targetValue = 10.0,
+                startDate = monday.minusWeeks(4),
+                targetDate = monday.plusWeeks(2),
+            ),
+        )
+        goals.upsertProgress(GoalFixtures.progress(date = monday, rawValue = 1.0, smoothedValue = 1.0))
+
+        val insights = observeInsights(InsightsPeriod.WEEK).first()!!
+
+        assertThat(insights.story).isEqualTo(ReviewStory.PLAN_TOO_SMALL)
     }
 
     @Test

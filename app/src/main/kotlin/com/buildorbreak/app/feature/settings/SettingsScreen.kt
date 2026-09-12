@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.BuildConfig
 import com.buildorbreak.app.R
+import com.buildorbreak.app.feature.about.LegalDocument
 import com.buildorbreak.core.designsystem.component.Badge
 import com.buildorbreak.core.designsystem.component.FillButton
 import com.buildorbreak.core.designsystem.component.GhostButton
@@ -66,6 +67,8 @@ private val ToleranceWidth = 150.dp
 fun SettingsScreen(
     onOpenReliability: () -> Unit,
     onOpenGoal: () -> Unit,
+    onOpenAbout: () -> Unit,
+    onOpenLegal: (LegalDocument) -> Unit,
     onImport: () -> Unit,
     onShare: (String) -> Unit,
     onOpenAlarmChannel: () -> Unit,
@@ -83,6 +86,8 @@ fun SettingsScreen(
         state = state,
         onOpenReliability = onOpenReliability,
         onOpenGoal = onOpenGoal,
+        onOpenAbout = onOpenAbout,
+        onOpenLegal = onOpenLegal,
         onThemeMode = viewModel::onThemeMode,
         onLateTolerance = viewModel::onLateTolerance,
         onOpenAlarmChannel = onOpenAlarmChannel,
@@ -100,6 +105,8 @@ fun SettingsContent(
     state: SettingsUiState,
     onOpenReliability: () -> Unit,
     onOpenGoal: () -> Unit,
+    onOpenAbout: () -> Unit,
+    onOpenLegal: (LegalDocument) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
     onLateTolerance: (Int) -> Unit,
     onOpenAlarmChannel: () -> Unit,
@@ -139,6 +146,8 @@ fun SettingsContent(
             )
 
             DemoRows(state = state, onSeedDemo = onSeedDemo, onClearDemo = onClearDemo)
+
+            AboutRows(onOpenAbout = onOpenAbout, onOpenLegal = onOpenLegal)
 
             Footer()
         }
@@ -249,7 +258,7 @@ private fun ToleranceRow(minutes: Int, onLateTolerance: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -263,7 +272,7 @@ private fun ToleranceRow(minutes: Int, onLateTolerance: (Int) -> Unit) {
                 text = stringResource(R.string.settings_tolerance_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 3.dp),
+                modifier = Modifier.padding(top = Theme.spacing.tight),
             )
         }
 
@@ -282,6 +291,25 @@ private fun ToleranceRow(minutes: Int, onLateTolerance: (Int) -> Unit) {
                 .width(ToleranceWidth),
         )
     }
+}
+
+/** What the app is, and the two documents the store asks for. */
+@Composable
+private fun AboutRows(onOpenAbout: () -> Unit, onOpenLegal: (LegalDocument) -> Unit) {
+    SectionLabel(text = stringResource(R.string.settings_section_about), underlined = true)
+    SettingsRow(
+        title = stringResource(R.string.settings_about),
+        body = stringResource(R.string.settings_about_body),
+        onClick = onOpenAbout,
+    ) { Chevron() }
+    SettingsRow(title = stringResource(R.string.about_privacy), onClick = { onOpenLegal(LegalDocument.PRIVACY) }) {
+        Chevron()
+    }
+    SettingsRow(
+        title = stringResource(R.string.about_terms),
+        onClick = { onOpenLegal(LegalDocument.TERMS) },
+        last = true,
+    ) { Chevron() }
 }
 
 /** The tier in a line, and how many things the next screen would change. */
@@ -304,7 +332,7 @@ private fun ThemeRow(mode: ThemeMode, onThemeMode: (ThemeMode) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -333,7 +361,7 @@ private fun SettingsRow(
     last: Boolean = false,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
-    Column(modifier = modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = modifier.padding(horizontal = Theme.spacing.medium)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -350,7 +378,7 @@ private fun SettingsRow(
                         text = it,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 3.dp),
+                        modifier = Modifier.padding(top = Theme.spacing.tight),
                     )
                 }
             }
@@ -379,11 +407,11 @@ private fun Footer() {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Theme.spacing.medium)
             .padding(top = 6.dp, bottom = 24.dp)
             .fillMaxWidth()
             .background(Theme.colours.raised)
-            .padding(horizontal = 13.dp, vertical = 12.dp),
+            .padding(horizontal = Theme.spacing.inset, vertical = 12.dp),
     )
 }
 
@@ -395,7 +423,7 @@ private fun Footer() {
 private fun WipeDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Panel {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(Theme.spacing.medium)) {
                 Text(
                     text = stringResource(R.string.settings_delete_confirm_title),
                     style = MaterialTheme.typography.titleLarge,
@@ -432,6 +460,8 @@ private fun SettingsPreview() {
             state = SettingsUiState.Initial.copy(fixCount = 1),
             onOpenReliability = {},
             onOpenGoal = {},
+            onOpenAbout = {},
+            onOpenLegal = {},
             onThemeMode = {},
             onLateTolerance = {},
             onOpenAlarmChannel = {},

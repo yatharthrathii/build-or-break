@@ -1,6 +1,7 @@
 package com.buildorbreak.app.navigation
 
 import androidx.navigation3.runtime.NavKey
+import com.buildorbreak.app.feature.about.LegalDocument
 import kotlinx.serialization.Serializable
 
 /**
@@ -34,8 +35,19 @@ data object ReliabilityRoute : NavKey
 @Serializable
 data object GoalRoute : NavKey
 
+/** Every number behind a measured goal, and the one place they can be corrected. */
+@Serializable
+data object ReadingsRoute : NavKey
+
 @Serializable
 data object ImportRoute : NavKey
+
+/** What the app is, and the two documents the store asks for. */
+@Serializable
+data object AboutRoute : NavKey
+
+@Serializable
+data class LegalRoute(val document: LegalDocument) : NavKey
 
 /**
  * [itemId] of zero opens the editor on a new step rather than an existing one.

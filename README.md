@@ -36,16 +36,19 @@ None of them bend. So I am building the one I wanted.
 
 ## Status
 
-Early. Milestone 1 of 9, which is the build skeleton and the injected clock.
+In progress. The app runs a real day end to end on a device.
 
-What exists: the module structure, convention plugins, the version catalog,
-`TimeProvider` and its test fixtures, static analysis wired to fail the build,
-and an app shell that renders one line of text.
+What exists: the timeline engine and its four anchor types, day templates,
+the whole day shift and the snooze preview, the tiered scheduler with full
+screen alarms and its delivery audit, the daily close, goals with a seven day
+average and a pace line, the weekly review and the Insights screen, import
+from pasted text, export, English and Hindi, light and dark, and an
+onboarding that writes a starter day.
 
-What does not exist yet: the timeline engine, the scheduler, and every screen.
-There is nothing to install and no screenshots, because there is nothing worth
-photographing. I will put a recording here when the Today screen runs a real
-day.
+What does not exist yet: points and rewards, anything paid, multi week
+programs, and the store listing. There is no public build yet, so there is
+nothing to install; it is being used daily on one phone while the rough
+edges come off.
 
 ## The hard part
 

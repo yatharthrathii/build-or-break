@@ -43,7 +43,7 @@ import com.buildorbreak.core.model.enums.ReviewStory
 internal fun StoryPanel(state: InsightsUiState) {
     SectionLabel(text = stringResource(R.string.insights_reading))
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium)) {
         Text(
             text = stringResource(storyHeadline(state.story)),
             style = MaterialTheme.typography.headlineSmall,
@@ -96,7 +96,7 @@ private fun StoryLine(kicker: String, text: String, accent: Boolean) {
     Row(modifier = Modifier.padding(top = 14.dp)) {
         Box(
             modifier = Modifier
-                .padding(top = 4.dp, end = 11.dp)
+                .padding(top = 4.dp, end = Theme.spacing.inset)
                 .width(Theme.spacing.rule * MARK_WIDTH)
                 .height(MARK_HEIGHT)
                 .background(
@@ -111,7 +111,7 @@ private fun StoryLine(kicker: String, text: String, accent: Boolean) {
                 text = text,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 3.dp),
+                modifier = Modifier.padding(top = Theme.spacing.tight),
             )
         }
     }
@@ -133,7 +133,7 @@ internal fun PatternSection(patterns: List<PatternUi>) {
 
     SectionLabel(text = stringResource(R.string.insights_patterns))
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium)) {
         patterns.forEach { pattern ->
             Column(modifier = Modifier.padding(vertical = 10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -159,7 +159,7 @@ internal fun PatternSection(patterns: List<PatternUi>) {
                     text = patternText(pattern),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 3.dp),
+                    modifier = Modifier.padding(top = Theme.spacing.tight),
                 )
             }
 
@@ -190,7 +190,7 @@ internal fun GoalStrip(goal: GoalStripUi, onOpen: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(role = Role.Button, onClick = onOpen)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -208,7 +208,7 @@ internal fun GoalStrip(goal: GoalStripUi, onOpen: () -> Unit) {
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 3.dp),
+                modifier = Modifier.padding(top = Theme.spacing.tight),
             )
         }
 

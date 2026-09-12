@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.R
+import com.buildorbreak.app.format.rememberClockFormat
 import com.buildorbreak.core.designsystem.component.BlockButton
 import com.buildorbreak.core.designsystem.component.EmptyState
 import com.buildorbreak.core.designsystem.component.HairlineRule
@@ -63,7 +64,15 @@ import java.time.LocalTime
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
+/**
+ * The clock column, wide enough for the longest time the phone will print.
+ *
+ * Two widths rather than one. "06:50" needs forty four; "10:30 AM" needs
+ * sixty eight, and at forty four it wrapped onto a second line, which made
+ * every row a different height and turned the column into a staircase.
+ */
 private val TimeColumn = 44.dp
+private val WideTimeColumn = 68.dp
 private val HandleSize = 18.dp
 
 /** How far a step inside a group sits in from the edge. Enough to read as inside it. */
@@ -101,6 +110,7 @@ fun PlanScreen(
             onEditItem = onEditItem,
             onAddItem = { onAddItem(state.templateId) },
             onImport = onImport,
+            onReorder = viewModel::onReorder,
         ),
         modifier = modifier,
     )
@@ -116,6 +126,8 @@ data class PlanActions(
     val onEditItem: (Long) -> Unit,
     val onAddItem: () -> Unit,
     val onImport: () -> Unit,
+    /** A tie of steps at one minute, in the order the user just put them. */
+    val onReorder: (List<Long>) -> Unit = {},
 ) {
     companion object {
         val None = PlanActions(
@@ -308,31 +320,33 @@ private fun Steps(
     onNewTemplate: () -> Unit,
     onEditGroup: (Long) -> Unit,
 ) {
+    val reorder = rememberReorderState()
+
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item {
-            // The templates, and a last cell that makes a new one. Weekday and
-            // weekend are the common pair; travel and rest days are the others.
-            SegmentedTabs(
-                options = state.templates.map { it.name } + stringResource(R.string.plan_template_new),
-                selectedIndex = state.selectedIndex,
-                onSelect = { index ->
-                    if (index == state.templates.size) {
-                        onNewTemplate()
-                    } else {
-                        actions.onSelectTemplate(state.templates[index].id)
-                    }
-                },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            )
-        }
+        item { TemplateTabs(state = state, actions = actions, onNewTemplate = onNewTemplate) }
 
         state.sections.forEach { section ->
             section.group?.let { group ->
                 item(key = "group:" + group.id) { GroupHeader(group = group, onEdit = onEditGroup) }
             }
 
-            items(items = section.rows, key = { it.id }) { row ->
-                StepRow(row = row, indented = section.group != null, onEdit = actions.onEditItem)
+            val rows = reorder.arrange(section.rows)
+
+            items(items = rows, key = { it.id }) { row ->
+                StepRow(
+                    row = row,
+                    indented = section.group != null,
+                    onEdit = actions.onEditItem,
+                    handle = Modifier.reorderHandle(
+                        state = reorder,
+                        id = row.id,
+                        tie = rows.filter { it.movable && it.slot == row.slot }.map { it.id },
+                        onReordered = actions.onReorder,
+                    ),
+                    modifier = Modifier
+                        .animateItem()
+                        .reorderRow(reorder, row.id),
+                )
             }
         }
 
@@ -342,22 +356,50 @@ private fun Steps(
     }
 }
 
+/**
+ * The templates, and a last cell that makes a new one. Weekday and weekend
+ * are the common pair; travel and rest days are the others.
+ */
 @Composable
-private fun StepRow(row: PlanItemRow, indented: Boolean, onEdit: (Long) -> Unit) {
-    Column {
+private fun TemplateTabs(state: PlanUiState, actions: PlanActions, onNewTemplate: () -> Unit) {
+    SegmentedTabs(
+        options = state.templates.map { it.name } + stringResource(R.string.plan_template_new),
+        selectedIndex = state.selectedIndex,
+        onSelect = { index ->
+            if (index == state.templates.size) {
+                onNewTemplate()
+            } else {
+                actions.onSelectTemplate(state.templates[index].id)
+            }
+        },
+        modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = Theme.spacing.inset),
+    )
+}
+
+@Composable
+private fun StepRow(
+    row: PlanItemRow,
+    indented: Boolean,
+    onEdit: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    handle: Modifier = Modifier,
+) {
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Button) { onEdit(row.id) }
                 .padding(start = if (indented) GroupIndent else 16.dp, end = 16.dp)
-                .padding(vertical = 13.dp),
+                .padding(vertical = Theme.spacing.inset),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Solid where it does something, faint where it does not. A row
+            // alone at its minute has nowhere to go; the clock put it there.
             Icon(
                 imageVector = Icons.Outlined.DragHandle,
-                contentDescription = null,
-                tint = Theme.colours.faint,
-                modifier = Modifier.size(HandleSize),
+                contentDescription = if (row.movable) stringResource(R.string.plan_reorder) else null,
+                tint = if (row.movable) MaterialTheme.colorScheme.onSurfaceVariant else Theme.colours.faint,
+                modifier = handle.size(HandleSize),
             )
 
             StepTime(row = row)
@@ -378,6 +420,8 @@ private fun StepRow(row: PlanItemRow, indented: Boolean, onEdit: (Long) -> Unit)
 
 @Composable
 private fun StepTime(row: PlanItemRow) {
+    val wide = !rememberClockFormat().is24Hour
+
     Text(
         text = timeText(row.kind),
         style = TimeStyle,
@@ -387,15 +431,16 @@ private fun StepTime(row: PlanItemRow) {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
         textAlign = TextAlign.Start,
+        maxLines = 1,
         modifier = Modifier
-            .padding(start = 11.dp)
-            .width(TimeColumn),
+            .padding(start = Theme.spacing.inset)
+            .width(if (wide) WideTimeColumn else TimeColumn),
     )
 }
 
 @Composable
 private fun StepBody(row: PlanItemRow, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.padding(start = 11.dp)) {
+    Column(modifier = modifier.padding(start = Theme.spacing.inset)) {
         Text(
             text = row.title,
             style = MaterialTheme.typography.titleMedium,
@@ -409,7 +454,8 @@ private fun StepBody(row: PlanItemRow, modifier: Modifier = Modifier) {
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
-            modifier = Modifier.padding(top = 3.dp),
+            maxLines = 2,
+            modifier = Modifier.padding(top = Theme.spacing.tight),
         )
     }
 }
@@ -438,7 +484,7 @@ private fun AddStep(onAddItem: () -> Unit) {
                 )
             }
             .clickable(role = Role.Button, onClick = onAddItem)
-            .padding(horizontal = 15.dp),
+            .padding(horizontal = Theme.spacing.inset),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -471,13 +517,23 @@ private fun NoPlan(onImport: () -> Unit, onAddItem: () -> Unit) {
 
 // Copy lookups -----------------------------------------------------------------
 
-/** The time column: a clock, two clocks, an offset, or the word "every". */
+/**
+ * The time column: one clock, or an offset from the step above.
+ *
+ * A window and an interval both have two times, and both used to print the
+ * pair stacked. On a twelve hour phone that came out as four lines in a
+ * column built for one, so the row stood twice as tall as its neighbours and
+ * the list stopped reading as a list. The column now shows the time the step
+ * is first available, which is the one the eye is running down the page
+ * looking for, and the far end moves to the line underneath where there is
+ * room to say it in words.
+ */
 @Composable
 private fun timeText(kind: PlanKind): String = when (kind) {
     is PlanKind.Fixed -> kind.at
     is PlanKind.After -> stringResource(R.string.plan_time_relative, kind.offsetMinutes)
-    is PlanKind.Window -> "${kind.from}\n${kind.to}"
-    is PlanKind.Every -> stringResource(R.string.plan_time_every)
+    is PlanKind.Window -> kind.from
+    is PlanKind.Every -> kind.from
 }
 
 /** "FIXED · ALARM ON", "WINDOW · 40 MIN WIDE", "AFTER GYM · ANCHOR FOR 2 STEPS". */
@@ -488,8 +544,8 @@ private fun kindLine(row: PlanItemRow): String {
             when (val kind = row.kind) {
                 is PlanKind.Fixed -> stringResource(R.string.plan_line_fixed)
                 is PlanKind.After -> stringResource(R.string.plan_line_after, kind.parentTitle)
-                is PlanKind.Window -> stringResource(R.string.plan_line_window, kind.minutesWide)
-                is PlanKind.Every -> stringResource(R.string.plan_line_every, kind.minutes)
+                is PlanKind.Window -> stringResource(R.string.plan_line_window, kind.to)
+                is PlanKind.Every -> stringResource(R.string.plan_line_every, kind.minutes, kind.to)
             },
         )
         if (row.childCount > 0) add(pluralStringResource(R.plurals.plan_line_anchor, row.childCount, row.childCount))
@@ -520,7 +576,7 @@ private fun previewPlanState(): PlanUiState {
 
     val rows = persistentListOf(
         PlanItemRow(1, "Wake + water", PlanKind.Fixed("06:40"), Salience.ALARM, false, 0, "", groupId = 1),
-        PlanItemRow(2, "Journal", PlanKind.Window("06:50", "07:30", 40), Salience.NOTIFY, false, 0, "", groupId = 1),
+        PlanItemRow(2, "Journal", PlanKind.Window("06:50", "07:30"), Salience.NOTIFY, false, 0, "", groupId = 1),
         PlanItemRow(3, "Gym", PlanKind.Fixed("07:30"), Salience.ALARM, true, 2, "", measured = true),
         PlanItemRow(4, "Protein + shower", PlanKind.After("Gym", 15), Salience.SILENT, false, 0, "", hasNote = true),
         PlanItemRow(5, "Stand up", PlanKind.Every(45, "11:00", "15:00"), Salience.SILENT, false, 0, "Mon Wed Fri"),

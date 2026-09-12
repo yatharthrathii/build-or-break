@@ -58,13 +58,13 @@ internal fun CatchUpPanelView(panel: CatchUpPanel, onMove: (Long, Int) -> Unit, 
     // and then shows none is the app arguing with itself.
     val possible = panel.steps.isNotEmpty()
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 8.dp)) {
         Panel {
             Column {
                 Kicker(
                     text = stringResource(if (possible) R.string.today_catch_up else R.string.today_catch_up_gone),
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 11.dp),
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = Theme.spacing.inset),
                 )
 
                 if (possible) {
@@ -97,7 +97,7 @@ private fun CatchUpStepRow(step: CatchUpRow, onMove: (Long, Int) -> Unit, onSkip
     ) {
         Text(text = step.time, style = TimeStyle, color = MaterialTheme.colorScheme.onSurface)
 
-        Column(modifier = Modifier.weight(1f).padding(start = 11.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(start = Theme.spacing.inset)) {
             Text(
                 text = step.title,
                 style = MaterialTheme.typography.titleSmall,
@@ -174,7 +174,7 @@ internal fun MilestoneBanner(notice: MilestoneNotice, onSeen: () -> Unit) {
 
     Column(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = Theme.spacing.medium, vertical = 8.dp)
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.primary),
     ) {
@@ -204,7 +204,7 @@ internal fun MilestoneBanner(notice: MilestoneNotice, onSeen: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(role = Role.Button, onClick = onSeen)
-                    .padding(start = 14.dp, top = 4.dp, bottom = 13.dp),
+                    .padding(start = Theme.spacing.inset, top = 4.dp, bottom = Theme.spacing.inset),
             )
         }
     }
@@ -235,7 +235,12 @@ internal fun MeasureSheet(prompt: MeasurePrompt, onLog: (Double) -> Unit, onDism
         dragHandle = null,
     ) {
         Column(
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp),
+            modifier = Modifier.padding(
+                start = Theme.spacing.medium,
+                end = Theme.spacing.medium,
+                top = 22.dp,
+                bottom = 28.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
@@ -257,15 +262,21 @@ internal fun MeasureSheet(prompt: MeasurePrompt, onLog: (Double) -> Unit, onDism
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                GhostButton(text = stringResource(R.string.today_number_skip), onClick = onDismiss)
-                FillButton(
-                    text = stringResource(R.string.today_number_save),
-                    onClick = { value?.let(onLog) },
-                    enabled = value != null,
-                )
-            }
+            MeasureActions(value = value, onLog = onLog, onDismiss = onDismiss)
         }
+    }
+}
+
+/** Save, and the way past it. Skipping the number never skips the step. */
+@Composable
+private fun MeasureActions(value: Double?, onLog: (Double) -> Unit, onDismiss: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        GhostButton(text = stringResource(R.string.today_number_skip), onClick = onDismiss)
+        FillButton(
+            text = stringResource(R.string.today_number_save),
+            onClick = { value?.let(onLog) },
+            enabled = value != null,
+        )
     }
 }
 
@@ -287,7 +298,7 @@ private fun NumberField(
                     text = unit,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 10.dp, top = 6.dp),
+                    modifier = Modifier.padding(start = Theme.spacing.inset, top = 6.dp),
                 )
             }
         }

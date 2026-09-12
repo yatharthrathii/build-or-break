@@ -23,6 +23,7 @@ import com.buildorbreak.core.designsystem.component.FillButton
 import com.buildorbreak.core.designsystem.component.GhostButton
 import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.Panel
+import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.plan.Weekdays
 import java.util.Locale
 
@@ -47,7 +48,10 @@ internal fun TemplateDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Panel {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(
+                modifier = Modifier.padding(Theme.spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
                 Text(
                     text = stringResource(
                         if (existing == null) R.string.plan_template_new_title else R.string.plan_template_edit_title,

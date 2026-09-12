@@ -117,7 +117,7 @@ fun AlarmContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .systemBarsPadding()
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = Theme.spacing.medium),
     ) {
         Row(
             modifier = Modifier

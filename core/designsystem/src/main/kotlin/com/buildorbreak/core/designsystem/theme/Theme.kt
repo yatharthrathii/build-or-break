@@ -25,6 +25,17 @@ data class Spacing(
     val rule: Dp = 2.dp,
     val tight: Dp = 4.dp,
     val small: Dp = 8.dp,
+    /**
+     * Inside a bordered box: a panel, a badge frame, a dialog.
+     *
+     * Four less than the screen gutter, so a card's own text sits slightly
+     * inboard of the section labels around it and the card reads as a thing
+     * on the page rather than as part of it. The one value between [small]
+     * and [medium] exists because every card in the app had picked its own:
+     * ten here, eleven there, thirteen in the editor.
+     */
+    val inset: Dp = 12.dp,
+    /** The screen gutter. Every title, label and full width row starts here. */
     val medium: Dp = 16.dp,
     val large: Dp = 24.dp,
     val section: Dp = 32.dp,

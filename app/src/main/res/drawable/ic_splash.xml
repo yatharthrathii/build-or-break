@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The launch window mark: a white slash across the accent.
+    The launch window mark: the same broken block, in the accent, on the
+    ground.
 
-    The disc is drawn here rather than left to windowSplashScreenIconBackgroundColor,
-    which several launchers and at least one emulator image quietly ignore. The
-    platform masks a splash icon to a circle, so the square becomes the disc and
-    the slash is cut by it, which is what makes it read as a stroke across the
-    mark rather than a bar sitting inside it.
+    No disc behind it. The platform masks a splash icon to a circle, and the
+    earlier version painted a red square that the mask turned into a red
+    ball with a stripe: a shape the app never shows anywhere else. The block
+    sits inside the safe circle, so the mask has nothing to cut and the mark
+    on the launch window is the mark on the launcher, one size up.
+
+    The cut is transparent rather than painted, so it shows the window's own
+    ground in both palettes.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -16,9 +20,9 @@
 
     <path
         android:fillColor="@color/accent"
-        android:pathData="M0,0 H108 V108 H0 Z" />
+        android:pathData="M31,31 H72 L31,72 Z" />
 
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M21.4,81.8 L75.4,9.8 L86.6,18.2 L32.6,90.2 Z" />
+        android:fillColor="@color/accent"
+        android:pathData="M77,77 H36 L77,36 Z" />
 </vector>

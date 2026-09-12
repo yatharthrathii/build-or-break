@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The mark: one slash.
+    The mark: a block, broken.
 
-    BUILD/BREAK is the line between the two, so the mark is that line and
-    nothing else. A single stroke survives being shrunk to a 24dp notification
-    glyph, masked into a circle by one launcher and a squircle by the next, and
-    flattened to a silhouette for a themed icon. Two shapes would not.
+    A solid square with one slash cut clean through it. The square is the
+    thing built, the slash is the break, and the two halves are what is left
+    either way. It is the wordmark's slash given something to cut, because a
+    slash on its own read as a "no entry" sign from across a room, and a
+    routine app whose icon says "no" is off to a bad start.
 
-    The parallelogram is inscribed in the 66dp safe circle of the 108dp
-    adaptive canvas, so no launcher shape can clip a tip off it.
+    Two polygons and nothing else, so it survives every launcher mask, the
+    24dp notification glyph and the monochrome themed icon as the same shape.
+    The square is inscribed in the 66dp safe circle of the 108dp adaptive
+    canvas: every corner sits inside the mask, whatever shape the mask is.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -16,7 +19,13 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <!-- The upper half, above the cut. -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M31.2,74.4 L67.2,26.4 L76.8,33.6 L40.8,81.6 Z" />
+        android:pathData="M31,31 H72 L31,72 Z" />
+
+    <!-- The lower half, below it. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M77,77 H36 L77,36 Z" />
 </vector>

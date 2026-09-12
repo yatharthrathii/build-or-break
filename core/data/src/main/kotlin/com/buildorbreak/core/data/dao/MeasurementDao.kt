@@ -35,6 +35,36 @@ interface MeasurementDao {
         itemId: Long?,
     ): List<MeasurementEntity>
 
+    @Query(
+        """
+        SELECT * FROM measurement
+        WHERE kind = :kind AND date BETWEEN :from AND :to AND (:itemId IS NULL OR item_id = :itemId)
+        ORDER BY date
+        """,
+    )
+    fun observeReadings(
+        kind: String,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long?,
+    ): Flow<List<MeasurementEntity>>
+
+    /**
+     * The whole series, newest first, for the screen that lists it.
+     *
+     * Unbounded by date on purpose. The other two queries feed the average,
+     * which only ever wants a window; this one feeds a list somebody scrolls
+     * to find the day they typed wrong, and that day can be any day.
+     */
+    @Query(
+        """
+        SELECT * FROM measurement
+        WHERE kind = :kind AND (:itemId IS NULL OR item_id = :itemId)
+        ORDER BY date DESC, id DESC
+        """,
+    )
+    fun observeSeries(kind: String, itemId: Long?): Flow<List<MeasurementEntity>>
+
     @Upsert
     suspend fun upsert(measurement: MeasurementEntity): Long
 

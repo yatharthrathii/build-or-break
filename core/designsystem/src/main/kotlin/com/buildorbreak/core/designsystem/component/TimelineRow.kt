@@ -33,7 +33,7 @@ private const val RINGS = "⏰"
 
 private val TimeColumnWidth = 46.dp
 
-/** Room for "10:30 PM". */
+/** Room for "10:30 PM" on one line. */
 private val WideTimeColumnWidth = 68.dp
 private val RailColumnWidth = 18.dp
 private val RailWidth = 2.dp
@@ -110,10 +110,14 @@ fun TimelineRow(
             text = time,
             style = TimeStyle,
             color = timeColour(state),
-            textAlign = TextAlign.End,
+            // Set from the left, not the right. Right aligning it made
+            // every time in the column start at a different x, so the one
+            // straight edge on the screen, the gutter every title and label
+            // is set to, was broken by the clock beside them.
+            textAlign = TextAlign.Start,
             modifier = Modifier
                 .width(if (wideTime) WideTimeColumnWidth else TimeColumnWidth)
-                .padding(top = 13.dp, end = Theme.spacing.small),
+                .padding(top = Theme.spacing.inset, end = Theme.spacing.small),
         )
 
         Rail(state = state)
@@ -144,7 +148,7 @@ private fun RowBody(
     last: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(start = 12.dp, top = 11.dp, bottom = 13.dp)) {
+    Column(modifier = modifier.padding(start = Theme.spacing.inset).padding(vertical = Theme.spacing.inset)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -156,7 +160,7 @@ private fun RowBody(
         RowMeta(badge = badge, note = note, accentBadge = accentBadge, noteAccent = noteAccent, alarm = alarm)
 
         if (!last) {
-            HairlineRule(Modifier.padding(top = 13.dp))
+            HairlineRule(Modifier.padding(top = Theme.spacing.inset))
         }
     }
 }
@@ -201,9 +205,9 @@ private fun RowMeta(
     if (badge == null && note == null && !alarm) return
 
     Row(
-        modifier = Modifier.padding(top = 5.dp),
+        modifier = Modifier.padding(top = Theme.spacing.tight),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small),
     ) {
         if (badge != null) {
             Badge(text = badge, accent = accentBadge)

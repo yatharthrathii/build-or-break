@@ -23,6 +23,7 @@ import com.buildorbreak.core.designsystem.component.BlockButton
 import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.Stepper
+import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.plan.Anchor
 import java.time.LocalTime
 import java.util.Locale
@@ -60,7 +61,7 @@ internal fun ImportEditSheet(
     ) {
         Column(
             modifier = Modifier
-                .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp)
+                .padding(start = Theme.spacing.medium, end = Theme.spacing.medium, top = 22.dp, bottom = 28.dp)
                 .imePadding(),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {

@@ -63,7 +63,7 @@ internal fun UndoBar(offer: UndoOffer?, onUndo: () -> Unit, modifier: Modifier =
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+                    .padding(start = Theme.spacing.medium, end = Theme.spacing.inset, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -111,7 +111,7 @@ internal fun SkipAskBar(ask: SkipAsk, onAnswer: () -> Unit, onWaveAway: () -> Un
         modifier = Modifier
             .fillMaxWidth()
             .background(Theme.colours.raised)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
     ) {
         Kicker(text = stringResource(R.string.today_ask_kicker))
 

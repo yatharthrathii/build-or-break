@@ -171,7 +171,7 @@ private fun Body(
             text = stringResource(R.string.insights_table_legend),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 10.dp),
+            modifier = Modifier.padding(horizontal = Theme.spacing.medium).padding(bottom = 10.dp),
         )
         StepTable(steps = state.steps)
 
@@ -194,7 +194,12 @@ private fun Body(
 private fun HeroRow(state: InsightsUiState) {
     Column {
         Row(
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 16.dp),
+            modifier = Modifier.padding(
+                start = Theme.spacing.medium,
+                end = Theme.spacing.medium,
+                top = 18.dp,
+                bottom = 16.dp,
+            ),
             verticalAlignment = Alignment.Bottom,
         ) {
             Column {
@@ -216,7 +221,7 @@ private fun HeroRow(state: InsightsUiState) {
 
 @Composable
 private fun HeroDetails(state: InsightsUiState) {
-    Column(modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)) {
+    Column(modifier = Modifier.padding(start = Theme.spacing.medium, bottom = 4.dp)) {
         Text(
             text = pluralStringResource(R.plurals.insights_kept_of, state.total, state.kept, state.total),
             style = MaterialTheme.typography.titleSmall,
@@ -231,7 +236,7 @@ private fun HeroDetails(state: InsightsUiState) {
             } else {
                 MaterialTheme.colorScheme.onPrimaryContainer
             },
-            modifier = Modifier.padding(top = 3.dp),
+            modifier = Modifier.padding(top = Theme.spacing.tight),
         )
 
         Text(
@@ -239,7 +244,7 @@ private fun HeroDetails(state: InsightsUiState) {
                 ?: stringResource(R.string.insights_no_slip),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 3.dp),
+            modifier = Modifier.padding(top = Theme.spacing.tight),
         )
     }
 }
@@ -261,7 +266,7 @@ private fun changeText(state: InsightsUiState): String {
 /** One bar per day or week. The best one is accent; weekends are faint. */
 @Composable
 private fun Chart(state: InsightsUiState) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 16.dp)) {
         Label(
             text = stringResource(
                 if (state.period == InsightsPeriod.WEEK) {
@@ -354,9 +359,12 @@ private fun SkipReasons(rows: List<SkipRowUi>) {
 
     SectionLabel(text = stringResource(R.string.insights_why_skipped))
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 4.dp)) {
         rows.forEach { row ->
-            Row(modifier = Modifier.padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.padding(vertical = Theme.spacing.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = stringResource(skipLabel(row.chip)),
                     style = MaterialTheme.typography.bodyMedium,
@@ -366,7 +374,7 @@ private fun SkipReasons(rows: List<SkipRowUi>) {
 
                 Box(
                     modifier = Modifier
-                        .padding(end = 10.dp)
+                        .padding(end = Theme.spacing.inset)
                         .height(10.dp)
                         .width(BAR_WIDTH * row.fraction)
                         .background(MaterialTheme.colorScheme.primary),
@@ -400,8 +408,8 @@ private fun skipLabel(chip: SkipChip): Int = when (chip) {
 
 @Composable
 private fun StepTable(steps: List<StepRowUi>) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Row(modifier = Modifier.padding(vertical = 9.dp)) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium)) {
+        Row(modifier = Modifier.padding(vertical = Theme.spacing.small)) {
             Kicker(text = stringResource(R.string.insights_col_step), modifier = Modifier.weight(1f))
             Kicker(
                 text = stringResource(R.string.insights_col_kept),
@@ -430,7 +438,7 @@ private fun StepRow(row: StepRowUi) {
         modifier = Modifier
             .fillMaxWidth()
             .then(if (row.isProblem) Modifier.background(MaterialTheme.colorScheme.primaryContainer) else Modifier)
-            .padding(vertical = 11.dp),
+            .padding(vertical = Theme.spacing.inset),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = row.title, style = MaterialTheme.typography.titleSmall, color = ink, modifier = Modifier.weight(1f))
@@ -476,7 +484,7 @@ private fun SuggestionPanel(suggestion: SuggestionUi, onApply: (ReviewAnswer) ->
 
     Column(
         modifier = Modifier
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+            .padding(start = Theme.spacing.medium, end = Theme.spacing.medium, top = 16.dp)
             .fillMaxWidth()
             .background(ground),
     ) {
@@ -511,14 +519,14 @@ private fun SuggestionHeading(
             text = stringResource(answerTitle(suggestion.answer), suggestion.title),
             style = MaterialTheme.typography.headlineSmall,
             color = ink,
-            modifier = Modifier.padding(top = 9.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
 
         Text(
             text = suggestionBody(suggestion),
             style = MaterialTheme.typography.bodySmall,
             color = ink,
-            modifier = Modifier.padding(top = 7.dp),
+            modifier = Modifier.padding(top = Theme.spacing.small),
         )
 
         if (suggestion.options.size > 1) {
@@ -528,7 +536,7 @@ private fun SuggestionHeading(
                 ).uppercase(Locale.getDefault()),
                 style = MaterialTheme.typography.labelMedium,
                 color = ink,
-                modifier = Modifier.padding(top = 11.dp).clickable(onClick = onToggleOptions),
+                modifier = Modifier.padding(top = Theme.spacing.inset).clickable(onClick = onToggleOptions),
             )
         }
     }
@@ -551,7 +559,7 @@ private fun OtherAnswers(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onApply(answer) }
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = Theme.spacing.inset, vertical = 12.dp),
             )
         }
     }
@@ -567,7 +575,7 @@ private fun SuggestionActions(ink: androidx.compose.ui.graphics.Color, onApply: 
             modifier = Modifier
                 .weight(1f)
                 .clickable(onClick = onApply)
-                .padding(start = 14.dp, top = 13.dp, bottom = 13.dp),
+                .padding(start = Theme.spacing.inset, top = Theme.spacing.inset, bottom = Theme.spacing.inset),
         )
 
         Box(modifier = Modifier.width(Theme.spacing.rule).height(40.dp).background(ink))
@@ -579,7 +587,7 @@ private fun SuggestionActions(ink: androidx.compose.ui.graphics.Color, onApply: 
             modifier = Modifier
                 .weight(1f)
                 .clickable(onClick = onDismiss)
-                .padding(start = 14.dp, top = 13.dp, bottom = 13.dp),
+                .padding(start = Theme.spacing.inset, top = Theme.spacing.inset, bottom = Theme.spacing.inset),
         )
     }
 }

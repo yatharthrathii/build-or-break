@@ -116,7 +116,28 @@ interface MeasurementRepository {
         itemId: Long? = null,
     ): List<Reading>
 
+    /** The same series, watched. Today's weigh in appears the moment it is typed. */
+    fun observeReadings(
+        kind: ValueKind,
+        from: LocalDate,
+        to: LocalDate,
+        itemId: Long? = null,
+    ): Flow<List<Reading>>
+
+    /**
+     * The whole series, newest first, with the id each row was written under.
+     *
+     * [observeReadings] deliberately drops the id, because the average does
+     * not care which row a number came from. A screen that lets somebody
+     * correct a weigh in does: it has to write back to the same row rather
+     * than add a second one for the same morning.
+     */
+    fun observeSeries(kind: ValueKind, itemId: Long? = null): Flow<List<Measurement>>
+
     suspend fun upsert(measurement: Measurement): Outcome<Unit, DataError>
+
+    /** Removes one reading. Used when a number was typed that never happened. */
+    suspend fun delete(measurementId: Long): Outcome<Unit, DataError>
 
     /** Always optional, always after the fact. Never required to settle a day. */
     suspend fun recordSkipReason(reason: SkipReason): Outcome<Unit, DataError>

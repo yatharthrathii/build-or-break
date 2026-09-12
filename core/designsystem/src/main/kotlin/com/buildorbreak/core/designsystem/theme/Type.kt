@@ -66,22 +66,32 @@ internal val BuildOrBreakTypography = Typography(
         fontFeatureSettings = TABULAR,
     ),
 
-    // A screen title: TODAY, PLAN, INSIGHTS.
+    /*
+     * A screen title: TODAY, PLAN, INSIGHTS.
+     *
+     * No negative tracking, unlike the display sizes above and below.
+     * Archivo has no Devanagari, so a Hindi title falls back to the system
+     * font, and tightening a fallback run measures every cluster as if it
+     * were far wider than it draws: "आज" broke onto two lines in a column
+     * wide enough for eight of it. The same happens to an English UI the
+     * moment somebody names a step in their own script, which they will.
+     *
+     * Half a pixel of tracking is not worth a title that cannot be read.
+     */
     headlineMedium = TextStyle(
         fontFamily = Archivo,
         fontWeight = FontWeight.ExtraBold,
         fontSize = 24.sp,
         lineHeight = 26.sp,
-        letterSpacing = (-0.5).sp,
     ),
 
-    // The next thing to happen, and an editor title.
+    // The next thing to happen, and an editor title. Untracked for the
+    // reason above, and more so: this one carries titles the user typed.
     headlineSmall = TextStyle(
         fontFamily = Archivo,
         fontWeight = FontWeight.ExtraBold,
         fontSize = 22.sp,
         lineHeight = 24.sp,
-        letterSpacing = (-0.4).sp,
     ),
 
     titleLarge = TextStyle(
@@ -171,7 +181,12 @@ val TimeStyle: TextStyle = TextStyle(
     fontFeatureSettings = TABULAR,
 )
 
-/** A number big enough to be the whole point of a screen: 78%. */
+/**
+ * A number big enough to be the whole point of a screen: 78%.
+ *
+ * Keeps its tracking. Digits are Latin in every locale this app ships, so
+ * the fallback problem that untracked the headlines cannot reach it.
+ */
 val HeroNumberStyle: TextStyle = TextStyle(
     fontFamily = Archivo,
     fontWeight = FontWeight.Black,

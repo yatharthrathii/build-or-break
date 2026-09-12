@@ -2,6 +2,7 @@ package com.buildorbreak.app.feature.today
 
 import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.time.TimeProvider
+import com.buildorbreak.core.domain.goal.GoalSnapshot
 import com.buildorbreak.core.domain.review.CatchUpViewBuilder
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.model.enums.DayMode
@@ -52,7 +53,14 @@ data class DayFacts(
     val runDays: Int,
     val consistency: Consistency?,
     val degradedTier: DeliveryTier?,
+    val goal: GoalSnapshot? = null,
 )
+
+/** Zero to one, drawn as zero to a hundred. */
+private const val PERCENT = 100
+
+/** "1 Sep", for the line under the goal number. */
+private val SHORT_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM")
 
 class TodayMapper @Inject constructor(
     private val time: TimeProvider,
@@ -106,6 +114,7 @@ class TodayMapper @Inject constructor(
             hasPlan = true,
             isReduced = day.mode == DayMode.REDUCED,
             reducedCount = day.entries.count { it.reduced },
+            goal = facts.goal?.let(::toGoalHero),
             startsTomorrow = day.entries.isEmpty() && day.hiddenBeforeStart > 0,
             templates = plan?.templates.orEmpty().map { DayChoice(it.id, it.name) }.toImmutableList(),
             currentTemplateId = day.template.id,
@@ -136,6 +145,26 @@ class TodayMapper @Inject constructor(
                 alsoMissed = view.alsoMissed.toImmutableList(),
             )
         }
+
+    private fun toGoalHero(goal: GoalSnapshot) = GoalHeroUi(
+        title = goal.goal.title,
+        kind = goal.goal.kind,
+        valueKind = goal.goal.valueKind,
+        current = goal.current,
+        target = goal.goal.targetValue,
+        startValue = goal.goal.startValue,
+        startDate = goal.goal.startDate.format(SHORT_DATE),
+        changeSinceStart = goal.changeSinceStart,
+        todayReading = goal.todayReading,
+        percent = (goal.percent * PERCENT).toInt(),
+        pacePercent = (goal.paceFraction * PERCENT).toInt(),
+        standing = goal.standing,
+        daysLeft = goal.daysLeft,
+        daysElapsed = goal.daysElapsed,
+        isFinished = goal.isFinished,
+        hasData = goal.hasData,
+        trail = goal.trail.toImmutableList(),
+    )
 
     /** The smaller version's title on a sick day, the step's own otherwise. */
     private fun titleOf(entry: ResolvedEntry): String =

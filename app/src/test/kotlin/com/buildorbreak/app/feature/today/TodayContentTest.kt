@@ -13,6 +13,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
+import com.buildorbreak.core.domain.goal.GoalStanding
+import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.enums.ValueKind
@@ -172,8 +174,8 @@ class TodayContentTest {
         )
         render(done)
 
-        scrollTo("Nothing left on the rails.")
-        compose.onNodeWithText("Nothing left on the rails.").assertIsDisplayed()
+        scrollTo("All done for today.")
+        compose.onNodeWithText("All done for today.").assertIsDisplayed()
     }
 
     // Phase 3: catch up, milestones, the number, the note ---------------------
@@ -283,7 +285,7 @@ class TodayContentTest {
             actions = TodayActions.None.copy(onLogNumber = { logged = it }),
         )
 
-        compose.onNodeWithText("Optional. The step is already done either way.").assertIsDisplayed()
+        compose.onNodeWithText("Optional. The step is already marked done.").assertIsDisplayed()
         // Nothing typed yet, so there is nothing to log.
         compose.onNodeWithText("LOG IT").assertIsNotEnabled()
         assertThat(logged).isNull()
@@ -318,4 +320,63 @@ class TodayContentTest {
         outOfTime = persistentListOf("Long walk"),
         alsoMissed = persistentListOf("Piano"),
     )
+
+    // The goal at the top ------------------------------------------------------
+
+    private fun weightGoal(todayReading: Double? = 50.5, daysElapsed: Int = 12) = GoalHeroUi(
+        title = "Gain weight",
+        kind = GoalKind.NUMBER,
+        valueKind = ValueKind.WEIGHT_KG,
+        current = 49.8,
+        target = 55.0,
+        startValue = 48.0,
+        startDate = "1 Sep",
+        changeSinceStart = 1.8,
+        todayReading = todayReading,
+        percent = 26,
+        pacePercent = 40,
+        standing = GoalStanding.BEHIND,
+        daysLeft = 9,
+        daysElapsed = daysElapsed,
+        hasData = true,
+        trail = persistentListOf(48.0, 48.4, 49.1, 49.8),
+    )
+
+    @Test
+    fun `the goal card shows the average, today's reading and the change since the start`() {
+        render(previewState().copy(goal = weightGoal()))
+
+        compose.onNodeWithText("GAIN WEIGHT").assertIsDisplayed()
+        compose.onNodeWithText("49.8").assertIsDisplayed()
+        compose.onNodeWithText("7-DAY AVG").assertIsDisplayed()
+        compose.onNodeWithText("50.5").assertIsDisplayed()
+        compose.onNodeWithText("48").assertIsDisplayed()
+        compose.onNodeWithText("55").assertIsDisplayed()
+        compose.onNodeWithText("+1.8 kg since 1 Sep").assertIsDisplayed()
+        compose.onNodeWithText("KG · 9 DAYS LEFT").assertIsDisplayed()
+    }
+
+    @Test
+    fun `in the first week the card says the average is still settling`() {
+        render(previewState().copy(goal = weightGoal(daysElapsed = 3)))
+
+        compose.onNodeWithText("still settling", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `without a goal nothing about a goal is drawn`() {
+        render(previewState())
+
+        compose.onAllNodesWithText("DAYS LEFT", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `tapping the card opens the goal`() {
+        var opened = false
+        render(previewState().copy(goal = weightGoal()), TodayActions.None.copy(onOpenGoal = { opened = true }))
+
+        compose.onNodeWithText("GAIN WEIGHT").performClick()
+
+        assertThat(opened).isTrue()
+    }
 }

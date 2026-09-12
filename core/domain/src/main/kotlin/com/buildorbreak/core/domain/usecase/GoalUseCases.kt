@@ -58,12 +58,20 @@ class ObserveGoalUseCase @Inject constructor(
         .flatMapLatest { goal -> if (goal == null) flowOf(null) else snapshots(goal) }
         .flowOn(dispatchers.default)
 
-    private fun snapshots(goal: Goal): Flow<GoalSnapshot> =
-        combine(goals.observeProgress(goal.id), today.contributionTo(goal)) { rows, sinceMidnight ->
-            snapshotOf(goal, rows, sinceMidnight)
-        }
+    private fun snapshots(goal: Goal): Flow<GoalSnapshot> = combine(
+        goals.observeProgress(goal.id),
+        today.contributionTo(goal),
+        today.readingFor(goal),
+    ) { rows, sinceMidnight, reading ->
+        snapshotOf(goal, rows, sinceMidnight, reading)
+    }
 
-    private fun snapshotOf(goal: Goal, rows: List<GoalProgress>, sinceMidnight: Double): GoalSnapshot {
+    private fun snapshotOf(
+        goal: Goal,
+        rows: List<GoalProgress>,
+        sinceMidnight: Double,
+        reading: Double?,
+    ): GoalSnapshot {
         val today = time.today()
         val counted = rows.filter { it.counted }
 
@@ -92,6 +100,7 @@ class ObserveGoalUseCase @Inject constructor(
             // one that has to have time behind it.
             hasProjection = closed && counted.maxByOrNull { it.date }?.let { goal.daysElapsed(it.date) > 0 } == true,
             on = today,
+            todayReading = reading,
         )
     }
 
@@ -140,6 +149,24 @@ class GoalToday @Inject constructor(
             val done = rows.count { it.itemId == itemId && it.isDone }
 
             if (goal.kind == GoalKind.COUNT) done.toDouble() else minutesFor(itemId, done)
+        }
+    }
+
+    /**
+     * Today's raw reading for a measured goal, or null.
+     *
+     * Not a contribution: it is never added to the current value, which stays
+     * the smoothed one. It exists so the card can say "today 50.5" next to
+     * "49.8", which is the difference between a number that looks wrong and a
+     * number that looks smoothed.
+     */
+    fun readingFor(goal: Goal): Flow<Double?> {
+        if (goal.kind != GoalKind.NUMBER) return flowOf(null)
+
+        val date = time.today()
+
+        return measurements.observeReadings(goal.valueKind, date, date, goal.itemId).map { readings ->
+            readings.lastOrNull()?.value
         }
     }
 

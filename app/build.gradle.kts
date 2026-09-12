@@ -105,6 +105,12 @@ dependencies {
     // find out what a tap actually does on the device it ships to.
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.truth)
+
+    // For its screenshot, which goes through the shell rather than through
+    // the instrumentation's own window capture. On an emulator the latter
+    // hands back a black rectangle, and a black rectangle is worse than no
+    // screenshot: it looks like the screen it was meant to prove.
+    androidTestImplementation(libs.androidx.uiautomator)
 }
 
 // Feature packages live inside this module for now: today, plan, insights,
