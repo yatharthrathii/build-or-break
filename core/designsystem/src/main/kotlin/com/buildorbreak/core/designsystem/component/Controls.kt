@@ -8,8 +8,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -60,7 +62,13 @@ fun SegmentedTabs(
     accent: Boolean = false,
     stretch: Boolean = false,
 ) {
-    Row(modifier = modifier.border(Theme.spacing.rule, MaterialTheme.colorScheme.onSurface)) {
+    // Intrinsic height, so every cell and every divider is exactly as tall
+    // as the tallest label and the fill can never poke out of the border.
+    Row(
+        modifier = modifier
+            .border(Theme.spacing.rule, MaterialTheme.colorScheme.onSurface)
+            .height(IntrinsicSize.Min),
+    ) {
         options.forEachIndexed { index, option ->
             Segment(
                 text = option,
@@ -74,7 +82,7 @@ fun SegmentedTabs(
                 Box(
                     modifier = Modifier
                         .width(Theme.spacing.rule)
-                        .height(FieldHeight - Theme.spacing.small)
+                        .fillMaxHeight()
                         .background(MaterialTheme.colorScheme.onSurface),
                 )
             }
@@ -106,15 +114,15 @@ private fun Segment(
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    Text(
-        text = text.uppercase(Locale.getDefault()),
-        style = MaterialTheme.typography.labelMedium,
-        color = ink,
-        textAlign = TextAlign.Center,
-        maxLines = 1,
+    // The fill is the cell, not the label: it takes the row's full height,
+    // so a selected segment is a solid block edge to edge inside the border.
+    // No reserved 48dp here. The row is often placed in a header of a fixed
+    // height, and a cell that insists on being taller than its row draws
+    // its fill outside the border, which is exactly what it did.
+    Box(
         modifier = modifier
+            .fillMaxHeight()
             .background(ground)
-            .minimumInteractiveComponentSize()
             // Selectable rather than clickable, so the reader says which
             // one is chosen instead of listing three identical tabs.
             .selectable(selected = selected, role = Role.Tab) {
@@ -122,7 +130,16 @@ private fun Segment(
                 onClick()
             }
             .padding(horizontal = Theme.spacing.inset, vertical = Theme.spacing.inset),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text.uppercase(Locale.getDefault()),
+            style = MaterialTheme.typography.labelMedium,
+            color = ink,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
+    }
 }
 
 /**
