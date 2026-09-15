@@ -207,6 +207,8 @@ private fun LengthSection(draft: GoalDraft, onChange: (GoalDraft) -> Unit) {
         Kicker(text = stringResource(R.string.goal_form_length))
 
         Stepper(
+            decrementLabel = stringResource(R.string.stepper_less),
+            incrementLabel = stringResource(R.string.stepper_more),
             value = pluralStringResource(R.plurals.goal_form_weeks, draft.weeks, draft.weeks),
             onDecrement = { onChange(draft.copy(weeks = (draft.weeks - 1).coerceAtLeast(MIN_WEEKS))) },
             onIncrement = { onChange(draft.copy(weeks = (draft.weeks + 1).coerceAtMost(MAX_WEEKS))) },

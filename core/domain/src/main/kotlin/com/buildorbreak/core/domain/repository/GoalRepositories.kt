@@ -43,6 +43,9 @@ interface GoalRepository {
 interface DayCloseRepository {
     fun observeRange(from: LocalDate, to: LocalDate): Flow<List<DayClose>>
 
+    /** Every close there is, oldest first. One row a day, so this stays small. */
+    fun observeAll(): Flow<List<DayClose>>
+
     suspend fun upsert(close: DayClose): Outcome<Unit, DataError>
 
     /** Where the daily close should resume from after the app was not opened. */
@@ -51,6 +54,9 @@ interface DayCloseRepository {
 
 interface MilestoneRepository {
     fun observeUnseen(): Flow<List<MilestoneAward>>
+
+    /** Everything ever awarded, seen or not, oldest first. */
+    fun observeAwarded(): Flow<List<MilestoneAward>>
 
     /**
      * The existence of a row is the entire anti repeat mechanism. There is no

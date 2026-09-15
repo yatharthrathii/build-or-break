@@ -118,12 +118,13 @@ class TodayViewModel @Inject constructor(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private val facts: Flow<DayFacts> = date.flatMapLatest { on ->
-        combine(watch.run(on), watch.consistency(on), watch.goal()) { run, score, goal ->
+        combine(watch.run(on), watch.consistency(on), watch.goal(), watch.points(on)) { run, score, goal, points ->
             DayFacts(
                 runDays = run,
                 consistency = Consistency(score.goodDays, score.consideredDays),
                 degradedTier = degradedTier(),
                 goal = goal,
+                points = points,
             )
         }
     }

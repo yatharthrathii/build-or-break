@@ -147,6 +147,8 @@ private fun MinutesField(
         Kicker(text = label)
 
         Stepper(
+            decrementLabel = stringResource(R.string.stepper_less),
+            incrementLabel = stringResource(R.string.stepper_more),
             value = stringResource(R.string.editor_minutes_value, minutes),
             onDecrement = { onMinutes((minutes - STEP_MINUTES).coerceAtLeast(floor)) },
             onIncrement = { onMinutes((minutes + STEP_MINUTES).coerceAtMost(MAX_MINUTES)) },

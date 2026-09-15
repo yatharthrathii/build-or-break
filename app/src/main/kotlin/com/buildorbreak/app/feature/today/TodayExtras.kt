@@ -15,6 +15,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -203,6 +204,7 @@ internal fun MilestoneBanner(notice: MilestoneNotice, onSeen: () -> Unit) {
                 color = ink,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .minimumInteractiveComponentSize()
                     .clickable(role = Role.Button, onClick = onSeen)
                     .padding(start = Theme.spacing.inset, top = 4.dp, bottom = Theme.spacing.inset),
             )

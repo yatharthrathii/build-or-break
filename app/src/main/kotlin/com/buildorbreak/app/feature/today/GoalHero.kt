@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.buildorbreak.app.R
@@ -173,13 +175,16 @@ private fun PaceBar(goal: GoalHeroUi) {
         label = "goal",
     )
     val pace = (goal.pacePercent / HUNDRED).coerceIn(0f, 1f)
+    // Two numbers a reader can say. The bar draws them; it cannot speak them.
+    val description = stringResource(R.string.goal_hero_bar_a11y, goal.percent.toInt(), goal.pacePercent.toInt())
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = Theme.spacing.medium)
             .height(BarHeight)
-            .background(Theme.colours.rail),
+            .background(Theme.colours.rail)
+            .semantics { contentDescription = description },
     ) {
         Box(
             modifier = Modifier

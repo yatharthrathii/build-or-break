@@ -133,6 +133,19 @@
         <item quantity="other">On time. %1$d days straight.</item>
     </plurals>
     <string name="today_run_none">Keep today, and your run starts.</string>
+    <string name="today_points">Points</string>
+    <!-- Read aloud only. What the colours on the timeline say to everyone else. -->
+    <string name="today_row_done">Done</string>
+    <string name="today_row_missed">Missed</string>
+    <string name="today_row_next">Next</string>
+    <string name="today_row_upcoming">Coming up</string>
+    <string name="today_row_rings">Rings</string>
+    <string name="stepper_less">Less</string>
+    <string name="stepper_more">More</string>
+    <string name="goal_hero_bar_a11y">%1$d percent of the way, pace at %2$d percent</string>
+    <string name="insights_bar_a11y">%1$s, %2$d percent kept</string>
+    <string name="insights_bar_none_a11y">%1$s, nothing yet</string>
+    <string name="today_points_today">+%1$d today</string>
     <plurals name="today_shift_line">
         <item quantity="one">Day shifted +%1$d min · %2$d alarm moved</item>
         <item quantity="other">Day shifted +%1$d min · %2$d alarms moved</item>
@@ -615,6 +628,23 @@
     <string name="insights_other_options">Try something else</string>
     <string name="insights_hide_options">Hide the others</string>
     <string name="insights_goal">The goal</string>
+    <string name="insights_rewards">Points and badges</string>
+    <string name="insights_points_banked">Banked</string>
+    <string name="insights_points_week">This week</string>
+    <string name="insights_points_best">Best day</string>
+    <string name="insights_points_legend">Ten a step, five for a smaller version, twenty for a whole day. Today joins the bank at midnight.</string>
+    <string name="insights_badges">Badges</string>
+    <string name="insights_badges_count">%1$d of %2$d</string>
+    <string name="insights_badge_not_yet">Not yet</string>
+    <string name="badge_first_completion">First step</string>
+    <string name="badge_first_full_day">Whole day</string>
+    <string name="badge_first_week">One week</string>
+    <string name="badge_goal_quarter">Quarter way</string>
+    <string name="badge_goal_half">Halfway</string>
+    <string name="badge_goal_three_quarters">Three quarters</string>
+    <string name="badge_goal_reached">Goal reached</string>
+    <string name="badge_best_week">Best week</string>
+    <string name="badge_thirty_day_run">Thirty day run</string>
 
     <string name="story_head_on_track">The week held.</string>
     <string name="story_head_plan_too_small">The plan is the problem, not you.</string>

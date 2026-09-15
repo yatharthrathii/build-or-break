@@ -311,6 +311,8 @@ class FakeDayCloseRepository : DayCloseRepository {
     override fun observeRange(from: LocalDate, to: LocalDate): Flow<List<DayClose>> =
         closes.map { list -> list.filter { it.date in from..to }.sortedBy { it.date } }
 
+    override fun observeAll(): Flow<List<DayClose>> = closes.map { list -> list.sortedBy { it.date } }
+
     override suspend fun upsert(close: DayClose): Outcome<Unit, DataError> {
         closes.value = closes.value.filterNot { it.date == close.date } + close
 

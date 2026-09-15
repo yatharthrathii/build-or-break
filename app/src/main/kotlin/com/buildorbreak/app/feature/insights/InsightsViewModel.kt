@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.buildorbreak.core.domain.goal.GoalSnapshot
 import com.buildorbreak.core.domain.goal.GoalStanding
+import com.buildorbreak.core.domain.goal.PointsTally
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.review.InsightBar
 import com.buildorbreak.core.domain.review.InsightPattern
@@ -15,8 +16,11 @@ import com.buildorbreak.core.domain.review.SkipCount
 import com.buildorbreak.core.domain.review.StepStat
 import com.buildorbreak.core.domain.review.Suggestion
 import com.buildorbreak.core.domain.usecase.ApplyReviewAnswerUseCase
+import com.buildorbreak.core.domain.usecase.Badge
+import com.buildorbreak.core.domain.usecase.ObserveBadgesUseCase
 import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
 import com.buildorbreak.core.domain.usecase.ObserveInsightsUseCase
+import com.buildorbreak.core.domain.usecase.ObservePointsUseCase
 import com.buildorbreak.core.model.enums.ReviewStory
 import com.buildorbreak.core.model.enums.SkipChip
 import com.buildorbreak.core.model.review.ReviewAnswer
@@ -31,6 +35,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -137,6 +142,8 @@ data class InsightsUiState(
     /** Whether the last four weeks hold anything, even if this period does not. */
     val hasHistory: Boolean,
     val story: ReviewStory,
+    /** The score and the wall. Null until both have been read. */
+    val rewards: RewardsUi? = null,
 ) {
     val isEmpty: Boolean get() = hasPlan && total == 0
 
@@ -178,18 +185,22 @@ data class InsightsUiState(
 class InsightsViewModel @Inject constructor(
     observeInsights: ObserveInsightsUseCase,
     observeGoal: ObserveGoalUseCase,
+    observePoints: ObservePointsUseCase,
+    observeBadges: ObserveBadgesUseCase,
     private val settings: SettingsRepository,
     private val applyAnswer: ApplyReviewAnswerUseCase,
 ) : ViewModel() {
 
     private val period = MutableStateFlow(InsightsPeriod.WEEK)
 
+    private val rewards: Flow<RewardsUi> = combine(observePoints(), observeBadges(), ::toRewards)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<InsightsUiState> = period
         .flatMapLatest { chosen ->
-            combine(observeInsights(chosen), observeGoal()) { insights, goal ->
-                insights?.let { toUiState(it, goal) }
-                    ?: InsightsUiState.Empty.copy(period = chosen, goal = goal?.let(::toGoalStrip))
+            combine(observeInsights(chosen), observeGoal(), rewards) { insights, goal, earned ->
+                insights?.let { toUiState(it, goal, earned) }
+                    ?: InsightsUiState.Empty.copy(period = chosen, goal = goal?.let(::toGoalStrip), rewards = earned)
             }
         }
         .stateIn(
@@ -212,7 +223,14 @@ class InsightsViewModel @Inject constructor(
         applyAnswer(suggestion.itemId, answer, suggestion.weekStart)
     }
 
-    private fun toUiState(insights: Insights, goal: GoalSnapshot?): InsightsUiState {
+    private fun toRewards(tally: PointsTally, badges: List<Badge>) = RewardsUi(
+        banked = tally.banked,
+        thisWeek = tally.thisWeek,
+        bestDay = tally.bestDay,
+        badges = badges.map { BadgeUi(it.milestone, it.earnedOn?.format(DAY)) }.toImmutableList(),
+    )
+
+    private fun toUiState(insights: Insights, goal: GoalSnapshot?, rewards: RewardsUi): InsightsUiState {
         val best = insights.bars.mapNotNull { it.fraction }.maxOrNull()
         val problemId = insights.suggestion?.itemId
 
@@ -235,6 +253,7 @@ class InsightsViewModel @Inject constructor(
             goal = goal?.let(::toGoalStrip),
             hasHistory = insights.hasHistory,
             story = insights.story,
+            rewards = rewards,
         )
     }
 

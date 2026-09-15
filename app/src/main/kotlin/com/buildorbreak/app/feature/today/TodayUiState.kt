@@ -93,6 +93,13 @@ data class TodayUiState(
      */
     val goal: GoalHeroUi? = null,
     /**
+     * Points in the bank and points earned so far today.
+     *
+     * Null until the bank has been read, so a cold start does not flash a
+     * zero where a four figure number is about to be.
+     */
+    val points: PointsUi? = null,
+    /**
      * The last thing the user asked for did not happen.
      *
      * Every action on this screen used to ignore its own result. A settle that
@@ -271,6 +278,15 @@ data class GoalHeroUi(
 /** Something earned. The screen turns the enum into a sentence. */
 @Immutable
 data class MilestoneNotice(val milestone: Milestone)
+
+/**
+ * [banked] is every closed day; [today] moves with each tap and is not yet
+ * banked. The screen shows the sum and says how much of it is today's.
+ */
+@Immutable
+data class PointsUi(val banked: Int, val today: Int) {
+    val total: Int get() = banked + today
+}
 
 /** [goodDays] out of [days]. Both, so the screen can say it and be believed. */
 @Immutable

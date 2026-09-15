@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,8 +59,12 @@ import com.buildorbreak.core.model.review.ReviewAnswer
 import java.time.LocalDate
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 
 private val ChartHeight = 112.dp
+
+/** Zero to one, spoken as zero to a hundred. */
+private const val PERCENT = 100
 private val KeptColumn = 44.dp
 private val SlipColumn = 56.dp
 
@@ -160,6 +166,8 @@ private fun Body(
         StoryPanel(state = state)
 
         state.goal?.let { GoalStrip(goal = it, onOpen = onOpenGoal) }
+
+        state.rewards?.let { RewardsSection(rewards = it) }
 
         PatternSection(patterns = state.patterns)
 
@@ -300,11 +308,17 @@ private fun RowScope.Bar(bar: BarUi) {
         bar.isWeekend -> Theme.colours.faint
         else -> MaterialTheme.colorScheme.onSurface
     }
+    // The bar in words: "Tuesday, 78 percent". A reader gets the number the
+    // sighted user reads off the height.
+    val description =
+        bar.fraction?.let { stringResource(R.string.insights_bar_a11y, bar.label, (it * PERCENT).toInt()) }
+            ?: stringResource(R.string.insights_bar_none_a11y, bar.label)
 
     Column(
         modifier = Modifier
             .weight(1f)
-            .fillMaxHeight(),
+            .fillMaxHeight()
+            .semantics(mergeDescendants = true) { contentDescription = description },
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -708,4 +722,12 @@ private val PreviewState = InsightsUiState(
     goal = GoalStripUi("Twelve gym sessions", 58, GoalStanding.ON_PACE, 19, hasData = true),
     hasHistory = true,
     story = ReviewStory.TIMING_PROBLEM,
+    rewards = RewardsUi(
+        banked = 1240,
+        thisWeek = 310,
+        bestDay = 110,
+        badges = emptyWall().mapIndexed { index, badge ->
+            if (index < 3) badge.copy(earnedOn = "${index + 2} Sep") else badge
+        }.toImmutableList(),
+    ),
 )

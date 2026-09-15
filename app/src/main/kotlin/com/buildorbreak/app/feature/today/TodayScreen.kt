@@ -354,7 +354,14 @@ private fun LazyListScope.top(
         item(key = "goal") { GoalHeroCard(goal = goal, onOpen = actions.onOpenGoal) }
     }
 
-    item { RingRow(header = state.header, runDays = state.runDays, consistency = state.consistency) }
+    item {
+        RingRow(
+            header = state.header,
+            runDays = state.runDays,
+            consistency = state.consistency,
+            points = state.points,
+        )
+    }
 
     state.milestone?.let { notice ->
         item(key = "milestone") { MilestoneBanner(notice = notice, onSeen = actions.onMilestoneSeen) }
@@ -391,11 +398,15 @@ private fun LazyListScope.top(
  */
 private fun LazyListScope.timeline(state: TodayUiState) {
     itemsIndexed(items = state.entries, key = { _, entry -> "${entry.itemId}:${entry.sequence}" }) { index, entry ->
+        val rowState = rowState(entry, isNext = index == state.nowIndex)
+
         Arriving(index = index) {
             TimelineRow(
                 time = entry.time,
                 title = entry.title,
-                state = rowState(entry, isNext = index == state.nowIndex),
+                state = rowState,
+                stateLabel = stringResource(rowStateLabel(rowState)),
+                alarmLabel = stringResource(R.string.today_row_rings),
                 badge = kindText(entry.kind),
                 note = entry.note?.let { noteText(it) },
                 noteAccent = entry.note is EntryNote.Moved,
@@ -490,6 +501,14 @@ private fun LazyListScope.notices(state: TodayUiState, onOpenReliability: () -> 
     }
 
     state.budget?.let { notice -> item { NoticeBar(text = budgetText(notice), tinted = false) } }
+}
+
+/** The state in a word, for a screen reader. Colour says it to everyone else. */
+private fun rowStateLabel(state: RowState): Int = when (state) {
+    RowState.DONE -> R.string.today_row_done
+    RowState.MISSED -> R.string.today_row_missed
+    RowState.NEXT -> R.string.today_row_next
+    RowState.UPCOMING -> R.string.today_row_upcoming
 }
 
 private fun rowState(entry: TimelineEntry, isNext: Boolean): RowState = when {
@@ -628,5 +647,6 @@ internal fun previewState(): TodayUiState {
         budget = null,
         degradedTier = DeliveryTier.EXACT_HEADS_UP,
         hasPlan = true,
+        points = PointsUi(banked = 1240, today = 45),
     )
 }

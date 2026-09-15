@@ -31,11 +31,14 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.buildorbreak.app.R
@@ -53,6 +56,7 @@ import com.buildorbreak.core.designsystem.component.SegmentedTabs
 import com.buildorbreak.core.designsystem.component.rememberFeedback
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
+import java.text.NumberFormat
 import java.util.Locale
 
 private const val CARD_RISE = 3
@@ -72,7 +76,17 @@ private val SHIFT_OPTIONS = listOf(15, 30, 60, 90)
 private const val COUNT_MILLIS = 420
 
 @Composable
-internal fun RingRow(header: DayHeader, runDays: Int, consistency: Consistency? = null) {
+internal fun RingRow(
+    header: DayHeader,
+    runDays: Int,
+    consistency: Consistency? = null,
+    points: PointsUi? = null,
+) {
+    // At a large font size three columns do not fit, and the label beside
+    // the ring was the thing that gave way. The score moves under the row
+    // instead, where it has the whole width.
+    val stacked = LocalDensity.current.fontScale > LARGE_FONT
+
     Column {
         Row(
             modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 16.dp),
@@ -80,17 +94,83 @@ internal fun RingRow(header: DayHeader, runDays: Int, consistency: Consistency? 
         ) {
             ProgressRing(fraction = header.fraction)
 
-            RingCounts(header = header, runDays = runDays, consistency = consistency)
+            RingCounts(header = header, runDays = runDays, consistency = consistency, modifier = Modifier.weight(1f))
+
+            if (!stacked) points?.let { PointsFigure(points = it) }
+        }
+
+        if (stacked) {
+            points?.let {
+                PointsFigure(
+                    points = it,
+                    modifier = Modifier.padding(start = Theme.spacing.medium, bottom = Theme.spacing.medium),
+                    alignEnd = false,
+                )
+            }
         }
 
         HairlineRule()
     }
 }
 
+/** Above this font scale the ring row gives the score its own line. */
+private const val LARGE_FONT = 1.3f
+
+/**
+ * The score, on the right of the ring.
+ *
+ * One number, counted up as it changes, with today's share under it so the
+ * total is explained by the day it is sitting on. A missed step is worth
+ * nothing, not less than nothing, so the only way this falls is an undo.
+ */
+@Composable
+private fun PointsFigure(points: PointsUi, modifier: Modifier = Modifier, alignEnd: Boolean = true) {
+    val counted by animateIntAsState(
+        targetValue = points.total,
+        animationSpec = tween(COUNT_MILLIS),
+        label = "points",
+    )
+    val format = remember { NumberFormat.getIntegerInstance() }
+
+    Column(
+        horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start,
+        modifier = if (alignEnd) modifier.padding(start = Theme.spacing.inset) else modifier,
+    ) {
+        Text(
+            text = format.format(counted),
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Black,
+                fontFeatureSettings = TimeStyle.fontFeatureSettings,
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+
+        Label(text = stringResource(R.string.today_points), modifier = Modifier.padding(top = Theme.spacing.tight))
+
+        // Today's share, in the accent. Zero is left off: "+0 today" under a
+        // number is the app pointing out that nothing has happened yet,
+        // and the empty ring beside it already says so more kindly.
+        if (points.today > 0) {
+            Text(
+                text = stringResource(R.string.today_points_today, points.today),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = Theme.spacing.tight),
+            )
+        }
+    }
+}
+
 /** The three lines beside the ring: the count, the run, and the steadier number. */
 @Composable
-private fun RingCounts(header: DayHeader, runDays: Int, consistency: Consistency?) {
-    Column(modifier = Modifier.padding(start = Theme.spacing.medium)) {
+private fun RingCounts(
+    header: DayHeader,
+    runDays: Int,
+    consistency: Consistency?,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(start = Theme.spacing.medium)) {
         // Counted up rather than swapped. The number is the one thing on this
         // screen that says the day is going well, and a digit that changes
         // while the ring fills is worth watching; one that has already changed
@@ -107,7 +187,11 @@ private fun RingCounts(header: DayHeader, runDays: Int, consistency: Consistency
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        Label(text = stringResource(R.string.today_steps_kept), modifier = Modifier.padding(top = Theme.spacing.tight))
+        Label(
+            text = stringResource(R.string.today_steps_kept),
+            modifier = Modifier.padding(top = Theme.spacing.tight),
+            maxLines = 2,
+        )
 
         Text(
             text = if (runDays > 0) {

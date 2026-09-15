@@ -64,7 +64,9 @@ fun ScreenHeader(
                 // yet passes an empty string rather than inventing a label, and
                 // an empty kicker would otherwise reserve a line of nothing.
                 if (!kicker.isNullOrBlank()) {
-                    Kicker(text = kicker)
+                    // Two lines at a large font size. "SUN 13 SEP · WEEK…"
+                    // loses the one word that says which day it is.
+                    Kicker(text = kicker, maxLines = 2)
                 }
 
                 Text(

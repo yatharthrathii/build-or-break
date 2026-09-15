@@ -18,6 +18,7 @@ import com.buildorbreak.core.model.review.ReviewAnswer
 import com.google.common.truth.Truth.assertThat
 import java.time.LocalDate
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -81,7 +82,7 @@ class InsightsContentTest {
     fun `every repeated miss is listed, not only the one being acted on`() {
         render(state())
 
-        scrollTo("WHAT KEEPS HAPPENING")
+        scrollTo("3/7")
         compose.onNodeWithText("4/7").assertIsDisplayed()
         compose.onNodeWithText("3/7").assertIsDisplayed()
     }
@@ -190,7 +191,44 @@ class InsightsContentTest {
         goal = GoalStripUi("Twelve gym sessions", 58, GoalStanding.ON_PACE, 19, hasData = true),
         hasHistory = true,
         story = ReviewStory.TIMING_PROBLEM,
+        rewards = RewardsUi(
+            banked = 1240,
+            thisWeek = 310,
+            bestDay = 110,
+            badges = emptyWall().mapIndexed { index, badge ->
+                if (index < 2) badge.copy(earnedOn = "${index + 2} Sep") else badge
+            }.toImmutableList(),
+        ),
     )
+
+    @Test
+    fun `the score is three figures somebody can check`() {
+        render(state())
+
+        scrollTo("BANKED")
+        compose.onNodeWithText("1,240").assertIsDisplayed()
+        compose.onNodeWithText("310").assertIsDisplayed()
+        compose.onNodeWithText("110").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the wall shows all nine and counts the lit ones`() {
+        render(state())
+
+        scrollTo("2 OF 9")
+        compose.onNodeWithText("2 OF 9").assertIsDisplayed()
+        compose.onNodeWithText("First step").assertIsDisplayed()
+        compose.onNodeWithText("2 Sep").assertIsDisplayed()
+        compose.onAllNodesWithText("Not yet").assertCountEquals(7)
+    }
+
+    @Test
+    fun `before the first close the best day is a dash, not a zero`() {
+        render(state().copy(rewards = RewardsUi(0, 0, null, emptyWall())))
+
+        scrollTo("BEST DAY")
+        compose.onNodeWithText("—").assertIsDisplayed()
+    }
 
     @Suppress("MagicNumber")
     private fun suggestion() = SuggestionUi(

@@ -17,6 +17,9 @@ interface MilestoneDao {
     @Query("SELECT * FROM milestone_award ORDER BY awarded_on")
     suspend fun awarded(): List<MilestoneAwardEntity>
 
+    @Query("SELECT * FROM milestone_award ORDER BY awarded_on")
+    fun observeAwarded(): Flow<List<MilestoneAwardEntity>>
+
     /**
      * Ignores a milestone that has already fired, rather than replacing it.
      *

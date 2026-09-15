@@ -13,6 +13,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -24,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -48,6 +51,7 @@ import com.buildorbreak.app.feature.settings.SettingsScreen
 import com.buildorbreak.app.feature.today.TodayScreen
 import com.buildorbreak.core.designsystem.component.BottomNavBar
 import com.buildorbreak.core.designsystem.component.NavDestination
+import com.buildorbreak.core.designsystem.component.NavRail
 import com.buildorbreak.core.designsystem.component.readablePage
 import com.buildorbreak.scheduler.alarm.TierBlocker
 
@@ -88,29 +92,41 @@ fun BuildOrBreakNavGraph(startRoute: NavKey, actions: ShellActions, modifier: Mo
     val current = backStack.lastOrNull()
     val tabIndex = TopLevelRoutes.indexOf(current)
 
+    // Wide enough for a rail: a tablet, or a phone on its side. Below this
+    // the bar across the bottom is the one a thumb reaches.
+    val wide = LocalConfiguration.current.screenWidthDp >= WIDE_DP
+    val onSelect = { index: Int -> backStack.openTab(TopLevelRoutes[index]) }
+
     // The ground colour under the nav host, so a cross fade between two
     // screens never shows the window behind them.
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        // Centred and capped, so a tablet or a phone on its side reads as one
-        // column of a timetable rather than as a table with the ink pushed
-        // to both edges. On a portrait phone the cap never bites.
-        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-            NavHostPage(backStack = backStack, actions = actions)
-        }
+    if (wide) {
+        Row(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+            if (tabIndex >= 0) {
+                NavRail(destinations = destinations(), selectedIndex = tabIndex, onSelect = onSelect)
+            }
 
-        if (tabIndex >= 0) {
-            BottomNavBar(
-                destinations = destinations(),
-                selectedIndex = tabIndex,
-                onSelect = { backStack.openTab(TopLevelRoutes[it]) },
-            )
+            Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
+                NavHostPage(backStack = backStack, actions = actions)
+            }
+        }
+    } else {
+        Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+            // Centred and capped, so a phone on its side reads as one column
+            // of a timetable rather than as a table with the ink pushed to
+            // both edges. On a portrait phone the cap never bites.
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                NavHostPage(backStack = backStack, actions = actions)
+            }
+
+            if (tabIndex >= 0) {
+                BottomNavBar(destinations = destinations(), selectedIndex = tabIndex, onSelect = onSelect)
+            }
         }
     }
 }
+
+/** Material's medium width class. A rail from here; a bar below it. */
+private const val WIDE_DP = 840
 
 @Composable
 private fun NavHostPage(backStack: NavBackStack<NavKey>, actions: ShellActions) {

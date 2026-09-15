@@ -20,13 +20,19 @@ import java.util.Locale
  * file full of shouting is a resource file nobody can reuse in a sentence.
  */
 @Composable
-fun Label(text: String, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+fun Label(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    /** Two where the label shares its row with something and a large font size would cut it. */
+    maxLines: Int = 1,
+) {
     Text(
         text = text.uppercase(Locale.getDefault()),
         style = MaterialTheme.typography.labelLarge,
         color = color,
         modifier = modifier,
-        maxLines = 1,
+        maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )
 }

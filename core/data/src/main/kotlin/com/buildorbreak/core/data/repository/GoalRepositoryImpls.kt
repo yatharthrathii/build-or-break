@@ -71,6 +71,9 @@ class DayCloseRepositoryImpl @Inject constructor(
     override fun observeRange(from: LocalDate, to: LocalDate): Flow<List<DayClose>> =
         closes.observeRange(from, to).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
 
+    override fun observeAll(): Flow<List<DayClose>> =
+        closes.observeAll().map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
+
     override suspend fun upsert(close: DayClose): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { closes.upsert(close.toEntity()) }
 
@@ -89,6 +92,10 @@ class MilestoneRepositoryImpl @Inject constructor(
      * nothing can match is not suppressing anything.
      */
     override fun observeUnseen(): Flow<List<MilestoneAward>> = milestones.observeUnseen()
+        .map { rows -> rows.mapNotNull { it.toModelOrNull() } }
+        .flowOn(dispatchers.io)
+
+    override fun observeAwarded(): Flow<List<MilestoneAward>> = milestones.observeAwarded()
         .map { rows -> rows.mapNotNull { it.toModelOrNull() } }
         .flowOn(dispatchers.io)
 

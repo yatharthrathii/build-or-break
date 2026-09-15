@@ -138,6 +138,8 @@ private fun OffsetField(minutes: Int, onMinutes: (Int) -> Unit, modifier: Modifi
         Kicker(text = stringResource(R.string.editor_offset))
 
         Stepper(
+            decrementLabel = stringResource(R.string.stepper_less),
+            incrementLabel = stringResource(R.string.stepper_more),
             value = stringResource(R.string.editor_minutes_value, minutes),
             onDecrement = { onMinutes((minutes - OFFSET_STEP).coerceAtLeast(0)) },
             onIncrement = { onMinutes((minutes + OFFSET_STEP).coerceAtMost(MAX_OFFSET)) },
@@ -176,6 +178,8 @@ private fun IntervalFields(state: ItemEditorUiState, onChange: (ItemEditorUiStat
             Kicker(text = stringResource(R.string.editor_every))
 
             Stepper(
+                decrementLabel = stringResource(R.string.stepper_less),
+                incrementLabel = stringResource(R.string.stepper_more),
                 value = stringResource(R.string.editor_minutes_value, draft.everyMinutes),
                 onDecrement = {
                     onChange(

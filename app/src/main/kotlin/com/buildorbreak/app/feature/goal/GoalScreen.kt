@@ -31,6 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -498,12 +501,16 @@ private fun Trail(values: List<Double>) {
     val top = values.max()
     val bottom = values.min()
     val span = (top - bottom).takeIf { it > 0.0 } ?: 1.0
+    val range = stringResource(R.string.goal_trail_range, format(bottom), format(top))
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Theme.spacing.medium, vertical = 12.dp)
-            .height(TrailHeight),
+            .height(TrailHeight)
+            // The columns are the shape of the line; the range is what it
+            // says. A reader gets the range once, from the chart itself.
+            .semantics { contentDescription = range },
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
@@ -520,8 +527,8 @@ private fun Trail(values: List<Double>) {
     }
 
     Label(
-        text = stringResource(R.string.goal_trail_range, format(bottom), format(top)),
-        modifier = Modifier.padding(horizontal = Theme.spacing.medium),
+        text = range,
+        modifier = Modifier.padding(horizontal = Theme.spacing.medium).clearAndSetSemantics {},
     )
 }
 

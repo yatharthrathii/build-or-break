@@ -22,6 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -98,13 +102,27 @@ fun TimelineRow(
     wideTime: Boolean = false,
     /** This step rings and takes over the screen. Everything else is a notification. */
     alarm: Boolean = false,
+    /** "Done", "Missed", "Next": the state in words, for a screen reader. The caller owns the words. */
+    stateLabel: String? = null,
+    /** What the alarm glyph means, for a screen reader. */
+    alarmLabel: String? = null,
 ) {
     val settled = state == RowState.DONE || state == RowState.MISSED
+    // The column is sized for digits at the default size. Digits grow with
+    // the font setting, so the column grows with them or the time wraps.
+    val fontScale = LocalDensity.current.fontScale
+    val timeWidth = (if (wideTime) WideTimeColumnWidth else TimeColumnWidth) * fontScale
 
     Row(
         // Intrinsic height so the rail can fill the row: without it a
         // fillMaxHeight child of a Row measures as zero.
-        modifier = modifier.fillMaxWidth().tappable(onClick).height(IntrinsicSize.Min),
+        modifier = modifier
+            .fillMaxWidth()
+            .tappable(onClick)
+            // One node per row for a reader: the time, the title and the
+            // state in a single announcement, not five stops down a rail.
+            .semantics(mergeDescendants = true) { stateLabel?.let { stateDescription = it } }
+            .height(IntrinsicSize.Min),
     ) {
         Text(
             text = time,
@@ -116,7 +134,7 @@ fun TimelineRow(
             // is set to, was broken by the clock beside them.
             textAlign = TextAlign.Start,
             modifier = Modifier
-                .width(if (wideTime) WideTimeColumnWidth else TimeColumnWidth)
+                .width(timeWidth)
                 .padding(top = Theme.spacing.inset, end = Theme.spacing.small),
         )
 
@@ -131,6 +149,7 @@ fun TimelineRow(
             accentBadge = state == RowState.NEXT,
             noteAccent = noteAccent,
             last = last,
+            alarmLabel = alarmLabel,
             modifier = Modifier.weight(1f),
         )
     }
@@ -146,6 +165,7 @@ private fun RowBody(
     accentBadge: Boolean,
     noteAccent: Boolean,
     last: Boolean,
+    alarmLabel: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(start = Theme.spacing.inset).padding(vertical = Theme.spacing.inset)) {
@@ -157,7 +177,14 @@ private fun RowBody(
             overflow = TextOverflow.Ellipsis,
         )
 
-        RowMeta(badge = badge, note = note, accentBadge = accentBadge, noteAccent = noteAccent, alarm = alarm)
+        RowMeta(
+            badge = badge,
+            note = note,
+            accentBadge = accentBadge,
+            noteAccent = noteAccent,
+            alarm = alarm,
+            alarmLabel = alarmLabel,
+        )
 
         if (!last) {
             HairlineRule(Modifier.padding(top = Theme.spacing.inset))
@@ -201,6 +228,7 @@ private fun RowMeta(
     accentBadge: Boolean,
     noteAccent: Boolean,
     alarm: Boolean,
+    alarmLabel: String?,
 ) {
     if (badge == null && note == null && !alarm) return
 
@@ -218,7 +246,12 @@ private fun RowMeta(
         // and a step that will not ring has to look different from one that
         // will before six in the morning, not after.
         if (alarm) {
-            Text(text = RINGS, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Text(
+                text = RINGS,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.semantics { alarmLabel?.let { contentDescription = it } },
+            )
         }
 
         if (note != null) {

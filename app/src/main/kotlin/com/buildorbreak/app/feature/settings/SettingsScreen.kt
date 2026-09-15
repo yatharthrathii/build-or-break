@@ -277,6 +277,8 @@ private fun ToleranceRow(minutes: Int, onLateTolerance: (Int) -> Unit) {
         }
 
         Stepper(
+            decrementLabel = stringResource(R.string.stepper_less),
+            incrementLabel = stringResource(R.string.stepper_more),
             value = if (minutes == 0) {
                 stringResource(R.string.settings_tolerance_off)
             } else {

@@ -13,6 +13,9 @@ interface DayCloseDao {
     @Query("SELECT * FROM day_close WHERE date BETWEEN :from AND :to ORDER BY date")
     fun observeRange(from: LocalDate, to: LocalDate): Flow<List<DayCloseEntity>>
 
+    @Query("SELECT * FROM day_close ORDER BY date")
+    fun observeAll(): Flow<List<DayCloseEntity>>
+
     @Query("SELECT * FROM day_close WHERE date BETWEEN :from AND :to ORDER BY date")
     suspend fun range(from: LocalDate, to: LocalDate): List<DayCloseEntity>
 

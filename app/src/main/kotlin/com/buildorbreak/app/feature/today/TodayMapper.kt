@@ -3,6 +3,8 @@ package com.buildorbreak.app.feature.today
 import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.goal.GoalSnapshot
+import com.buildorbreak.core.domain.goal.Points
+import com.buildorbreak.core.domain.goal.PointsTally
 import com.buildorbreak.core.domain.review.CatchUpViewBuilder
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.model.enums.DayMode
@@ -54,6 +56,7 @@ data class DayFacts(
     val consistency: Consistency?,
     val degradedTier: DeliveryTier?,
     val goal: GoalSnapshot? = null,
+    val points: PointsTally? = null,
 )
 
 /** Zero to one, drawn as zero to a hundred. */
@@ -115,12 +118,29 @@ class TodayMapper @Inject constructor(
             isReduced = day.mode == DayMode.REDUCED,
             reducedCount = day.entries.count { it.reduced },
             goal = facts.goal?.let(::toGoalHero),
+            points = facts.points?.let { pointsFor(day, states.values, it) },
             startsTomorrow = day.entries.isEmpty() && day.hiddenBeforeStart > 0,
             templates = plan?.templates.orEmpty().map { DayChoice(it.id, it.name) }.toImmutableList(),
             currentTemplateId = day.template.id,
             planId = plan?.planId ?: 0,
         )
     }
+
+    /**
+     * The bank plus today, live.
+     *
+     * Today's figure is worked out from the same states the ring uses, so a
+     * tap moves both at once. It is not written anywhere: the close writes
+     * the row at midnight and the bank picks it up from there.
+     */
+    private fun pointsFor(day: ResolvedDay, states: Collection<OccurrenceState?>, tally: PointsTally) = PointsUi(
+        banked = tally.banked,
+        today = Points.of(
+            done = states.count { it == OccurrenceState.DONE },
+            minimum = states.count { it == OccurrenceState.DONE_MINIMUM },
+            total = day.entries.count { it.salience != Salience.TIMELINE },
+        ),
+    )
 
     private fun catchUpFor(day: ResolvedDay, now: LocalDateTime, exclude: Long): CatchUpPanel? =
         catchUp.build(day, now, exclude)?.let { view ->

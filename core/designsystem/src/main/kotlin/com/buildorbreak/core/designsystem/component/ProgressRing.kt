@@ -19,6 +19,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.buildorbreak.core.designsystem.theme.Theme
@@ -66,7 +69,15 @@ fun ProgressRing(
     val track = Theme.colours.rail
     val fill = MaterialTheme.colorScheme.primary
 
-    Canvas(modifier = modifier.size(size)) {
+    // Announced as what it is. A Canvas has no meaning of its own, and the
+    // ring is the one thing on Today that says how the day is going.
+    val shown = fraction.coerceIn(0f, 1f)
+
+    Canvas(
+        modifier = modifier
+            .size(size)
+            .semantics { progressBarRangeInfo = ProgressBarRangeInfo(shown, 0f..1f) },
+    ) {
         val width = stroke.toPx()
         arc(track, FULL_SWEEP, width)
         if (sweep > 0f) arc(fill, sweep, width)

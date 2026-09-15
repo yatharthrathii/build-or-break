@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -434,7 +435,8 @@ private fun StepTime(row: PlanItemRow) {
         maxLines = 1,
         modifier = Modifier
             .padding(start = Theme.spacing.inset)
-            .width(if (wide) WideTimeColumn else TimeColumn),
+            // Sized for digits at the default size, so it grows with them.
+            .width((if (wide) WideTimeColumn else TimeColumn) * LocalDensity.current.fontScale),
     )
 }
 

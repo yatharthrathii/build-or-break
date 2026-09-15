@@ -77,6 +77,8 @@ class FakeMilestoneRepository : MilestoneRepository {
 
     override fun observeUnseen(): Flow<List<MilestoneAward>> = awards.map { list -> list.filter { it.seenAt == null } }
 
+    override fun observeAwarded(): Flow<List<MilestoneAward>> = awards.map { list -> list.sortedBy { it.awardedOn } }
+
     override suspend fun awarded(): List<MilestoneAward> = awards.value
 
     override suspend fun award(award: MilestoneAward): Outcome<Unit, DataError> {

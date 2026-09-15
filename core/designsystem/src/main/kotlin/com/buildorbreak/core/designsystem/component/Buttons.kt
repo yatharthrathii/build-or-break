@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -141,6 +142,10 @@ fun OutlineButton(
         style = MaterialTheme.typography.labelMedium,
         color = ink,
         modifier = modifier
+            // The box is drawn to its label; the target is reserved to the
+            // platform minimum, so two of these in a row cannot be hit by
+            // mistake and a screen reader gets a target it can land on.
+            .minimumInteractiveComponentSize()
             .border(Theme.spacing.rule, border)
             // Filled in ink while pressed. The outline is the quiet control,
             // so its press has to be the loud moment.
@@ -187,6 +192,7 @@ fun FillButton(
         style = MaterialTheme.typography.labelMedium,
         color = ink,
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .background(ground)
             .clickable(
                 interactionSource = interaction,
@@ -217,6 +223,7 @@ fun GhostButton(
         style = MaterialTheme.typography.labelMedium,
         color = color,
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clickable(role = Role.Button) {
                 feedback.tap()
                 onClick()

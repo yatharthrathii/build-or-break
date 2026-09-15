@@ -2,11 +2,13 @@ package com.buildorbreak.app.feature.today
 
 import com.buildorbreak.core.domain.goal.ConsistencyScore
 import com.buildorbreak.core.domain.goal.GoalSnapshot
+import com.buildorbreak.core.domain.goal.PointsTally
 import com.buildorbreak.core.domain.usecase.LogMeasurementUseCase
 import com.buildorbreak.core.domain.usecase.MarkMilestoneSeenUseCase
 import com.buildorbreak.core.domain.usecase.ObserveConsistencyUseCase
 import com.buildorbreak.core.domain.usecase.ObserveEarnedMilestoneUseCase
 import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
+import com.buildorbreak.core.domain.usecase.ObservePointsUseCase
 import com.buildorbreak.core.domain.usecase.ObserveRunUseCase
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.goal.MilestoneAward
@@ -28,6 +30,7 @@ class DayWatch @Inject constructor(
     private val observeConsistency: ObserveConsistencyUseCase,
     private val observeMilestone: ObserveEarnedMilestoneUseCase,
     private val observeGoal: ObserveGoalUseCase,
+    private val observePoints: ObservePointsUseCase,
     private val markSeen: MarkMilestoneSeenUseCase,
     private val logNumber: LogMeasurementUseCase,
 ) {
@@ -38,6 +41,8 @@ class DayWatch @Inject constructor(
     fun milestone(): Flow<MilestoneAward?> = observeMilestone()
 
     fun goal(): Flow<GoalSnapshot?> = observeGoal()
+
+    fun points(on: LocalDate): Flow<PointsTally> = observePoints(on)
 
     suspend fun markMilestoneSeen(milestone: Milestone) {
         markSeen(milestone)

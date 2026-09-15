@@ -310,6 +310,8 @@ private fun DurationSection(state: ItemEditorUiState, onChange: (ItemEditorUiSta
         Kicker(text = stringResource(R.string.editor_duration))
 
         Stepper(
+            decrementLabel = stringResource(R.string.stepper_less),
+            incrementLabel = stringResource(R.string.stepper_more),
             value = if (minutes == 0) {
                 stringResource(R.string.editor_duration_none)
             } else {

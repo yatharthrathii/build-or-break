@@ -12,17 +12,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -33,8 +39,10 @@ private val ToggleWidth = 46.dp
 private val ToggleHeight = 26.dp
 private val ToggleKnob = 18.dp
 private val ToggleInset = 2.dp
-private val StepperCell = 40.dp
-private val FieldHeight = 44.dp
+private val StepperCell = 48.dp
+
+/** The platform's minimum target. A field is a thing somebody taps. */
+private val FieldHeight = 48.dp
 
 /**
  * Joined boxes, one selected: WEEKDAY | WEEKEND, FIXED | RELATIVE | WINDOW.
@@ -106,7 +114,10 @@ private fun Segment(
         maxLines = 1,
         modifier = modifier
             .background(ground)
-            .clickable(role = Role.Tab) {
+            .minimumInteractiveComponentSize()
+            // Selectable rather than clickable, so the reader says which
+            // one is chosen instead of listing three identical tabs.
+            .selectable(selected = selected, role = Role.Tab) {
                 feedback.tick()
                 onClick()
             }
@@ -132,10 +143,12 @@ fun SquareToggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier:
 
     Box(
         modifier = modifier
+            // The track is small on purpose; the target around it is not.
+            .minimumInteractiveComponentSize()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
             .size(ToggleWidth, ToggleHeight)
             .border(Theme.spacing.rule, MaterialTheme.colorScheme.onSurface)
             .background(track)
-            .clickable(role = Role.Switch) { onCheckedChange(!checked) }
             .padding(Theme.spacing.rule + ToggleInset),
         contentAlignment = Alignment.CenterStart,
     ) {
@@ -162,6 +175,9 @@ fun Stepper(
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
     modifier: Modifier = Modifier,
+    /** What the two glyphs mean, for a screen reader. The caller owns the words. */
+    decrementLabel: String? = null,
+    incrementLabel: String? = null,
 ) {
     Row(
         modifier = modifier
@@ -169,7 +185,7 @@ fun Stepper(
             .height(FieldHeight),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StepperButton(text = "−", onClick = onDecrement)
+        StepperButton(text = "−", label = decrementLabel, onClick = onDecrement)
 
         Box(
             modifier = Modifier
@@ -193,12 +209,12 @@ fun Stepper(
                 .background(MaterialTheme.colorScheme.onSurface),
         )
 
-        StepperButton(text = "+", onClick = onIncrement)
+        StepperButton(text = "+", label = incrementLabel, onClick = onIncrement)
     }
 }
 
 @Composable
-private fun StepperButton(text: String, onClick: () -> Unit) {
+private fun StepperButton(text: String, label: String?, onClick: () -> Unit) {
     val feedback = rememberFeedback()
 
     Text(
@@ -213,7 +229,8 @@ private fun StepperButton(text: String, onClick: () -> Unit) {
                 feedback.tick()
                 onClick()
             }
-            .padding(top = 10.dp),
+            .semantics { label?.let { contentDescription = it } }
+            .padding(top = Theme.spacing.inset),
     )
 }
 
@@ -240,8 +257,10 @@ fun PickerField(
                 .padding(top = Theme.spacing.small)
                 .border(Theme.spacing.rule, MaterialTheme.colorScheme.onSurface)
                 .clickable(role = Role.Button, onClick = onClick)
-                .height(FieldHeight)
-                .padding(horizontal = Theme.spacing.inset),
+                // A floor, not a height: at a large font size the value wraps
+                // and a fixed box cut the second line off.
+                .heightIn(min = FieldHeight)
+                .padding(horizontal = Theme.spacing.inset, vertical = Theme.spacing.small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

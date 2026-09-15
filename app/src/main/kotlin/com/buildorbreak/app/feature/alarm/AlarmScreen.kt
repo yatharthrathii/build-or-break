@@ -16,11 +16,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -42,6 +45,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -287,7 +291,10 @@ private fun SecondaryCells(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = Theme.spacing.small)
-            .height(CellHeight),
+            // A floor. Three labels across a narrow phone at a large font
+            // size need two lines, and a fixed row cut the second one off.
+            .heightIn(min = CellHeight)
+            .height(IntrinsicSize.Min),
     ) {
         if (state.hasMinimum) {
             Cell(
@@ -318,15 +325,17 @@ private fun Cell(
 ) {
     Box(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxHeight()
             .background(Theme.colours.raised)
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = Theme.spacing.tight, vertical = Theme.spacing.small),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text.uppercase(Locale.getDefault()),
             style = MaterialTheme.typography.labelMedium,
             color = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
         )
     }
 }

@@ -122,6 +122,18 @@
         <item quantity="other">टाइम पर। लगातार %1$d दिन।</item>
     </plurals>
     <string name="today_run_none">आज निभाएँ, और सिलसिला शुरू।</string>
+    <string name="today_points">अंक</string>
+    <string name="today_row_done">हो गया</string>
+    <string name="today_row_missed">छूट गया</string>
+    <string name="today_row_next">अगला</string>
+    <string name="today_row_upcoming">आने वाला</string>
+    <string name="today_row_rings">बजेगा</string>
+    <string name="stepper_less">कम</string>
+    <string name="stepper_more">ज़्यादा</string>
+    <string name="goal_hero_bar_a11y">%1$d प्रतिशत रास्ता तय, रफ़्तार %2$d प्रतिशत पर</string>
+    <string name="insights_bar_a11y">%1$s, %2$d प्रतिशत निभाया</string>
+    <string name="insights_bar_none_a11y">%1$s, अभी कुछ नहीं</string>
+    <string name="today_points_today">+%1$d आज</string>
     <plurals name="today_shift_line">
         <item quantity="one">दिन +%1$d मिनट खिसका · %2$d अलार्म हिला</item>
         <item quantity="other">दिन +%1$d मिनट खिसका · %2$d अलार्म हिले</item>
@@ -572,6 +584,23 @@
     <string name="insights_other_options">कुछ और आज़माएं</string>
     <string name="insights_hide_options">बाकी छिपाएं</string>
     <string name="insights_goal">लक्ष्य</string>
+    <string name="insights_rewards">अंक और बैज</string>
+    <string name="insights_points_banked">जमा</string>
+    <string name="insights_points_week">इस हफ़्ते</string>
+    <string name="insights_points_best">सबसे अच्छा दिन</string>
+    <string name="insights_points_legend">हर स्टेप के दस, छोटे रूप के पाँच, पूरे दिन के बीस। आज के अंक आधी रात को जमा होते हैं।</string>
+    <string name="insights_badges">बैज</string>
+    <string name="insights_badges_count">%2$d में से %1$d</string>
+    <string name="insights_badge_not_yet">अभी नहीं</string>
+    <string name="badge_first_completion">पहला स्टेप</string>
+    <string name="badge_first_full_day">पूरा दिन</string>
+    <string name="badge_first_week">एक हफ़्ता</string>
+    <string name="badge_goal_quarter">चौथाई रास्ता</string>
+    <string name="badge_goal_half">आधा रास्ता</string>
+    <string name="badge_goal_three_quarters">तीन चौथाई</string>
+    <string name="badge_goal_reached">लक्ष्य पूरा</string>
+    <string name="badge_best_week">सबसे अच्छा हफ़्ता</string>
+    <string name="badge_thirty_day_run">तीस दिन लगातार</string>
 
     <string name="story_head_on_track">हफ़्ता टिका रहा।</string>
     <string name="story_head_plan_too_small">दिक्कत प्लान में है, आप में नहीं।</string>

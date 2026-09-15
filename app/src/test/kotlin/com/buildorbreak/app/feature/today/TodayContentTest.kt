@@ -1,5 +1,7 @@
 package com.buildorbreak.app.feature.today
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -57,6 +59,33 @@ class TodayContentTest {
     /** Brings a row of the lazy list into view before asserting on it. */
     private fun scrollTo(text: String) {
         compose.onNode(hasScrollAction()).performScrollToNode(hasText(text, substring = true))
+    }
+
+    @Test
+    fun `the score sits beside the ring, and says how much of it is today`() {
+        render(previewState())
+
+        compose.onNodeWithText("1,285").assertIsDisplayed()
+        compose.onNodeWithText("POINTS").assertIsDisplayed()
+        compose.onNodeWithText("+45 today").assertIsDisplayed()
+    }
+
+    @Test
+    fun `nothing kept yet shows the bank alone, not plus zero`() {
+        render(previewState().copy(points = PointsUi(banked = 1240, today = 0)))
+
+        compose.onNodeWithText("1,240").assertIsDisplayed()
+        compose.onAllNodesWithText("+0 today").assertCountEquals(0)
+    }
+
+    @Test
+    fun `the ring is a progress bar to a screen reader, and a row says its state`() {
+        render(previewState())
+
+        compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)).assertExists()
+        compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Next")).assertExists()
+        compose.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Done"))
+            .assertCountEquals(2)
     }
 
     @Test
