@@ -553,8 +553,8 @@
         <item quantity="one">%1$d of %2$d step</item>
         <item quantity="other">%1$d of %2$d steps</item>
     </plurals>
-    <string name="insights_change_up">+%1$d pts vs last %2$s</string>
-    <string name="insights_change_down">−%1$d pts vs last %2$s</string>
+    <string name="insights_change_up">Up %1$d on last %2$s</string>
+    <string name="insights_change_down">Down %1$d from last %2$s</string>
     <string name="insights_change_flat">Same as last %1$s</string>
     <string name="insights_change_none">First %1$s. Nothing to compare yet.</string>
     <string name="insights_period_week">week</string>
@@ -798,13 +798,6 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
-    <!-- Temporary, with DemoHistory. Delete both together. -->
-    <string name="settings_section_demo">Demo data (testing)</string>
-    <string name="settings_demo_seed">Load twelve weeks of history</string>
-    <string name="settings_demo_seed_body">Made-up days before today, so Insights has something to show. Your plan is not changed.</string>
-    <string name="settings_demo_written">Wrote %1$s steps of history.</string>
-    <string name="settings_demo_clear">Delete the demo history</string>
-    <string name="settings_demo_clear_body">Removes every day before today. Today and your plan stay.</string>
     <string name="settings_section_data">Your data</string>
     <string name="settings_export">Export plan and history</string>
     <string name="settings_export_body">One file with your plan and history. Share it anywhere you like.</string>

@@ -3,7 +3,6 @@ package com.buildorbreak.app.feature.settings
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.buildorbreak.core.data.demo.DemoHistory
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.usecase.ExportPlanUseCase
 import com.buildorbreak.core.domain.usecase.WipeDataUseCase
@@ -35,9 +34,6 @@ data class SettingsUiState(
     val lateToleranceMinutes: Int,
     val exporting: Boolean,
     val wiping: Boolean,
-    /** Temporary. See `DemoHistory`; both go together. */
-    val demoBusy: Boolean = false,
-    val demoMessage: String? = null,
 ) {
     companion object {
         val Initial = SettingsUiState(
@@ -57,22 +53,17 @@ class SettingsViewModel @Inject constructor(
     private val exportPlan: ExportPlanUseCase,
     private val wipeData: WipeDataUseCase,
     private val tiers: TierDetector,
-    private val demoHistory: DemoHistory,
 ) : ViewModel() {
 
     private val delivery = MutableStateFlow(tiers.detect())
     private val busy = MutableStateFlow(false to false)
-
-    /** Temporary, with `DemoHistory`. Busy, and how many rows the last run wrote. */
-    private val demo = MutableStateFlow<Pair<Boolean, Int?>>(false to null)
 
     val state: StateFlow<SettingsUiState> = combine(
         settings.themeMode,
         settings.lateTolerance,
         delivery,
         busy,
-        demo,
-    ) { mode, tolerance, status, flags, demoState ->
+    ) { mode, tolerance, status, flags ->
         SettingsUiState(
             themeMode = mode,
             tier = status.tier,
@@ -80,8 +71,6 @@ class SettingsViewModel @Inject constructor(
             lateToleranceMinutes = tolerance.inWholeMinutes.toInt(),
             exporting = flags.first,
             wiping = flags.second,
-            demoBusy = demoState.first,
-            demoMessage = demoState.second?.toString(),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -103,25 +92,6 @@ class SettingsViewModel @Inject constructor(
         busy.value = true to busy.value.second
         exportPlan()?.let(onReady)
         busy.value = false to busy.value.second
-    }
-
-    /**
-     * Temporary, and deliberately obvious.
-     *
-     * Six weeks of invented history so the review screens can be looked at
-     * before six weeks have passed. `DemoHistory` says the rest; deleting that
-     * file and these two functions removes the feature.
-     */
-    fun onSeedDemo() = viewModelScope.launch {
-        demo.value = true to null
-        val written = demoHistory.seed()
-        demo.value = false to written
-    }
-
-    fun onClearDemo() = viewModelScope.launch {
-        demo.value = true to null
-        demoHistory.clear()
-        demo.value = false to 0
     }
 
     fun onWipe(onDone: () -> Unit) = viewModelScope.launch {

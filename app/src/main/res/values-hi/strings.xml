@@ -511,8 +511,8 @@
         <item quantity="one">%2$d में से %1$d स्टेप</item>
         <item quantity="other">%2$d में से %1$d स्टेप</item>
     </plurals>
-    <string name="insights_change_up">पिछले %2$s से +%1$d अंक</string>
-    <string name="insights_change_down">पिछले %2$s से −%1$d अंक</string>
+    <string name="insights_change_up">पिछले %2$s से %1$d ऊपर</string>
+    <string name="insights_change_down">पिछले %2$s से %1$d नीचे</string>
     <string name="insights_change_flat">पिछले %1$s जितना ही</string>
     <string name="insights_change_none">पहला %1$s। तुलना के लिए अभी कुछ नहीं।</string>
     <string name="insights_period_week">हफ्ते</string>
@@ -751,12 +751,6 @@
     <string name="theme_system">सिस्टम</string>
     <string name="theme_light">लाइट</string>
     <string name="theme_dark">डार्क</string>
-    <string name="settings_section_demo">डेमो डेटा (टेस्टिंग)</string>
-    <string name="settings_demo_seed">छह हफ्ते का इतिहास डालें</string>
-    <string name="settings_demo_seed_body">आज से पहले के बनावटी दिन, ताकि Insights में कुछ दिखे। आपका प्लान नहीं बदलता।</string>
-    <string name="settings_demo_written">%1$s स्टेप का इतिहास बना।</string>
-    <string name="settings_demo_clear">डेमो इतिहास मिटाएँ</string>
-    <string name="settings_demo_clear_body">आज से पहले के सारे दिन हटा देता है। आज और आपका प्लान रहेगा।</string>
     <string name="settings_section_data">आपका डेटा</string>
     <string name="settings_export">प्लान और हिस्ट्री एक्सपोर्ट</string>
     <string name="settings_export_body">आपके प्लान और इतिहास की एक फ़ाइल। जहाँ चाहें भेजें।</string>

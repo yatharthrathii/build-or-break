@@ -229,6 +229,13 @@ class TodayViewModel @Inject constructor(
      * always offers a way past.
      */
     fun onSkip(occurrenceId: Long, chip: SkipChip? = null) = viewModelScope.launch {
+        // Answered here and now, so the deferred question must never be put.
+        // The flow that finds unexplained skips watches the occurrence table,
+        // and it re emitted the moment the row was settled, a beat before the
+        // reason had been written: the bar for skips made from a notification
+        // came up for a skip made from the sheet, and it stayed up, because
+        // writing the reason touches nothing that flow watches.
+        local.update { it.copy(waved = it.waved + occurrenceId) }
         expect(occurrenceId, OccurrenceState.SKIPPED)
         offerUndo(occurrenceId, SettleKind.SKIPPED)
 

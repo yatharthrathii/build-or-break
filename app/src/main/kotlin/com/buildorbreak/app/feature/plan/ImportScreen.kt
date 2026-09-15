@@ -1,6 +1,7 @@
 package com.buildorbreak.app.feature.plan
 
 import android.content.ClipData
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -136,6 +137,12 @@ fun ImportContent(
     actions: ImportActions,
     modifier: Modifier = Modifier,
 ) {
+    // The phone's back does what the arrow does. On the review stage that
+    // is back to the text, not out of the screen: somebody who sees a line
+    // was not understood presses back to fix it, and leaving instead threw
+    // the paste away and reopened on the same stale preview next time.
+    BackHandler(enabled = state.stage != ImportStage.EDITING, onBack = actions.onBackToEditing)
+
     Column(
         modifier = modifier
             .fillMaxSize()

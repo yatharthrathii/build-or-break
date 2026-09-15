@@ -94,8 +94,6 @@ fun SettingsScreen(
         onExport = { viewModel.onExport(onShare) },
         onImport = onImport,
         onWipe = { viewModel.onWipe { } },
-        onSeedDemo = viewModel::onSeedDemo,
-        onClearDemo = viewModel::onClearDemo,
         modifier = modifier,
     )
 }
@@ -113,8 +111,6 @@ fun SettingsContent(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onWipe: () -> Unit,
-    onSeedDemo: () -> Unit,
-    onClearDemo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var confirmingWipe by rememberSaveable { mutableStateOf(false) }
@@ -145,8 +141,6 @@ fun SettingsContent(
                 onDelete = { confirmingWipe = true },
             )
 
-            DemoRows(state = state, onSeedDemo = onSeedDemo, onClearDemo = onClearDemo)
-
             AboutRows(onOpenAbout = onOpenAbout, onOpenLegal = onOpenLegal)
 
             Footer()
@@ -176,34 +170,6 @@ private fun DayRows(state: SettingsUiState, onOpenGoal: () -> Unit, onThemeMode:
     ) { Chevron() }
 
     ThemeRow(mode = state.themeMode, onThemeMode = onThemeMode)
-}
-
-/**
- * Temporary. Goes with `DemoHistory`, and both are meant to be deleted.
- *
- * Six weeks of invented history so the review screens can be judged before six
- * weeks have passed. Marked as clearly as the design allows so nobody mistakes
- * it for a feature, and it only ever writes to dates before today.
- */
-@Composable
-private fun DemoRows(state: SettingsUiState, onSeedDemo: () -> Unit, onClearDemo: () -> Unit) {
-    SectionLabel(text = stringResource(R.string.settings_section_demo), underlined = true)
-
-    SettingsRow(
-        title = stringResource(R.string.settings_demo_seed),
-        body = state.demoMessage?.let { stringResource(R.string.settings_demo_written, it) }
-            ?: stringResource(R.string.settings_demo_seed_body),
-        enabled = !state.demoBusy,
-        onClick = onSeedDemo,
-    ) { Chevron() }
-
-    SettingsRow(
-        title = stringResource(R.string.settings_demo_clear),
-        body = stringResource(R.string.settings_demo_clear_body),
-        enabled = !state.demoBusy,
-        onClick = onClearDemo,
-        last = true,
-    )
 }
 
 @Composable
@@ -470,8 +436,6 @@ private fun SettingsPreview() {
             onExport = {},
             onImport = {},
             onWipe = {},
-            onSeedDemo = {},
-            onClearDemo = {},
         )
     }
 }

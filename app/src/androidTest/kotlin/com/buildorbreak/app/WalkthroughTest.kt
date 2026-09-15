@@ -64,8 +64,6 @@ class WalkthroughTest {
         val dayIsLive = today()
         plan()
         insightsBeforeHistory()
-        loadDemoHistory()
-        insightsAfterHistory()
 
         // Run after the last step of the starter day, there is no day left to
         // drive: the screen says it starts tomorrow, and shifting or skipping
@@ -76,8 +74,6 @@ class WalkthroughTest {
             runningLate()
             skipAsksWhy()
         }
-
-        clearDemoHistory()
     }
 
     /**
@@ -166,47 +162,6 @@ class WalkthroughTest {
         shot("insights-before")
     }
 
-    private fun loadDemoHistory() {
-        tab(SETTINGS)
-        await("ALARMS")
-        shot("settings-top")
-
-        scrollTo("Load twelve weeks of history")
-        shot("settings-demo")
-        tap("Load twelve weeks of history")
-
-        // Around nine hundred rows, one settle each. Waited on by the row's own
-        // text rather than by a sleep, so a fast device is not punished for it.
-        await("Wrote", timeout = SEED_TIMEOUT)
-        shot("settings-demo-done")
-    }
-
-    /**
-     * The week, then the month.
-     *
-     * The demo history stops at yesterday, so on a Monday the current week is
-     * genuinely empty and the screen says so. A walkthrough that only passed
-     * on a Tuesday would be a walkthrough nobody could trust on a Monday.
-     */
-    private fun insightsAfterHistory() {
-        tab(INSIGHTS)
-
-        // Either the week has something in it or it says plainly that it does
-        // not. Never tapped by the word WEEK, which also appears in the header
-        // above it.
-        awaitEither("KEPT PER DAY", "Nothing this week yet")
-        shot("insights-week")
-
-        tap("MONTH")
-        await("KEPT PER WEEK")
-        shot("insights-month")
-
-        // The whole reason the skip sheet asks. Checked on the month rather
-        // than the week: a week that is one day old can honestly contain no
-        // skips at all.
-        assertThat(exists("Why steps were skipped")).isTrue()
-    }
-
     private fun runningLate() {
         tab(TODAY)
         await("RUNNING LATE")
@@ -254,14 +209,6 @@ class WalkthroughTest {
         tap("Undo")
         compose.waitForIdle()
         shot("today-undone")
-    }
-
-    private fun clearDemoHistory() {
-        tab(SETTINGS)
-        scrollTo("Delete the demo history")
-        tap("Delete the demo history")
-        compose.waitForIdle()
-        shot("settings-demo-cleared")
     }
 
     // Driving ----------------------------------------------------------------
@@ -352,6 +299,5 @@ class WalkthroughTest {
         const val SETTINGS = "Settings"
 
         const val DEFAULT_TIMEOUT = 15_000L
-        const val SEED_TIMEOUT = 180_000L
     }
 }
