@@ -215,7 +215,7 @@
     <string name="note_done_early">हो गया %1$s · %2$s जल्दी</string>
     <string name="note_moved_later">+%1$s खिसका</string>
     <string name="note_moved_earlier">−%1$s खिसका</string>
-    <string name="span_minutes">%1$d</string>
+    <string name="span_minutes">%1$d मि</string>
     <string name="span_hours">%1$dघ</string>
     <string name="span_hours_minutes">%1$dघ %2$dम</string>
     <string name="note_ends">%1$s तक</string>
@@ -639,9 +639,15 @@
     <string name="readings_body">आपने जो भी नंबर लिखे हैं. ठीक करने या हटाने के लिए किसी पर टैप करें.</string>
     <string name="readings_today">आज</string>
     <string name="readings_save">सेव करें</string>
+    <string name="readings_add">रीडिंग जोड़ें</string>
+    <string name="readings_add_day">कौन सा दिन</string>
+    <string name="readings_day_earlier">एक दिन पहले</string>
+    <string name="readings_day_later">एक दिन बाद</string>
+    <string name="readings_replaces">इस दिन का नंबर पहले से है। सेव करने पर वह बदल जाएगा।</string>
     <string name="readings_delete">हटाएं</string>
     <string name="readings_failed">सेव नहीं हुआ. फिर कोशिश करें.</string>
     <string name="readings_rebuilds">ये बदलने पर उस दिन से आगे का औसत दोबारा बनेगा.</string>
+    <string name="readings_rebuilds_new">इस दिन से आगे का औसत दोबारा बनेगा.</string>
     <string name="readings_none_title">अभी कोई रीडिंग नहीं</string>
     <string name="readings_none_body">जो स्टेप नंबर मांगता है, उसे पूरा करने पर नंबर यहाँ दिखेंगे.</string>
     <string name="goal_see_readings">सभी रीडिंग देखें</string>
@@ -755,6 +761,38 @@
     <string name="settings_export">प्लान और हिस्ट्री एक्सपोर्ट</string>
     <string name="settings_export_body">आपके प्लान और इतिहास की एक फ़ाइल। जहाँ चाहें भेजें।</string>
     <string name="settings_export_chooser">अपना प्लान शेयर करें</string>
+    <string name="settings_export_file">build-or-break-%1$s.json</string>
+    <string name="action_close">बंद करें</string>
+    <string name="settings_restore">फ़ाइल से वापस लाएं</string>
+    <string name="settings_restore_body">इस ऐप की एक्सपोर्ट की हुई फ़ाइल। जो अभी है वह बदल जाएगा।</string>
+    <string name="settings_restore_busy">वापस डाला जा रहा है…</string>
+    <string name="settings_restore_confirm_title">वापस लाकर बदल दें?</string>
+    <string name="settings_restore_confirm_body">इस फ़ोन का सब कुछ मिटाकर फ़ाइल से दोबारा लिखा जाएगा। यह वापस नहीं हो सकता।</string>
+    <string name="settings_restore_confirm">वापस लाएं</string>
+    <string name="settings_restore_done_title">वापस आ गया।</string>
+    <plurals name="settings_restore_steps">
+        <item quantity="one">%1$d स्टेप</item>
+        <item quantity="other">%1$d स्टेप</item>
+    </plurals>
+    <plurals name="settings_restore_days">
+        <item quantity="one">%1$d दिन का इतिहास</item>
+        <item quantity="other">%1$d दिन का इतिहास</item>
+    </plurals>
+    <plurals name="settings_restore_readings">
+        <item quantity="one">%1$d रीडिंग</item>
+        <item quantity="other">%1$d रीडिंग</item>
+    </plurals>
+    <plurals name="settings_restore_badges">
+        <item quantity="one">%1$d बैज</item>
+        <item quantity="other">%1$d बैज</item>
+    </plurals>
+    <string name="settings_restore_done_body">%1$s।</string>
+    <string name="settings_restore_join">%1$s, %2$s</string>
+    <string name="settings_restore_join_last">%1$s और %2$s</string>
+    <string name="settings_restore_failed_title">पढ़ नहीं पाए</string>
+    <string name="settings_restore_not_readable">यह फ़ाइल इस ऐप की नहीं है, या रास्ते में खराब हो गई। कुछ बदला नहीं।</string>
+    <string name="settings_restore_too_new">यह फ़ाइल ऐप के नए वर्ज़न से बनी है। पहले अपडेट करें।</string>
+    <string name="settings_restore_empty">इस फ़ाइल में कोई स्टेप नहीं है। कुछ बदला नहीं।</string>
     <string name="settings_import">टेक्स्ट से इंपोर्ट</string>
     <string name="settings_delete">सब कुछ मिटाएँ</string>
     <string name="settings_delete_body">प्लान, इतिहास, अलार्म। कहीं और कोई कॉपी नहीं है।</string>

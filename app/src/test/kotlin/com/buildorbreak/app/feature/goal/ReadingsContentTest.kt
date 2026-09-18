@@ -49,7 +49,9 @@ class ReadingsContentTest {
             BuildOrBreakTheme {
                 ReadingsContent(
                     state = state,
+                    onAdd = {},
                     onEdit = onEdit,
+                    onShiftDay = {},
                     onTyped = onTyped,
                     onSave = onSave,
                     onDelete = onDelete,
@@ -116,6 +118,7 @@ class ReadingsContentTest {
                     draft = ReadingDraft(id = 2, date = TODAY.minusDays(1), typed = typed),
                     unit = ValueKind.WEIGHT_KG,
                     failed = false,
+                    onShiftDay = {},
                     onTyped = onTyped,
                     onSave = onSave,
                     onDelete = onDelete,

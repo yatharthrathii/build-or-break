@@ -49,6 +49,15 @@ interface ItemRepository {
     fun observeBlocksForTemplate(templateId: Long): Flow<List<Block>>
 
     /**
+     * Every step on a template, archived ones included.
+     *
+     * Only for an export, which is the one reader that wants the steps the
+     * plan has finished with: the history points at them, and a backup that
+     * left them out would restore those days as empty rather than as done.
+     */
+    suspend fun allForTemplate(templateId: Long): List<Item>
+
+    /**
      * One item, for a receiver that has an id and ten seconds.
      *
      * A broadcast receiver woken by an alarm cannot collect a flow and wait for

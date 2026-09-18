@@ -27,6 +27,17 @@ interface ItemDao {
     )
     fun observeForTemplate(templateId: Long): Flow<List<ItemEntity>>
 
+    /**
+     * Every step, archived ones included, for an export.
+     *
+     * A backup that dropped the archived ones would come back with a gap in
+     * the history rather than a smaller plan: the occurrences for those days
+     * point at steps that would no longer exist, so the days they were done
+     * on would restore empty.
+     */
+    @Query("SELECT * FROM item WHERE template_id = :templateId ORDER BY sort_order, id")
+    suspend fun allForTemplate(templateId: Long): List<ItemEntity>
+
     @Query("SELECT * FROM block WHERE template_id = :templateId ORDER BY sort_order, id")
     fun observeBlocksForTemplate(templateId: Long): Flow<List<BlockEntity>>
 

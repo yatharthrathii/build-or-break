@@ -37,7 +37,10 @@ data object GoalRoute : NavKey
 
 /** Every number behind a measured goal, and the one place they can be corrected. */
 @Serializable
-data object ReadingsRoute : NavKey
+data class ReadingsRoute(
+    /** Straight into the editor, for "add a reading" on the goal screen. */
+    val addNow: Boolean = false,
+) : NavKey
 
 @Serializable
 data object ImportRoute : NavKey

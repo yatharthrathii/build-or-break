@@ -64,6 +64,25 @@
         </activity>
 
         <!--
+            The export, handed to whichever app the user picks to share it.
+
+            A file rather than a block of text in the intent: an export is a
+            document somebody keeps, and a chat app given plain text with a
+            JSON type has nowhere to put it. It is also what makes the file
+            pickable again on the other side, which is the whole point of a
+            backup.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!--
             Rescheduling on launch is the second path to work the daily job also
             does. WorkManager is best effort and a vendor battery manager may
             stop it for days, so the pass runs here too. It is idempotent, which

@@ -3,8 +3,12 @@ package com.buildorbreak.app.feature.settings
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.buildorbreak.core.common.result.Outcome
+import com.buildorbreak.core.domain.export.BackupProblem
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.usecase.ExportPlanUseCase
+import com.buildorbreak.core.domain.usecase.RestoreBackupUseCase
+import com.buildorbreak.core.domain.usecase.RestoreSummary
 import com.buildorbreak.core.domain.usecase.WipeDataUseCase
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.core.model.enums.ThemeMode
@@ -25,6 +29,22 @@ import kotlinx.coroutines.launch
  * [fixCount] is how many things the reliability screen would offer to change.
  * Zero means the row can say so and nobody has to open it.
  */
+/**
+ * How a restore ended, for the one line the screen says afterwards.
+ *
+ * A restore replaces everything, which is the sort of thing somebody wants
+ * told back to them in their own numbers: eleven steps and forty days is a
+ * sentence they can check against what they remember having.
+ */
+@Immutable
+sealed interface RestoreResult {
+    @Immutable
+    data class Done(val summary: RestoreSummary) : RestoreResult
+
+    @Immutable
+    data class Failed(val problem: BackupProblem) : RestoreResult
+}
+
 @Immutable
 data class SettingsUiState(
     val themeMode: ThemeMode,
@@ -34,6 +54,8 @@ data class SettingsUiState(
     val lateToleranceMinutes: Int,
     val exporting: Boolean,
     val wiping: Boolean,
+    val restoring: Boolean = false,
+    val restored: RestoreResult? = null,
 ) {
     companion object {
         val Initial = SettingsUiState(
@@ -51,19 +73,22 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val exportPlan: ExportPlanUseCase,
+    private val restoreBackup: RestoreBackupUseCase,
     private val wipeData: WipeDataUseCase,
     private val tiers: TierDetector,
 ) : ViewModel() {
 
     private val delivery = MutableStateFlow(tiers.detect())
     private val busy = MutableStateFlow(false to false)
+    private val restore = MutableStateFlow(false to null as RestoreResult?)
 
     val state: StateFlow<SettingsUiState> = combine(
         settings.themeMode,
         settings.lateTolerance,
         delivery,
         busy,
-    ) { mode, tolerance, status, flags ->
+        restore,
+    ) { mode, tolerance, status, flags, restoreState ->
         SettingsUiState(
             themeMode = mode,
             tier = status.tier,
@@ -71,6 +96,8 @@ class SettingsViewModel @Inject constructor(
             lateToleranceMinutes = tolerance.inWholeMinutes.toInt(),
             exporting = flags.first,
             wiping = flags.second,
+            restoring = restoreState.first,
+            restored = restoreState.second,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -92,6 +119,32 @@ class SettingsViewModel @Inject constructor(
         busy.value = true to busy.value.second
         exportPlan()?.let(onReady)
         busy.value = false to busy.value.second
+    }
+
+    /**
+     * Puts a backup file back, replacing everything.
+     *
+     * The text is read by the screen rather than here: picking a file needs a
+     * content resolver, which is a framework type, and a ViewModel that held
+     * one would be a ViewModel that cannot be tested without Android. The same
+     * split as the export, which hands its text out for somebody else to send.
+     */
+    fun onRestore(text: String) = viewModelScope.launch {
+        restore.value = true to null
+
+        restore.value = false to when (val outcome = restoreBackup(text)) {
+            is Outcome.Success -> RestoreResult.Done(outcome.value)
+            is Outcome.Failure -> RestoreResult.Failed(outcome.reason)
+        }
+    }
+
+    /** The file could not even be opened, which the screen reports like any other bad file. */
+    fun onRestoreUnreadable() {
+        restore.value = false to RestoreResult.Failed(BackupProblem.NOT_READABLE)
+    }
+
+    fun onDismissRestore() {
+        restore.value = false to null
     }
 
     fun onWipe(onDone: () -> Unit) = viewModelScope.launch {

@@ -88,6 +88,20 @@ interface OccurrenceRepository {
      * rows would re emit the whole set on every completion for no reader.
      */
     suspend fun between(from: LocalDate, to: LocalDate): List<Occurrence>
+
+    /**
+     * Writes back rows that already happened, from a backup.
+     *
+     * Separate from [materialise] because that one creates the future: it
+     * takes what the resolver said, forces every row to PENDING and drops
+     * anything not scheduled. A restore is the opposite job. The rows are
+     * settled history, their state is the whole point of keeping them, and
+     * the timeline-only ones are part of what the day looked like.
+     *
+     * Ids are assigned fresh. The ones in the file belonged to a database
+     * that no longer exists, and nothing outside the file refers to them.
+     */
+    suspend fun restore(rows: List<Occurrence>): Outcome<Unit, DataError>
 }
 
 interface DayLogRepository {

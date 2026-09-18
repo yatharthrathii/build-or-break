@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import com.buildorbreak.core.designsystem.component.HairlineRule
 import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.Panel
+import com.buildorbreak.core.designsystem.component.Stepper
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.designsystem.theme.TimeStyle
@@ -64,12 +66,26 @@ private val RowDate = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault
  * "which day did I get wrong", never "which value".
  */
 @Composable
-fun ReadingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: ReadingsViewModel = hiltViewModel()) {
+fun ReadingsScreen(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** Opened from the goal's "add a reading", which means the editor, not the list. */
+    startAdding: Boolean = false,
+    viewModel: ReadingsViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Once the series has arrived, so the box opens with whatever the day
+    // already holds rather than empty and then changing under the thumb.
+    LaunchedEffect(startAdding, state.loaded) {
+        if (startAdding && state.loaded) viewModel.onAdd()
+    }
 
     ReadingsContent(
         state = state,
+        onAdd = viewModel::onAdd,
         onEdit = viewModel::onEdit,
+        onShiftDay = viewModel::onShiftDay,
         onTyped = viewModel::onTyped,
         onSave = viewModel::onSave,
         onDelete = viewModel::onDelete,
@@ -82,7 +98,9 @@ fun ReadingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel:
 @Composable
 fun ReadingsContent(
     state: ReadingsUiState,
+    onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
+    onShiftDay: (Long) -> Unit,
     onTyped: (String) -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
@@ -104,8 +122,8 @@ fun ReadingsContent(
         )
 
         when {
-            state.rows.isNotEmpty() -> ReadingList(state = state, onEdit = onEdit)
-            state.loaded -> NoReadings()
+            state.rows.isNotEmpty() -> ReadingList(state = state, onAdd = onAdd, onEdit = onEdit)
+            state.loaded -> NoReadings(canAdd = state.canAdd, onAdd = onAdd)
             // Nothing, rather than an empty state, before the first read.
             else -> Unit
         }
@@ -116,6 +134,7 @@ fun ReadingsContent(
             draft = draft,
             unit = state.valueKind,
             failed = state.failed,
+            onShiftDay = onShiftDay,
             onTyped = onTyped,
             onSave = onSave,
             onDelete = onDelete,
@@ -125,7 +144,7 @@ fun ReadingsContent(
 }
 
 @Composable
-private fun ReadingList(state: ReadingsUiState, onEdit: (Long) -> Unit) {
+private fun ReadingList(state: ReadingsUiState, onAdd: () -> Unit, onEdit: (Long) -> Unit) {
     val unit = stringResource(goalUnit(state.valueKind, GoalKind.NUMBER))
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -141,6 +160,17 @@ private fun ReadingList(state: ReadingsUiState, onEdit: (Long) -> Unit) {
                     bottom = Theme.spacing.small,
                 ),
             )
+
+            if (state.canAdd) {
+                OutlineButton(
+                    text = stringResource(R.string.readings_add),
+                    onClick = onAdd,
+                    modifier = Modifier.padding(
+                        start = Theme.spacing.medium,
+                        bottom = Theme.spacing.small,
+                    ),
+                )
+            }
         }
 
         items(items = state.rows, key = { it.id }) { row ->
@@ -198,6 +228,7 @@ private fun EditDialog(
     draft: ReadingDraft,
     unit: ValueKind,
     failed: Boolean,
+    onShiftDay: (Long) -> Unit,
     onTyped: (String) -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
@@ -209,6 +240,7 @@ private fun EditDialog(
                 draft = draft,
                 unit = unit,
                 failed = failed,
+                onShiftDay = onShiftDay,
                 onTyped = onTyped,
                 onSave = onSave,
                 onDelete = onDelete,
@@ -231,15 +263,41 @@ internal fun ReadingEditor(
     draft: ReadingDraft,
     unit: ValueKind,
     failed: Boolean,
+    onShiftDay: (Long) -> Unit,
     onTyped: (String) -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
 ) {
     Column(modifier = Modifier.padding(Theme.spacing.medium)) {
-        Kicker(text = draft.date.format(RowDate))
+        if (draft.isNew) {
+            Kicker(text = stringResource(R.string.readings_add_day))
+
+            // Steps a day at a time rather than opening a calendar. The day
+            // being looked for is today or the one before it; a month grid is
+            // a lot of screen for a question with two likely answers.
+            Stepper(
+                value = draft.date.format(RowDate),
+                onDecrement = { onShiftDay(-1) },
+                onIncrement = { onShiftDay(1) },
+                modifier = Modifier.fillMaxWidth().padding(top = Theme.spacing.small),
+                decrementLabel = stringResource(R.string.readings_day_earlier),
+                incrementLabel = stringResource(R.string.readings_day_later),
+            )
+        } else {
+            Kicker(text = draft.date.format(RowDate))
+        }
 
         NumberBox(typed = draft.typed, unit = stringResource(goalUnit(unit, GoalKind.NUMBER)), onTyped = onTyped)
+
+        if (draft.isNew && draft.replaces) {
+            Text(
+                text = stringResource(R.string.readings_replaces),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(top = Theme.spacing.small),
+            )
+        }
 
         if (failed) {
             Text(
@@ -251,19 +309,28 @@ internal fun ReadingEditor(
         }
 
         Text(
-            text = stringResource(R.string.readings_rebuilds),
+            text = stringResource(
+                if (draft.isNew) R.string.readings_rebuilds_new else R.string.readings_rebuilds,
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = Theme.colours.faint,
             modifier = Modifier.padding(top = Theme.spacing.inset),
         )
 
-        DialogActions(canSave = draft.canSave, onSave = onSave, onDelete = onDelete, onCancel = onCancel)
+        DialogActions(
+            canSave = draft.canSave,
+            canDelete = draft.canDelete,
+            onSave = onSave,
+            onDelete = onDelete,
+            onCancel = onCancel,
+        )
     }
 }
 
 @Composable
 private fun DialogActions(
     canSave: Boolean,
+    canDelete: Boolean,
     onSave: () -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
@@ -278,11 +345,13 @@ private fun DialogActions(
 
         Box(modifier = Modifier.weight(1f))
 
-        GhostButton(
-            text = stringResource(R.string.readings_delete),
-            onClick = onDelete,
-            color = MaterialTheme.colorScheme.error,
-        )
+        if (canDelete) {
+            GhostButton(
+                text = stringResource(R.string.readings_delete),
+                onClick = onDelete,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
     }
 }
 
@@ -316,11 +385,17 @@ private fun NumberBox(typed: String, unit: String, onTyped: (String) -> Unit) {
 }
 
 @Composable
-private fun NoReadings() {
-    EmptyState(
-        title = stringResource(R.string.readings_none_title),
-        body = stringResource(R.string.readings_none_body),
-    )
+private fun NoReadings(canAdd: Boolean, onAdd: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        EmptyState(
+            title = stringResource(R.string.readings_none_title),
+            body = stringResource(R.string.readings_none_body),
+        )
+
+        if (canAdd) {
+            OutlineButton(text = stringResource(R.string.readings_add), onClick = onAdd)
+        }
+    }
 }
 
 @Preview(name = "Readings", showBackground = true)
@@ -337,8 +412,11 @@ private fun ReadingsPreview() {
                     ReadingRow(2, LocalDate.of(2026, 9, 11), 49.8, isToday = false),
                     ReadingRow(1, LocalDate.of(2026, 9, 10), 50.1, isToday = false),
                 ),
+                canAdd = true,
             ),
+            onAdd = {},
             onEdit = {},
+            onShiftDay = {},
             onTyped = {},
             onSave = {},
             onDelete = {},

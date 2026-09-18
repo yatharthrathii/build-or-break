@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.common.time.TimeProvider
+import com.buildorbreak.core.domain.usecase.AddReadingUseCase
 import com.buildorbreak.core.domain.usecase.DeleteReadingUseCase
 import com.buildorbreak.core.domain.usecase.GoalSeries
 import com.buildorbreak.core.domain.usecase.ObserveGoalReadingsUseCase
@@ -34,12 +35,29 @@ data class ReadingRow(
     val isToday: Boolean,
 )
 
-/** The row being corrected, and what has been typed into it so far. */
+/**
+ * The reading being written, and what has been typed into it so far.
+ *
+ * One shape for both jobs. Correcting a row and adding a missing one ask the
+ * same question of the user, and the only difference is whether the day is
+ * already decided, so the editor is the same editor with its date unlocked.
+ */
 @Immutable
-data class ReadingDraft(val id: Long, val date: LocalDate, val typed: String) {
+data class ReadingDraft(
+    val id: Long,
+    val date: LocalDate,
+    val typed: String,
+    /** Adding rather than correcting: the day can still be moved. */
+    val isNew: Boolean = false,
+    /** True when the chosen day already has a number this would replace. */
+    val replaces: Boolean = false,
+) {
     val value: Double? get() = typed.trim().toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
 
     val canSave: Boolean get() = value != null
+
+    /** Nothing to remove until there is a row. */
+    val canDelete: Boolean get() = !isNew || replaces
 }
 
 @Immutable
@@ -50,6 +68,8 @@ data class ReadingsUiState(
     val rows: ImmutableList<ReadingRow>,
     val editing: ReadingDraft? = null,
     val failed: Boolean = false,
+    /** Only a measured goal takes readings, so only one can be added by hand. */
+    val canAdd: Boolean = false,
 ) {
     companion object {
         val Empty = ReadingsUiState(
@@ -77,6 +97,7 @@ data class ReadingsUiState(
 @HiltViewModel
 class ReadingsViewModel @Inject constructor(
     observeReadings: ObserveGoalReadingsUseCase,
+    private val addReading: AddReadingUseCase,
     private val saveReading: SaveReadingUseCase,
     private val deleteReading: DeleteReadingUseCase,
     private val time: TimeProvider,
@@ -88,9 +109,13 @@ class ReadingsViewModel @Inject constructor(
     /** Kept so an edit can be written back as the row it came from, not as a new one. */
     private var series: List<Measurement> = emptyList()
 
+    /** The earliest day a reading may be added for. Before the goal it would not count. */
+    private var firstDay: LocalDate? = null
+
     val state: StateFlow<ReadingsUiState> =
         combine(observeReadings(), draft, failed) { found, editing, failure ->
             series = found?.readings.orEmpty()
+            firstDay = found?.goal?.startDate
 
             ReadingsUiState(
                 loaded = true,
@@ -99,12 +124,38 @@ class ReadingsViewModel @Inject constructor(
                 rows = rowsOf(found),
                 editing = editing,
                 failed = failure,
+                canAdd = found != null,
             )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = ReadingsUiState.Empty,
         )
+
+    /**
+     * Opens the editor on a day with no number, today by default.
+     *
+     * Today because that is the reading somebody came here to add: the step
+     * was ticked from a notification hours ago and the figure has nowhere to
+     * go. The arrows are there for the morning it is remembered a day late.
+     */
+    fun onAdd() {
+        draft.value = draftFor(time.today())
+        failed.value = false
+    }
+
+    /** Moves the day being added by [days], inside the goal's own window. */
+    fun onShiftDay(days: Long) {
+        val current = draft.value?.takeIf { it.isNew } ?: return
+        val moved = current.date.plusDays(days)
+
+        // A reading before the goal began is averaged into nothing, and one
+        // dated tomorrow is a number that has not been taken yet.
+        if (moved > time.today() || moved < (firstDay ?: moved)) return
+
+        draft.value = draftFor(moved)
+        failed.value = false
+    }
 
     fun onEdit(id: Long) {
         val row = series.firstOrNull { it.id == id } ?: return
@@ -125,9 +176,13 @@ class ReadingsViewModel @Inject constructor(
     fun onSave() = viewModelScope.launch {
         val current = draft.value ?: return@launch
         val value = current.value ?: return@launch
-        val row = series.firstOrNull { it.id == current.id } ?: return@launch
 
-        val written = saveReading(row, value) is Outcome.Success
+        val written = if (current.isNew) {
+            addReading(current.date, value) is Outcome.Success
+        } else {
+            val row = series.firstOrNull { it.id == current.id } ?: return@launch
+            saveReading(row, value) is Outcome.Success
+        }
 
         if (written) draft.value = null
         failed.value = !written
@@ -135,12 +190,26 @@ class ReadingsViewModel @Inject constructor(
 
     fun onDelete() = viewModelScope.launch {
         val current = draft.value ?: return@launch
-        val row = series.firstOrNull { it.id == current.id } ?: return@launch
+        val id = if (current.isNew) series.firstOrNull { it.date == current.date }?.id else current.id
+        val row = series.firstOrNull { it.id == id } ?: return@launch
 
         val removed = deleteReading(row) is Outcome.Success
 
         if (removed) draft.value = null
         failed.value = !removed
+    }
+
+    /** A day, with whatever is already written against it put in the box. */
+    private fun draftFor(date: LocalDate): ReadingDraft {
+        val existing = series.firstOrNull { it.date == date }
+
+        return ReadingDraft(
+            id = existing?.id ?: 0L,
+            date = date,
+            typed = existing?.let { trimmed(it.value) }.orEmpty(),
+            isNew = true,
+            replaces = existing != null,
+        )
     }
 
     private fun rowsOf(found: GoalSeries?): ImmutableList<ReadingRow> {

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The one folder the app ever hands out a URI for.
+
+    A share gives another app read access to a single file that this app has
+    just written, and nothing else. Scoped to a subfolder of the cache rather
+    than to the cache itself, so a future temporary file cannot be handed over
+    by accident.
+-->
+<paths>
+    <cache-path
+        name="exports"
+        path="exports/" />
+</paths>

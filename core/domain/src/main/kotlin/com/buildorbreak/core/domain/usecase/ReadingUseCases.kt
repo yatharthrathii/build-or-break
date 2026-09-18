@@ -6,9 +6,12 @@ import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.goal.GoalCloser
 import com.buildorbreak.core.domain.repository.GoalRepository
+import com.buildorbreak.core.domain.repository.ItemRepository
 import com.buildorbreak.core.domain.repository.MeasurementRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
+import com.buildorbreak.core.domain.repository.TemplateRepository
 import com.buildorbreak.core.model.enums.GoalKind
+import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.execution.Measurement
 import com.buildorbreak.core.model.goal.Goal
 import java.time.LocalDate
@@ -57,6 +60,89 @@ class ObserveGoalReadingsUseCase @Inject constructor(
             }
         }
         .flowOn(dispatchers.default)
+}
+
+/**
+ * Records a number for a day that never got one.
+ *
+ * A measured goal is fed by a step that asks for a figure, and the figure is
+ * optional by design: a step ticked from a notification settles the day and
+ * asks for nothing. That is the right trade at the moment of ticking and the
+ * wrong one an hour later, when the weight has been taken and the app has
+ * nowhere to put it. Without this the only way to record it is to un-tick a
+ * step that was genuinely done, which trades one wrong record for another.
+ *
+ * One number a day. A date that already has a reading is corrected rather
+ * than given a second row, for the same reason logging twice against one
+ * settle replaces rather than averages.
+ *
+ * Writes through [RecomputeGoalHistoryUseCase] like a correction does,
+ * because a number added for last Tuesday changes every average since.
+ */
+class AddReadingUseCase @Inject constructor(
+    private val plans: PlanRepository,
+    private val goals: GoalRepository,
+    private val templates: TemplateRepository,
+    private val items: ItemRepository,
+    private val measurements: MeasurementRepository,
+    private val recompute: RecomputeGoalHistoryUseCase,
+    private val dispatchers: AppDispatchers,
+) {
+
+    suspend operator fun invoke(date: LocalDate, value: Double): Outcome<Unit, DataError> =
+        withContext(dispatchers.io) {
+            if (!value.isFinite() || value < 0.0) return@withContext Outcome.Failure(DataError.ConstraintViolation)
+
+            val plan = plans.observeActive().first() ?: return@withContext Outcome.Failure(DataError.NotFound)
+            val goal = goals.observeActive(plan.id).first() ?: return@withContext Outcome.Failure(DataError.NotFound)
+            if (goal.kind != GoalKind.NUMBER) return@withContext Outcome.Failure(DataError.ConstraintViolation)
+
+            val series = measurements.observeSeries(goal.valueKind, goal.itemId).first()
+            val existing = series.firstOrNull { it.date == date }
+            val itemId = existing?.itemId
+                ?: goal.itemId
+                ?: series.lastOrNull()?.itemId
+                ?: stepThatRecords(plan.id, goal.valueKind)
+                ?: return@withContext Outcome.Failure(DataError.NotFound)
+
+            val written = measurements.upsert(
+                Measurement(
+                    id = existing?.id ?: 0,
+                    itemId = itemId,
+                    // Kept, so undoing that settle still takes its number with it.
+                    occurrenceId = existing?.occurrenceId,
+                    date = date,
+                    value = value,
+                    kind = goal.valueKind,
+                ),
+            )
+
+            if (written is Outcome.Success) recompute(date)
+
+            written
+        }
+
+    /**
+     * The step this goal's numbers normally arrive from.
+     *
+     * Only reached on the first reading of a goal whose series is still
+     * empty. The reading has to hang off some step, because that is how the
+     * export finds it again, and the step that asks for this kind of figure
+     * is the one the user would have typed it into.
+     *
+     * Falls back to any step at all when nothing asks for this figure. A goal
+     * can be measured without a step that collects the number, and refusing
+     * the reading would leave somebody with a weight goal and nowhere to put
+     * a weight. The series itself is found by kind, not by step, so the choice
+     * changes nothing the user sees.
+     */
+    private suspend fun stepThatRecords(planId: Long, kind: ValueKind): Long? {
+        val steps = templates.observeForPlan(planId)
+            .first()
+            .flatMap { items.observeForTemplate(it.id).first() }
+
+        return steps.firstOrNull { it.valueKind == kind }?.id ?: steps.firstOrNull()?.id
+    }
 }
 
 /**

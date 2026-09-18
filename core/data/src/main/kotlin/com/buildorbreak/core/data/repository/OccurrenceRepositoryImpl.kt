@@ -4,6 +4,7 @@ import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.data.dao.OccurrenceDao
 import com.buildorbreak.core.data.entity.OccurrenceEntity
+import com.buildorbreak.core.data.mapper.toEntity
 import com.buildorbreak.core.data.mapper.toModel
 import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
@@ -65,6 +66,11 @@ class OccurrenceRepositoryImpl @Inject constructor(
                 }
 
             occurrences.insertIgnoringExisting(rows)
+        }
+
+    override suspend fun restore(rows: List<Occurrence>): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) {
+            occurrences.insertIgnoringExisting(rows.map { it.copy(id = 0).toEntity() })
         }
 
     override suspend fun settle(id: Long, state: OccurrenceState, at: Instant): Outcome<Unit, DataError> =

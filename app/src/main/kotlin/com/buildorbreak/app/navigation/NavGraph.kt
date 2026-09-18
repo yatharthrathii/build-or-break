@@ -221,13 +221,14 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
 
     entry<GoalRoute> {
         GoalScreen(
-            onOpenReadings = { backStack.add(ReadingsRoute) },
+            onOpenReadings = { backStack.add(ReadingsRoute()) },
+            onAddReading = { backStack.add(ReadingsRoute(addNow = true)) },
             onBack = { backStack.removeLastOrNull() },
         )
     }
 
-    entry<ReadingsRoute> {
-        ReadingsScreen(onBack = { backStack.removeLastOrNull() })
+    entry<ReadingsRoute> { key ->
+        ReadingsScreen(onBack = { backStack.removeLastOrNull() }, startAdding = key.addNow)
     }
 
     entry<SettingsRoute> {

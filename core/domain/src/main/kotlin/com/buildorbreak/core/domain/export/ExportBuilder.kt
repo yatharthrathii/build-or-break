@@ -5,6 +5,7 @@ import com.buildorbreak.core.model.execution.Measurement
 import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.goal.DayClose
 import com.buildorbreak.core.model.goal.Goal
+import com.buildorbreak.core.model.goal.MilestoneAward
 import com.buildorbreak.core.model.plan.Anchor
 import com.buildorbreak.core.model.plan.Block
 import com.buildorbreak.core.model.plan.DayTemplate
@@ -31,6 +32,7 @@ data class ExportInput(
     val occurrences: List<Occurrence> = emptyList(),
     val measurements: List<Measurement> = emptyList(),
     val closes: List<DayClose> = emptyList(),
+    val milestones: List<MilestoneAward> = emptyList(),
 )
 
 /**
@@ -178,6 +180,13 @@ private fun ExportInput.toHistory() = ExportHistory(
         .map { it.toExport() },
     measurements = measurements.sortedWith(compareBy({ it.date }, { it.itemId })).map { it.toExport() },
     dayCloses = closes.sortedBy { it.date }.map { it.toExport() },
+    milestones = milestones.sortedBy { it.milestone.name }.map { it.toExport() },
+)
+
+private fun MilestoneAward.toExport() = ExportMilestone(
+    milestone = milestone.name,
+    awardedOn = awardedOn.toString(),
+    seen = seenAt != null,
 )
 
 private fun Occurrence.toExport() = ExportOccurrence(

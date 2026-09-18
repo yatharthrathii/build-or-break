@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.content.FileProvider
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.buildorbreak.app.navigation.BuildOrBreakNavGraph
 import com.buildorbreak.app.navigation.OnboardingRoute
 import com.buildorbreak.app.navigation.ShellActions
@@ -31,7 +33,12 @@ import com.buildorbreak.scheduler.notification.Channels
 import com.buildorbreak.scheduler.oem.OemGuide
 import com.buildorbreak.scheduler.oem.VendorIntents
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
+import java.time.LocalDate
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The only activity.
@@ -226,17 +233,45 @@ class MainActivity : ComponentActivity() {
         startSettings(intent ?: VendorIntents.appSettingsIntent(this))
     }
 
-    /** The export, handed to whichever app the user picks. */
+    /**
+     * The export, handed to whichever app the user picks.
+     *
+     * As a file, not as a block of text in the intent. A chat app offered a
+     * hundred kilobytes of JSON as a message has nowhere to put it and says
+     * so, and text pasted into a conversation is not something that can be
+     * picked back up on a new phone. The file is what makes the export a
+     * backup rather than a printout.
+     *
+     * Written to the cache, because the system deletes it when the space is
+     * wanted and the copy that matters is the one the user just sent.
+     */
     private fun share(text: String) {
-        val send = Intent(Intent.ACTION_SEND)
-            .setType("application/json")
-            .putExtra(Intent.EXTRA_TEXT, text)
+        lifecycleScope.launch {
+            val uri = withContext(Dispatchers.IO) {
+                runCatching {
+                    val folder = File(cacheDir, EXPORT_FOLDER).apply { mkdirs() }
+                    val file = File(folder, getString(R.string.settings_export_file, LocalDate.now()))
 
-        startActivity(Intent.createChooser(send, getString(R.string.settings_export_chooser)))
+                    file.writeText(text)
+
+                    FileProvider.getUriForFile(this@MainActivity, "$packageName.files", file)
+                }.getOrNull()
+            } ?: return@launch
+
+            val send = Intent(Intent.ACTION_SEND)
+                .setType("application/json")
+                .putExtra(Intent.EXTRA_STREAM, uri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            startActivity(Intent.createChooser(send, getString(R.string.settings_export_chooser)))
+        }
     }
 
     private companion object {
         const val SPLASH_EXIT_MILLIS = 220L
         const val SPLASH_EXIT_SCALE = 1.06f
+
+        /** Matches `res/xml/file_paths.xml`. Nothing else is ever shared out. */
+        const val EXPORT_FOLDER = "exports"
     }
 }

@@ -82,6 +82,7 @@ fun GoalScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenReadings: () -> Unit = {},
+    onAddReading: () -> Unit = {},
     viewModel: GoalViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -89,6 +90,7 @@ fun GoalScreen(
     GoalContent(
         state = state,
         onOpenReadings = onOpenReadings,
+        onAddReading = onAddReading,
         onNew = viewModel::onNew,
         onEdit = viewModel::onEdit,
         onChange = viewModel::onChange,
@@ -105,6 +107,7 @@ fun GoalContent(
     state: GoalUiState,
     onNew: () -> Unit,
     onOpenReadings: () -> Unit = {},
+    onAddReading: () -> Unit = {},
     onEdit: () -> Unit,
     onChange: (GoalDraft) -> Unit,
     onSave: () -> Unit,
@@ -130,6 +133,7 @@ fun GoalContent(
                 onEdit = onEdit,
                 onRetire = onRetire,
                 onOpenReadings = onOpenReadings,
+                onAddReading = onAddReading,
             )
             state.loaded -> NoGoal(onNew = onNew)
             // Nothing, rather than "no goal yet", before the first read.
@@ -211,6 +215,7 @@ private fun GoalBody(
     onEdit: () -> Unit,
     onRetire: () -> Unit,
     onOpenReadings: () -> Unit,
+    onAddReading: () -> Unit,
 ) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         if (goal.isFinished) Finished(goal = goal, onNew = onNew)
@@ -227,12 +232,27 @@ private fun GoalBody(
         // Only a measured goal has readings. A count of gym sessions is
         // corrected by un-ticking the step, not by editing a figure.
         if (goal.kind == GoalKind.NUMBER) {
-            GhostButton(
-                text = stringResource(R.string.goal_see_readings),
-                onClick = onOpenReadings,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            // Adding is offered next to reading, because the two are the same
+            // question from either end: a step ticked from a notification
+            // settles the day and asks for no figure, and the figure still
+            // has to go somewhere afterwards.
+            Row(
                 modifier = Modifier.padding(start = Theme.spacing.tight, top = Theme.spacing.small),
-            )
+                horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GhostButton(
+                    text = stringResource(R.string.goal_see_readings),
+                    onClick = onOpenReadings,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+
+                GhostButton(
+                    text = stringResource(R.string.readings_add),
+                    onClick = onAddReading,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
 
         Row(

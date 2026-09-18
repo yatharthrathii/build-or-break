@@ -141,6 +141,23 @@ data class ExportHistory(
     val occurrences: List<ExportOccurrence> = emptyList(),
     val measurements: List<ExportMeasurement> = emptyList(),
     @SerialName("day_closes") val dayCloses: List<ExportDayClose> = emptyList(),
+    val milestones: List<ExportMilestone> = emptyList(),
+)
+
+/**
+ * A badge, and the day it was earned.
+ *
+ * History rather than plan: a badge is a thing that happened, and the rule
+ * that stops it being awarded twice is the existence of its row. A restore
+ * that dropped them would hand somebody back their streak and then award
+ * "first week" for a week they finished in August.
+ */
+@Serializable
+data class ExportMilestone(
+    val milestone: String,
+    @SerialName("awarded_on") val awardedOn: String,
+    /** Already shown, so a restore does not reopen six old banners. */
+    val seen: Boolean = true,
 )
 
 @Serializable

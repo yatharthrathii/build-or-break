@@ -109,6 +109,9 @@ class FakeItemRepository : ItemRepository {
     override fun observeBlocksForTemplate(templateId: Long): Flow<List<Block>> =
         blocks.map { list -> list.filter { it.templateId == templateId }.sortedBy { it.sortOrder } }
 
+    override suspend fun allForTemplate(templateId: Long): List<Item> =
+        items.value.filter { it.templateId == templateId }.sortedBy { it.sortOrder }
+
     override suspend fun byId(itemId: Long): Item? = items.value.firstOrNull { it.id == itemId }
 
     override suspend fun upsert(item: Item): Outcome<Long, DataError> {
@@ -191,6 +194,16 @@ class FakeOccurrenceRepository : OccurrenceRepository {
             }
 
         occurrences.value = occurrences.value + fresh
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun restore(rows: List<Occurrence>): Outcome<Unit, DataError> {
+        val existing = occurrences.value.map { it.itemId to (it.date to it.sequenceInDay) }.toSet()
+
+        occurrences.value = occurrences.value + rows
+            .filterNot { (it.itemId to (it.date to it.sequenceInDay)) in existing }
+            .map { it.copy(id = nextId++) }
 
         return Outcome.Success(Unit)
     }

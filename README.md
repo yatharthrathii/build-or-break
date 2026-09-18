@@ -42,9 +42,9 @@ What exists: the timeline engine and its four anchor types, day templates,
 the whole day shift and the snooze preview, the tiered scheduler with full
 screen alarms and its delivery audit, the daily close, goals with a seven day
 average and a pace line, the weekly review and the Insights screen, import
-from pasted text, export, English and Hindi, light and dark, and an
-onboarding that writes a starter day, points worked out from the daily
-close, and a wall of the nine badges.
+from pasted text, a backup that exports as a file and reads back, English and
+Hindi, light and dark, and an onboarding that writes a starter day, points
+worked out from the daily close, and a wall of the nine badges.
 
 What does not exist yet: anything paid, multi week programs, and the store
 listing. There is no public build yet, so there is

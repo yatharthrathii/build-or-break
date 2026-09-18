@@ -28,6 +28,10 @@ class ItemRepositoryImpl @Inject constructor(
     override fun observeBlocksForTemplate(templateId: Long): Flow<List<Block>> =
         items.observeBlocksForTemplate(templateId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
 
+    override suspend fun allForTemplate(templateId: Long): List<Item> = withContext(dispatchers.io) {
+        items.allForTemplate(templateId).map { it.toModel() }
+    }
+
     override suspend fun byId(itemId: Long): Item? = withContext(dispatchers.io) { items.byId(itemId)?.toModel() }
 
     override suspend fun upsert(item: Item): Outcome<Long, DataError> =

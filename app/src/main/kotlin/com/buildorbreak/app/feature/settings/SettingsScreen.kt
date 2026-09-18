@@ -1,5 +1,7 @@
 package com.buildorbreak.app.feature.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,10 +24,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -49,7 +54,12 @@ import com.buildorbreak.core.designsystem.component.SegmentedTabs
 import com.buildorbreak.core.designsystem.component.Stepper
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.Theme
+import com.buildorbreak.core.domain.export.BackupProblem
+import com.buildorbreak.core.domain.usecase.RestoreSummary
 import com.buildorbreak.core.model.enums.ThemeMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TOLERANCE_STEP = 5
 private const val MAX_TOLERANCE = 60
@@ -82,6 +92,27 @@ fun SettingsScreen(
         onPauseOrDispose { }
     }
 
+    // Picking a file needs a content resolver, so the file is read here and
+    // the ViewModel is handed the text. The mirror of the export, which builds
+    // its text here and hands it out for somebody else to send.
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var offered by remember { mutableStateOf<String?>(null) }
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        scope.launch {
+            val text = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+                }.getOrNull()
+            }
+
+            if (text == null) viewModel.onRestoreUnreadable() else offered = text
+        }
+    }
+
     SettingsContent(
         state = state,
         onOpenReliability = onOpenReliability,
@@ -93,9 +124,24 @@ fun SettingsScreen(
         onOpenAlarmChannel = onOpenAlarmChannel,
         onExport = { viewModel.onExport(onShare) },
         onImport = onImport,
+        // Anything, because a file sent through a chat app often arrives typed
+        // as plain text or as nothing at all, and a picker that greys out the
+        // backup somebody was just sent is a picker that cannot be used.
+        onRestore = { picker.launch(arrayOf("*/*")) },
+        onDismissRestore = viewModel::onDismissRestore,
         onWipe = { viewModel.onWipe { } },
         modifier = modifier,
     )
+
+    offered?.let { text ->
+        RestoreDialog(
+            onConfirm = {
+                offered = null
+                viewModel.onRestore(text)
+            },
+            onDismiss = { offered = null },
+        )
+    }
 }
 
 @Composable
@@ -110,6 +156,8 @@ fun SettingsContent(
     onOpenAlarmChannel: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onRestore: () -> Unit = {},
+    onDismissRestore: () -> Unit = {},
     onWipe: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -135,9 +183,10 @@ fun SettingsContent(
 
             SectionLabel(text = stringResource(R.string.settings_section_data), underlined = true)
             DataRows(
-                exporting = state.exporting,
+                state = state,
                 onExport = onExport,
                 onImport = onImport,
+                onRestore = onRestore,
                 onDelete = { confirmingWipe = true },
             )
 
@@ -146,6 +195,8 @@ fun SettingsContent(
             Footer()
         }
     }
+
+    state.restored?.let { RestoreReport(result = it, onDismiss = onDismissRestore) }
 
     if (confirmingWipe) {
         WipeDialog(
@@ -174,16 +225,28 @@ private fun DayRows(state: SettingsUiState, onOpenGoal: () -> Unit, onThemeMode:
 
 @Composable
 private fun DataRows(
-    exporting: Boolean,
+    state: SettingsUiState,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onRestore: () -> Unit,
     onDelete: () -> Unit,
 ) {
     SettingsRow(
         title = stringResource(R.string.settings_export),
         body = stringResource(R.string.settings_export_body),
-        enabled = !exporting,
+        enabled = !state.exporting,
         onClick = onExport,
+    ) { Chevron() }
+
+    // Directly under the export, because the two are one feature. An export
+    // with nothing that reads it is a document, not a backup.
+    SettingsRow(
+        title = stringResource(R.string.settings_restore),
+        body = stringResource(
+            if (state.restoring) R.string.settings_restore_busy else R.string.settings_restore_body,
+        ),
+        enabled = !state.restoring,
+        onClick = onRestore,
     ) { Chevron() }
 
     SettingsRow(title = stringResource(R.string.settings_import), onClick = onImport) { Chevron() }
@@ -387,6 +450,121 @@ private fun Footer() {
  * The one dialog in the app, because the one thing that cannot be undone is
  * the one thing worth interrupting for.
  */
+/**
+ * The one question a restore has to ask.
+ *
+ * A restore replaces rather than merges, which is the right behaviour and the
+ * surprising one, so it is said in the words it will happen in before anything
+ * is touched. Same shape as the wipe, because it is the same loss.
+ */
+@Composable
+private fun RestoreDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Panel {
+            Column(modifier = Modifier.padding(Theme.spacing.medium)) {
+                Text(
+                    text = stringResource(R.string.settings_restore_confirm_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                Text(
+                    text = stringResource(R.string.settings_restore_confirm_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GhostButton(text = stringResource(R.string.settings_delete_cancel), onClick = onDismiss)
+                    FillButton(text = stringResource(R.string.settings_restore_confirm), onClick = onConfirm)
+                }
+            }
+        }
+    }
+}
+
+/** What came back, in the user's own numbers, or which of three things was wrong. */
+@Composable
+private fun RestoreReport(result: RestoreResult, onDismiss: () -> Unit) {
+    val title: String
+    val body: String
+
+    when (result) {
+        is RestoreResult.Done -> {
+            title = stringResource(R.string.settings_restore_done_title)
+            body = stringResource(R.string.settings_restore_done_body, restoredParts(result.summary))
+        }
+
+        is RestoreResult.Failed -> {
+            title = stringResource(R.string.settings_restore_failed_title)
+            body = stringResource(problemText(result.problem))
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Panel {
+            Column(modifier = Modifier.padding(Theme.spacing.medium)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                )
+
+                FillButton(text = stringResource(R.string.action_close), onClick = onDismiss)
+            }
+        }
+    }
+}
+
+/**
+ * "9 steps, 40 days of history and 12 readings".
+ *
+ * Only the parts that came back. A restore of a plan with no history yet
+ * should not report "0 days of history and 0 badges": zeroes read as things
+ * that went missing, which is the one thing this sentence exists to rule out.
+ */
+@Composable
+private fun restoredParts(summary: RestoreSummary): String {
+    val parts = buildList {
+        add(pluralStringResource(R.plurals.settings_restore_steps, summary.steps, summary.steps))
+
+        if (summary.days > 0) {
+            add(pluralStringResource(R.plurals.settings_restore_days, summary.days, summary.days))
+        }
+
+        if (summary.readings > 0) {
+            add(pluralStringResource(R.plurals.settings_restore_readings, summary.readings, summary.readings))
+        }
+
+        if (summary.badges > 0) {
+            add(pluralStringResource(R.plurals.settings_restore_badges, summary.badges, summary.badges))
+        }
+    }
+
+    val join = stringResource(R.string.settings_restore_join)
+    val last = stringResource(R.string.settings_restore_join_last)
+
+    return parts.reduceIndexed { index, sentence, part ->
+        val pattern = if (index == parts.lastIndex) last else join
+
+        pattern.format(sentence, part)
+    }
+}
+
+private fun problemText(problem: BackupProblem): Int = when (problem) {
+    BackupProblem.NOT_READABLE -> R.string.settings_restore_not_readable
+    BackupProblem.TOO_NEW -> R.string.settings_restore_too_new
+    BackupProblem.EMPTY -> R.string.settings_restore_empty
+}
+
 @Composable
 private fun WipeDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
