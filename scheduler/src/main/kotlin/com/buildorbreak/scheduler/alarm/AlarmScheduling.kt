@@ -1,0 +1,100 @@
+package com.buildorbreak.scheduler.alarm
+
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import androidx.core.net.toUri
+import com.buildorbreak.core.model.enums.Salience
+
+/**
+ * How an alarm is addressed, and why it can be cancelled reliably.
+ *
+ * `AlarmManager` has no way to list what is scheduled. The only handle on an
+ * existing alarm is a `PendingIntent` that matches the one used to set it, so
+ * cancelling depends entirely on being able to rebuild that intent exactly. Every
+ * decision here exists to make that rebuild deterministic.
+ */
+object AlarmScheduling {
+
+    const val ACTION_FIRE = "com.buildorbreak.scheduler.ACTION_FIRE"
+
+    /**
+     * The activity the app shows when an alarm fires.
+     *
+     * By action rather than by class, because the screen lives in :app and
+     * this module cannot see it. The app declares an activity for this action
+     * and the notification's full screen intent points at it by name.
+     */
+    const val ACTION_ALARM_SCREEN = "com.buildorbreak.ACTION_ALARM_SCREEN"
+
+    const val EXTRA_OCCURRENCE_ID = "occurrence_id"
+    const val EXTRA_ITEM_ID = "item_id"
+
+    /**
+     * How loud this particular alarm is, decided when it was set.
+     *
+     * The item's own salience is not enough: a step inside a group takes the
+     * group's loudness and every later step in the group runs silent. The
+     * receiver reads the item back from the database, and the database only
+     * knows the item. So the answer travels with the alarm instead.
+     */
+    const val EXTRA_SALIENCE = "salience"
+
+    /**
+     * One request code per occurrence, derived rather than allocated.
+     *
+     * Deriving it means the same occurrence always maps to the same slot, on
+     * this launch and on the next one after a reboot, with nothing stored in
+     * between. A counter would need persisting and would drift the moment a
+     * write was lost, and a drifted counter means an alarm nobody can cancel.
+     *
+     * The modulo is what fits a row id into the int a `PendingIntent` takes. Two
+     * occurrences would have to be `Int.MAX_VALUE` apart to collide, which is
+     * around two billion rows on one phone.
+     */
+    fun requestCode(occurrenceId: Long): Int = (occurrenceId % Int.MAX_VALUE).toInt()
+
+    /**
+     * The intent an alarm carries.
+     *
+     * The occurrence id goes in the data URI as well as in an extra. Extras are
+     * not part of `PendingIntent` equality, so two alarms differing only by extra
+     * would be the same intent as far as `AlarmManager` is concerned, and setting
+     * the second would silently replace the first.
+     */
+    fun fireIntent(
+        context: Context,
+        occurrenceId: Long,
+        itemId: Long,
+        salience: Salience? = null,
+    ): Intent = Intent(context, AlarmReceiver::class.java).apply {
+        action = ACTION_FIRE
+        data = "buildorbreak://occurrence/$occurrenceId".toUri()
+        putExtra(EXTRA_OCCURRENCE_ID, occurrenceId)
+        putExtra(EXTRA_ITEM_ID, itemId)
+        salience?.let { putExtra(EXTRA_SALIENCE, it.name) }
+    }
+
+    /**
+     * [mutable] is false for everything the scheduler sets. An immutable pending
+     * intent cannot have its extras rewritten by another app, and since Android
+     * 12 one or the other flag has to be stated explicitly anyway.
+     */
+    fun pendingIntent(
+        context: Context,
+        occurrenceId: Long,
+        itemId: Long,
+        create: Boolean = true,
+        salience: Salience? = null,
+    ): PendingIntent? {
+        val flags = PendingIntent.FLAG_IMMUTABLE or
+            if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
+
+        return PendingIntent.getBroadcast(
+            context,
+            requestCode(occurrenceId),
+            fireIntent(context, occurrenceId, itemId, salience),
+            flags,
+        )
+    }
+}

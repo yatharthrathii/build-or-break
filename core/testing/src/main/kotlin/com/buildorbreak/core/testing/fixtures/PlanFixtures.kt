@@ -1,0 +1,124 @@
+package com.buildorbreak.core.testing.fixtures
+
+import com.buildorbreak.core.model.enums.DayMode
+import com.buildorbreak.core.model.enums.ItemKind
+import com.buildorbreak.core.model.enums.Salience
+import com.buildorbreak.core.model.enums.ValueKind
+import com.buildorbreak.core.model.plan.Anchor
+import com.buildorbreak.core.model.plan.Block
+import com.buildorbreak.core.model.plan.DayTemplate
+import com.buildorbreak.core.model.plan.Item
+import com.buildorbreak.core.model.plan.MinimumVersion
+import com.buildorbreak.core.model.plan.Weekdays
+import java.time.LocalTime
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+
+/**
+ * Builders for plan types, so a test that cares about one field does not have to
+ * spell out fifteen.
+ *
+ * Every default here is boring on purpose. A test that reads
+ * `item(id = 2, anchor = relativeTo(1, 10.minutes))` says exactly what it is
+ * about, and nothing else in it can accidentally matter.
+ */
+object PlanFixtures {
+
+    const val TEMPLATE_ID = 1L
+
+    const val PLAN_ID = 1L
+
+    /** The default wake hour, so a test that does not care about time says nothing about it. */
+    const val DEFAULT_HOUR = 8
+
+    private const val DEFAULT_OFFSET_MINUTES = 10L
+
+    fun item(
+        id: Long,
+        title: String = "Item $id",
+        anchor: Anchor = fixedAt(DEFAULT_HOUR),
+        templateId: Long = TEMPLATE_ID,
+        blockId: Long? = null,
+        kind: ItemKind = ItemKind.DO,
+        detail: String? = null,
+        duration: Duration? = null,
+        salience: Salience = Salience.NOTIFY,
+        weekdays: Weekdays = Weekdays.EveryDay,
+        pinned: Boolean = false,
+        minimum: MinimumVersion? = null,
+        valueKind: ValueKind = ValueKind.NONE,
+        sortOrder: Int = id.toInt(),
+    ): Item = Item(
+        id = id,
+        templateId = templateId,
+        blockId = blockId,
+        kind = kind,
+        title = title,
+        detail = detail,
+        anchor = anchor,
+        duration = duration,
+        salience = salience,
+        weekdays = weekdays,
+        pinned = pinned,
+        minimum = minimum,
+        valueKind = valueKind,
+        bundleUri = null,
+        trackId = null,
+        sortOrder = sortOrder,
+        archivedAt = null,
+    )
+
+    fun template(
+        id: Long = TEMPLATE_ID,
+        planId: Long = PLAN_ID,
+        name: String = "Office day",
+        weekdays: Weekdays = Weekdays.EveryDay,
+        isDefault: Boolean = true,
+        mode: DayMode = DayMode.NORMAL,
+        sortOrder: Int = 0,
+    ): DayTemplate = DayTemplate(
+        id = id,
+        planId = planId,
+        name = name,
+        weekdays = weekdays,
+        isDefault = isDefault,
+        mode = mode,
+        sortOrder = sortOrder,
+    )
+
+    fun block(
+        id: Long,
+        title: String = "Block $id",
+        anchor: Anchor = fixedAt(DEFAULT_HOUR),
+        templateId: Long = TEMPLATE_ID,
+        salience: Salience = Salience.NOTIFY,
+        sortOrder: Int = id.toInt(),
+    ): Block = Block(
+        id = id,
+        templateId = templateId,
+        title = title,
+        anchor = anchor,
+        salience = salience,
+        sortOrder = sortOrder,
+    )
+
+    fun fixedAt(hour: Int, minute: Int = 0): Anchor.Fixed = Anchor.Fixed(LocalTime.of(hour, minute))
+
+    fun relativeTo(parentItemId: Long, offset: Duration = DEFAULT_OFFSET_MINUTES.minutes): Anchor.Relative =
+        Anchor.Relative(parentItemId, offset)
+
+    fun window(fromHour: Int, toHour: Int, nagLadder: List<Duration> = emptyList()): Anchor.Window = Anchor.Window(
+        from = LocalTime.of(fromHour, 0),
+        to = LocalTime.of(toHour, 0),
+        nagLadder = nagLadder,
+    )
+
+    fun interval(everyMinutes: Long, fromHour: Int, toHour: Int): Anchor.Interval = Anchor.Interval(
+        every = everyMinutes.minutes,
+        from = LocalTime.of(fromHour, 0),
+        to = LocalTime.of(toHour, 0),
+    )
+
+    fun minimum(title: String = "Minimum", duration: Duration? = null): MinimumVersion =
+        MinimumVersion(title = title, duration = duration)
+}

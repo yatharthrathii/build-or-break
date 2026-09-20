@@ -43,6 +43,15 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     unitTests {
                         isIncludeAndroidResources = true
                         isReturnDefaultValues = true
+
+                        // Robolectric brings up an Android runtime per test
+                        // class and a Compose test keeps a whole composition
+                        // alive inside it. On the default heap the suite dies
+                        // somewhere past twenty screen tests, and it dies as
+                        // an OutOfMemoryError inside whichever test happened
+                        // to be running, which is the worst possible way to
+                        // find out that nothing is actually broken.
+                        all { test -> test.maxHeapSize = "2g" }
                     }
                 }
 
@@ -50,6 +59,13 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     warningsAsErrors = true
                     abortOnError = true
                     checkDependencies = true
+
+                    // Version nags are not correctness. warningsAsErrors turns
+                    // "a newer Gradle exists" into a failing build, which would
+                    // mean an upgrade nobody asked for becomes the only way to
+                    // ship. Versions here are pinned on purpose and upgraded
+                    // deliberately, not because lint noticed a release.
+                    disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
                 }
             }
         }

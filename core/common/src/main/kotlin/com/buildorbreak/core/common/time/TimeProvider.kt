@@ -36,9 +36,7 @@ interface TimeProvider {
  * default zone on every call, because both can change while the process is
  * alive: the user travels, or changes the device time.
  */
-class SystemTimeProvider(
-    private val clock: Clock = Clock.systemDefaultZone(),
-) : TimeProvider {
+class SystemTimeProvider(private val clock: Clock = Clock.systemDefaultZone()) : TimeProvider {
     override fun now(): Instant = clock.instant()
 
     override fun zone(): ZoneId = ZoneId.systemDefault()

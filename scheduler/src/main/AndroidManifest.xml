@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Permissions live with the code that uses them. techspec.md section 7.
+
+        Four of these are restricted and each needs a Play Console declaration.
+        Declaring one before there is a working fallback for it is how a release
+        gets rejected, so they land together with the tier that degrades without
+        them:
+
+          SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM   -> EXACT_HEADS_UP, else INEXACT
+          USE_FULL_SCREEN_INTENT                   -> FULL_SCREEN_ALARM, else HEADS_UP
+          POST_NOTIFICATIONS                       -> anything, else IN_APP_ONLY
+          FOREGROUND_SERVICE_SPECIAL_USE           -> blocks, else one alarm each
+    -->
+
+    <!--
+        Both exact alarm permissions, and the pair is deliberate. USE_EXACT_ALARM
+        is granted automatically to apps whose main purpose is alarms and cannot
+        be revoked, which is the right fit here. SCHEDULE_EXACT_ALARM is the
+        fallback for builds where the first is not honoured, and it is the one
+        denied by default from Android 14.
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!--
+        The ringer holds the alarm audio stream open until somebody answers, so
+        it is a media playback service and says so. Anything vaguer would be a
+        worse description of what it does and a harder one to justify.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- Every alarm is lost on restart. Without this a phone that rebooted
+         overnight wakes up silent, and nothing tells the user until morning. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!--
+        Play restricts this permission to apps whose core function is hurt by
+        Doze, and lists alarm apps as the example that is allowed. This app is
+        one. Without it the user is sent to a list of every app on the phone
+        and has to find this one; with it the phone asks a single question.
+    -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        tools:ignore="BatteryLife" />
+
+    <application>
+
+        <!--
+            Not exported. Only AlarmManager delivers to it, through a
+            PendingIntent this app created, so nothing else needs to reach it and
+            an exported receiver here would let any app fake an alarm.
+        -->
+        <receiver
+            android:name=".alarm.AlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".notification.NotificationActionReceiver"
+            android:exported="false" />
+
+        <!--
+            Not directBootAware on purpose. Before the first unlock the database
+            is in storage that cannot be opened, and so is WorkManager's, so a
+            locked boot broadcast would have nothing it could safely do.
+        -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            A timezone change is the sharp case. Waking at six means six where
+            the user now is, and every alarm already set is for six somewhere
+            else.
+        -->
+        <receiver
+            android:name=".receiver.TimeChangeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            An update clears every alarm too. It fails in the way hardest to
+            notice: everything works in testing, and the morning after a release
+            is silent on somebody's phone.
+        -->
+        <receiver
+            android:name=".receiver.PackageReplacedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            The alarm itself: the looping sound, the vibration, and the
+            notification whose full screen intent puts the alarm screen in
+            front of a locked phone. A notification alone rings for three
+            seconds and stops, which is not an alarm.
+        -->
+        <service
+            android:name=".alarm.AlarmRingerService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service
+            android:name=".service.BlockRunnerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Runs a timed block of routine steps to completion while the screen is off" />
+        </service>
+
+    </application>
+
+</manifest>

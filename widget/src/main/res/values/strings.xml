@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_name">Today</string>
+    <string name="widget_description">The next step, with Done beside it.</string>
+
+    <string name="widget_kicker">TODAY</string>
+    <string name="widget_count">%1$d / %2$d</string>
+    <string name="widget_done">DONE</string>
+    <string name="widget_snooze">SNOOZE 10</string>
+    <string name="widget_all_done">Nothing left on the rails.</string>
+    <string name="widget_no_plan">No plan yet. Open the app to add one.</string>
+
+    <!-- The picker has no data, so the preview shows a made up step. -->
+    <string name="widget_preview_time" translatable="false">07:30</string>
+    <string name="widget_preview_title">Morning walk</string>
+</resources>

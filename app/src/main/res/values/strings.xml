@@ -5,11 +5,948 @@
     a Hinglish variant in V1.5 is a translation job and not a refactor.
 
     rules.md section 2 governs the wording: short, second person, present tense,
-    no em dash, no en dash, no exclamation marks, no filler adjectives.
+    no em dash, no exclamation marks, no filler adjectives. Labels are written in
+    natural case; the design system sets them in capitals.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Build or Break</string>
+    <string name="action_back">Back</string>
 
-    <!-- Temporary. Removed in M5 when the Today screen lands. -->
-    <string name="placeholder_foundation">M1 foundation. Timeline engine lands in M2.</string>
+    <!-- The bottom bar -->
+    <string name="nav_today">Today</string>
+    <string name="nav_plan">Plan</string>
+    <string name="nav_insights">Insights</string>
+    <string name="nav_settings">Settings</string>
+
+    <!--
+        First run. Three screens: what it does, how the plan gets in, and what
+        the phone has to allow. Each asks for one thing.
+    -->
+    <string name="onboarding_step_of">Step %1$d of %2$d</string>
+    <string name="onboarding_get_started">Show me</string>
+    <string name="onboarding_cta_choose">See the day</string>
+    <string name="onboarding_cta_next">Next</string>
+    <string name="onboarding_cta_preview">Looks right</string>
+    <string name="onboarding_start_day">Start my day</string>
+    <string name="onboarding_failed">That could not be saved. Try again.</string>
+
+    <string name="onboarding_welcome_title">A routine app\nthat moves with you.</string>
+    <string name="onboarding_welcome_body">Write your daily routine once. The app reminds you of each step at the right time. If you run late, it moves the rest of the day for you and tells you what it moved.</string>
+    <string name="onboarding_before_kicker">In other apps</string>
+    <string name="onboarding_before_body">You wake up 40 minutes late. Nine alarms still ring at the old times. You miss most of them, feel behind all morning, and mute the app by Thursday.</string>
+    <string name="onboarding_after_kicker">In this app</string>
+    <string name="onboarding_after_body">You tap Running late. Every step moves 40 minutes. Gym stays where it is, because it is booked. Nothing rings for a step you already did.</string>
+    <string name="onboarding_point_1_title">Steps that follow each other</string>
+    <string name="onboarding_point_1_body">Set a time, or say 20 minutes after the gym, or give a window. Move one step and the ones after it move too.</string>
+    <string name="onboarding_point_2_title">Alarms that really wake you</string>
+    <string name="onboarding_point_2_body">Full screen, gets louder, stop it from the lock screen. The app checks your phone settings and tells you if something will block it.</string>
+    <string name="onboarding_point_3_title">Your data stays on your phone</string>
+    <string name="onboarding_point_3_body">No account. No internet. Nothing is uploaded anywhere.</string>
+
+    <string name="onboarding_start_title">What are you\ntrying to build?</string>
+    <string name="onboarding_start_body">Pick one. You get a ready-made day you can change any time.</string>
+    <string name="onboarding_choice_morning_kicker">Most people start here</string>
+    <string name="onboarding_choice_morning_title">A better morning</string>
+    <string name="onboarding_choice_morning_body">Wake up, stretch, breakfast, and a wind-down so you sleep on time.</string>
+    <string name="onboarding_choice_study_kicker">Exams, a course, a skill</string>
+    <string name="onboarding_choice_study_title">Study that actually happens</string>
+    <string name="onboarding_choice_study_body">Two focus blocks, revision, practice. Each has a shorter version for a bad day.</string>
+    <string name="onboarding_choice_fitness_kicker">Training and food</string>
+    <string name="onboarding_choice_fitness_title">Gym, food and sleep</string>
+    <string name="onboarding_choice_fitness_body">A fixed gym slot, protein after it, an evening walk, and lights out on time.</string>
+    <string name="onboarding_choice_paste_kicker">Fastest if you have one</string>
+    <string name="onboarding_choice_paste_title">Paste a routine from an AI chat</string>
+    <string name="onboarding_choice_paste_body">Paste the text. The app reads the times and shows you what it understood before saving.</string>
+    <!-- The hyphen is the import format's window syntax. An en dash would not parse. -->
+    <string name="onboarding_paste_example" tools:ignore="TypographyDashes">07:30 | Gym | 60m\n+15m | Protein + shower\n18:00-20:00 | Language drill</string>
+    <string name="onboarding_choice_write_kicker">Full control</string>
+    <string name="onboarding_choice_write_title">Write it myself</string>
+    <string name="onboarding_choice_write_body">Start empty. Add your first step and go.</string>
+
+    <string name="onboarding_preview_title">Here is\nyour day.</string>
+    <string name="onboarding_preview_body">Nothing is saved yet. You can change or delete any step later.</string>
+    <plurals name="onboarding_preview_count">
+        <item quantity="one">%1$d step · %2$d will ring</item>
+        <item quantity="other">%1$d steps · %2$d will ring</item>
+    </plurals>
+    <string name="onboarding_preview_paste_title">Next, your\nown routine.</string>
+    <string name="onboarding_preview_paste_body">After the permissions screen, paste your text. The app shows every line it understood before saving.</string>
+    <string name="onboarding_preview_write_title">Next, your\nfirst step.</string>
+    <string name="onboarding_preview_write_body">After the permissions screen, add your first step. Give it a name and a time. The day builds from there.</string>
+    <string name="onboarding_preview_after">After the step above</string>
+    <string name="onboarding_preview_window">Any time before %1$s</string>
+    <string name="onboarding_preview_every">Repeats</string>
+    <string name="onboarding_preview_rings">Rings, and takes over the screen</string>
+    <string name="onboarding_preview_pinned">Stays put if the day moves</string>
+
+    <string name="onboarding_permissions_title">Three permissions.\nHere is why.</string>
+    <string name="onboarding_permissions_body">You can skip any of them. The app still works, just quieter.</string>
+    <string name="perm_alarms_title">Alarms and reminders</string>
+    <string name="perm_alarms_body">So a step can ring at the exact minute, even after the day moves.</string>
+    <string name="perm_notifications_title">Notifications</string>
+    <string name="perm_notifications_body">For the next-step reminder and the Done button on the lock screen.</string>
+    <string name="perm_battery_title">Run in the background</string>
+    <string name="perm_battery_body">Otherwise your phone may delay or silence alarms to save battery.</string>
+    <string name="perm_autostart_done">I\'ve done it</string>
+    <string name="perm_autostart_title">Autostart</string>
+    <string name="perm_autostart_body">Some phones keep their own list of apps allowed to start on their own. The app cannot see that list, so this row never turns green. If alarms go missing overnight, this is usually the reason.</string>
+    <string name="perm_allow">Allow</string>
+    <string name="perm_open_settings">Open settings</string>
+    <string name="perm_granted">Granted</string>
+    <string name="onboarding_right_now">Right now: %1$s</string>
+    <string name="onboarding_privacy_note">No account, no internet. Your plan stays on this phone.</string>
+
+    <!--
+        The three starter days, in the app's own import format.
+
+        Read by the same parser a pasted routine goes through, so a starter
+        that loads is proof the import works. Each uses several kinds of time,
+        keeps at least one thing pinned, and stays inside the daily alarm
+        budget so nobody meets a noise warning on their first screen.
+
+        One step per line, and the line breaks have to be escaped. A real
+        newline inside a string resource is collapsed to a space by AAPT, which
+        once turned an entire routine into one step whose title was the whole
+        text. The parser was right; the resource was lying to it.
+    -->
+    <string name="starter_template">Weekday</string>
+
+    <string name="starter_morning_name">Morning routine</string>
+    <string name="starter_morning_text" tools:ignore="TypographyDashes">06:30 | Wake + water | alarm\n+10m | Make the bed | 5m\n06:50-07:20 | Stretch | 15m | min: five minutes\n07:30 | Shower and dress | 20m\n08:00 | Breakfast | 20m | pinned\n08:30 | Plan the day | 10m\n22:30 | Phone away | alarm\n23:00 | Lights out | alarm</string>
+
+    <string name="starter_study_name">Study plan</string>
+    <string name="starter_study_text" tools:ignore="TypographyDashes">07:00 | Wake + water | alarm\n08:30 | Revise yesterday | 30m | min: ten minutes\n09:30-11:00 | Deep study block 1 | 60m | alarm\n+20m | Break and walk | 15m\n12:30 | Lunch | 40m | pinned\n14:00-16:00 | Deep study block 2 | 60m | min: twenty minutes\n17:00 | Practice questions | 45m\n20:00-21:30 | Revision | 30m | min: ten minutes\n22:45 | Phone away | alarm</string>
+
+    <string name="starter_fitness_name">Training plan</string>
+    <string name="starter_fitness_text" tools:ignore="TypographyDashes">06:15 | Wake + water | alarm\n06:45 | Gym | 60m | alarm | pinned\n+15m | Protein and shower | 15m\n09:00 | Breakfast | 20m\n13:00 | Lunch and walk | 45m | pinned\n16:00 | Water check | 5m\n18:30-20:00 | Evening walk | 30m | min: ten minutes\n22:00 | Stretch | 10m | min: three minutes\n22:45 | Lights out | alarm</string>
+
+    <string name="starter_blank_name">My routine</string>
+    <string name="starter_blank_text"></string>
+
+    <!-- Today -->
+    <string name="today_title">Today</string>
+    <string name="today_kicker">%1$s · %2$s plan</string>
+    <string name="today_of">%1$d of %2$d</string>
+    <string name="today_steps_kept">Steps kept today</string>
+    <plurals name="today_run_days">
+        <item quantity="one">On time. %1$d day kept.</item>
+        <item quantity="other">On time. %1$d days straight.</item>
+    </plurals>
+    <string name="today_run_none">Keep today, and your run starts.</string>
+    <string name="today_points">Points</string>
+    <!-- Read aloud only. What the colours on the timeline say to everyone else. -->
+    <string name="today_row_done">Done</string>
+    <string name="today_row_missed">Missed</string>
+    <string name="today_row_next">Next</string>
+    <string name="today_row_upcoming">Coming up</string>
+    <string name="today_row_rings">Rings</string>
+    <string name="stepper_less">Less</string>
+    <string name="stepper_more">More</string>
+    <string name="goal_hero_bar_a11y">%1$d percent of the way, pace at %2$d percent</string>
+    <string name="insights_bar_a11y">%1$s, %2$d percent kept</string>
+    <string name="insights_bar_none_a11y">%1$s, nothing yet</string>
+    <string name="today_points_today">+%1$d today</string>
+    <plurals name="today_shift_line">
+        <item quantity="one">Day shifted +%1$d min · %2$d alarm moved</item>
+        <item quantity="other">Day shifted +%1$d min · %2$d alarms moved</item>
+    </plurals>
+    <string name="today_undo">Undo</string>
+    <string name="today_on_time">Everything on its planned time.</string>
+    <string name="today_running_late">Running late</string>
+    <string name="today_notice_fix">Fix</string>
+    <string name="today_next_up">Next up</string>
+    <string name="today_still_open">Still to do</string>
+    <string name="today_duration_min">%1$d min</string>
+    <string name="today_done">Done</string>
+    <string name="today_done_minimum">Smaller version</string>
+    <string name="today_snooze_10">Snooze 10</string>
+    <string name="skip_title_ahead">Not doing this today?</string>
+    <string name="skip_body_ahead">It is not time yet. Deciding now is fine. Your reason helps the weekly review.</string>
+    <string name="skip_title">What happened?</string>
+    <string name="skip_body">One tap. It helps the weekly review find what is really going wrong. You can skip this.</string>
+    <string name="skip_no_reason">Skip without a reason</string>
+    <string name="skip_body_after">You skipped this from a notification. One tap here helps the weekly review.</string>
+    <string name="skip_rather_not_say">Rather not say</string>
+    <string name="skip_work">Work came up</string>
+    <string name="skip_forgot">Forgot</string>
+    <string name="skip_mood">Not in the mood</string>
+    <string name="skip_unwell">Unwell</string>
+    <string name="skip_travelling">Travelling</string>
+    <string name="skip_no_time">No time</string>
+    <string name="skip_later">Did it later</string>
+    <string name="skip_other">Something else</string>
+    <string name="today_skip_today">Skip today</string>
+
+    <string name="today_undo_done">Marked done</string>
+    <string name="today_undo_minimum">Smaller version done</string>
+    <string name="today_undo_skipped">Skipped</string>
+
+    <string name="today_ask_kicker">Skipped from a notification</string>
+    <string name="today_ask_body">Say why, and the weekly review can point at the real problem.</string>
+    <string name="today_ask_answer">Say why</string>
+    <string name="today_ask_dismiss">Not now</string>
+    <string name="today_action_failed">That did not save. Nothing has changed. Try again.</string>
+    <string name="today_all_done_kicker">Day complete</string>
+    <string name="today_all_done_title">All done for today.</string>
+    <string name="today_all_done_body">Every step is done or decided. Tomorrow starts fresh from the plan.</string>
+    <string name="today_all_settled_kicker">Day closed</string>
+    <string name="today_all_settled_title">Nothing got done today.</string>
+    <string name="today_all_settled_body">That is noted, not judged. Tomorrow starts fresh. Insights will tell you if this keeps happening.</string>
+    <string name="today_late_title">How late?</string>
+    <string name="today_late_body">Every step that is not pinned moves by this much. You can undo it from the bar.</string>
+    <string name="today_late_option">+%1$d</string>
+    <string name="today_the_day">The day</string>
+
+    <string name="today_no_plan_title">No plan yet</string>
+    <string name="today_no_plan_body">Paste the routine you already have, or write the first step yourself.</string>
+    <string name="today_paste">Paste a routine</string>
+    <string name="today_write">Write it myself</string>
+    <string name="today_starts_tomorrow_title">Starts tomorrow</string>
+    <string name="today_starts_tomorrow_body">Today\'s steps had already passed when you made this plan. From tomorrow it runs from the top.</string>
+    <string name="today_empty_title">Nothing today</string>
+    <string name="today_empty_body">This plan has no steps that run on this weekday.</string>
+
+    <!-- Catch up. What is still possible, and what honestly is not. -->
+    <string name="today_catch_up">Still possible</string>
+    <string name="today_catch_up_body">You missed some steps. Here is where they could still fit today.</string>
+    <string name="today_catch_up_gone">Out of time</string>
+    <string name="today_catch_up_takes">Takes about %1$d min</string>
+    <string name="today_catch_up_smaller">The smaller version, about %1$d min</string>
+    <string name="today_catch_up_move">Move here</string>
+    <string name="today_catch_up_skip">Not today</string>
+    <plurals name="today_catch_up_also">
+        <item quantity="one">%1$s was missed too. Three at a time is enough for one evening.</item>
+        <item quantity="other">%1$s were missed too. Three at a time is enough for one evening.</item>
+    </plurals>
+    <string name="today_catch_up_no_room">No room left today for %1$s.</string>
+
+    <!-- Milestones. At most one a day, and never on a day that went badly. -->
+    <string name="today_milestone">Worth saying</string>
+    <string name="today_milestone_seen">Got it</string>
+    <string name="milestone_first_completion">First one done.</string>
+    <string name="milestone_first_completion_body">Your routine has started. Now it is about repeating it.</string>
+    <string name="milestone_first_full_day">A whole day kept.</string>
+    <string name="milestone_first_full_day_body">Every step on the plan, done. This is what a good day looks like.</string>
+    <string name="milestone_first_week">A week in.</string>
+    <string name="milestone_first_week_body">Seven days recorded. Now the app has enough to show you patterns.</string>
+    <string name="milestone_goal_quarter">A quarter of the way.</string>
+    <string name="milestone_goal_half">Halfway.</string>
+    <string name="milestone_goal_three_quarters">Three quarters there.</string>
+    <string name="milestone_goal_body">The goal is moving because your days are.</string>
+    <string name="milestone_goal_reached">Goal reached.</string>
+    <string name="milestone_goal_reached_body">Set the next one when you are ready. There is no hurry.</string>
+    <string name="milestone_best_week">Your best week yet.</string>
+    <string name="milestone_best_week_body">Better than every seven days before it.</string>
+    <string name="milestone_thirty_day_run">Thirty days in a row.</string>
+    <string name="milestone_thirty_day_run_body">One step, kept every day for a month. That is a habit now.</string>
+
+    <plurals name="today_consistency">
+        <item quantity="one">%1$d of the last day went well</item>
+        <item quantity="other">%1$d of the last %2$d days went well</item>
+    </plurals>
+
+    <!-- The number a completed step asks for. Always optional. -->
+    <string name="today_number_body">Optional. The step is already marked done.</string>
+    <string name="today_number_save">Log it</string>
+    <string name="today_number_skip">Not now</string>
+
+    <!-- What kind of time a step keeps. Set as a badge. -->
+    <string name="kind_fixed">Fixed</string>
+    <!-- Minutes, not a count of things, so the word after the number does not inflect. -->
+    <string name="kind_after" tools:ignore="PluralsCandidate">+%1$d after %2$s</string>
+    <string name="kind_window">Window</string>
+    <string name="kind_every">Every %1$d min</string>
+
+    <!-- The one note beside a row. -->
+    <string name="note_pinned">Never moves</string>
+    <string name="note_done_at">Done %1$s</string>
+    <string name="note_done_over">Done %1$s · ran %2$s over</string>
+    <string name="note_done_early">Done %1$s · %2$s early</string>
+    <string name="note_moved_later">Moved +%1$s</string>
+    <string name="note_moved_earlier">Moved −%1$s</string>
+    <string name="span_minutes">%1$d min</string>
+    <string name="span_hours">%1$dh</string>
+    <string name="span_hours_minutes">%1$dh %2$dm</string>
+    <string name="note_ends">Ends %1$s</string>
+    <string name="note_missed">Missed</string>
+    <string name="note_skipped">Skipped</string>
+    <string name="note_snoozed">Snoozed ×%1$d</string>
+    <string name="note_degraded">Time could not be worked out</string>
+    <string name="note_reduced">Smaller version today</string>
+
+    <!-- A different day: another template, or a sick day. -->
+    <string name="today_different_day">Run a different day</string>
+    <string name="today_sick_day">Sick day</string>
+    <string name="today_sick_body">Every step with a shorter version runs as that version. Nothing counts against you.</string>
+    <plurals name="today_sick_line">
+        <item quantity="one">Sick day · %1$d step in its smaller version</item>
+        <item quantity="other">Sick day · %1$d steps in their smaller version</item>
+    </plurals>
+    <string name="today_sick_none">Sick day. No step here has a smaller version yet.</string>
+    <string name="today_not_yet">Comes round at %1$s.</string>
+    <string name="today_back_to_normal">Normal day</string>
+
+    <!-- The alarm, full screen. -->
+    <string name="alarm_kicker">Time to</string>
+    <plurals name="alarm_snooze_moves">
+        <item quantity="one">Snoozing moves %1$d later step by ten minutes.</item>
+        <item quantity="other">Snoozing moves %1$d later steps by ten minutes.</item>
+    </plurals>
+
+    <!--
+        Budget. Counts rather than a percentage, because "4 of 11" can be checked
+        against the list and a percentage has to be taken on trust.
+    -->
+    <plurals name="budget_too_many_alarms">
+        <item quantity="one">%1$d alarm today. More than three and they stop landing.</item>
+        <item quantity="other">%1$d alarms today. More than three and they stop landing.</item>
+    </plurals>
+    <plurals name="budget_too_many_notifications">
+        <item quantity="one">%1$d notification today. That is a lot to hear.</item>
+        <item quantity="other">%1$d notifications today. That is a lot to hear.</item>
+    </plurals>
+
+    <!--
+        Reliability. Every line says what is lost rather than which permission is
+        missing, because somebody reading this after a missed alarm wants to know
+        whether it will happen again.
+    -->
+    <string name="reliability_title">Reliability</string>
+    <string name="reliability_kicker">What the phone allows</string>
+    <string name="tier_full_screen_headline">Alarms will work</string>
+    <string name="tier_full_screen_body">Alarm steps will ring, take over the screen, and get louder until you respond.</string>
+    <string name="tier_full_screen_short">Alarms will ring and take over the screen.</string>
+
+    <string name="tier_heads_up_headline">Alarms will arrive on time</string>
+    <string name="tier_heads_up_body">Alarms arrive on time with sound, but cannot take over the screen. Fine for a reminder, easy to sleep through.</string>
+    <string name="tier_heads_up_short">Alarms arrive on time but will not take over the screen.</string>
+
+    <string name="tier_inexact_headline">Alarms may be late</string>
+    <string name="tier_inexact_body">Android is delaying this app\'s alarms. A step set for 06:30 may ring at 06:45 or later. The app will not pretend otherwise.</string>
+    <string name="tier_inexact_short">Alarms may arrive several minutes late.</string>
+
+    <string name="tier_in_app_headline">Nothing will reach you</string>
+    <string name="tier_in_app_body">Notifications are off. Nothing will reach you unless the app is open.</string>
+    <string name="tier_in_app_short">Nothing will reach you outside this app.</string>
+
+    <string name="reliability_what_would_change">What would change that</string>
+
+    <string name="fix_notifications_what">Turn notifications on</string>
+    <string name="fix_notifications_why">Without them nothing can be delivered at all.</string>
+    <string name="fix_channel_what">Turn the Alarms channel back up</string>
+    <string name="fix_channel_why">It is set to silent, so alarms arrive without a sound.</string>
+    <string name="fix_exact_what">Allow alarms and reminders</string>
+    <string name="fix_exact_why">Without this, Android decides when to ring, which can be 15 minutes late.</string>
+    <string name="fix_full_screen_what">Allow full screen alarms</string>
+    <string name="fix_full_screen_why">Alarms will still ring, but will not wake the screen.</string>
+    <string name="fix_battery_what">Remove battery restrictions</string>
+    <string name="fix_battery_why">Your phone may stop this app overnight to save battery.</string>
+    <string name="fix_open_notification_settings">Open notification settings</string>
+    <string name="fix_open_alarm_settings">Open alarm settings</string>
+    <string name="fix_open_app_settings">Open app settings</string>
+    <string name="fix_open_battery_settings">Open battery settings</string>
+
+    <!--
+        The one switch no API can see the state of. The copy says so plainly,
+        because claiming to know would be worse than admitting the gap.
+    -->
+    <string name="lock_screen_title">Show on the lock screen</string>
+    <string name="lock_screen_body">This phone has its own setting for showing an app over the lock screen. Without it the alarm rings, but you must unlock the phone to answer it. Turn on Show on lock screen and Background pop-ups.</string>
+    <string name="lock_screen_action">Open the permission screen</string>
+    <string name="autostart_title">Allow autostart</string>
+    <string name="autostart_body">Your phone has its own list of apps allowed to start on their own. This app cannot see that list. If alarms go missing overnight, this is usually why.</string>
+    <string name="autostart_action">Open autostart settings</string>
+
+    <!-- Plan -->
+    <string name="plan_title">Plan</string>
+    <plurals name="plan_kicker">
+        <item quantity="one">%1$d step · %2$s – %3$s</item>
+        <item quantity="other">%1$d steps · %2$s – %3$s</item>
+    </plurals>
+    <string name="plan_kicker_empty">No steps yet</string>
+    <string name="plan_kicker_none">No plan yet</string>
+    <string name="plan_none_title">No plan yet</string>
+    <string name="plan_none_body">Bring in the routine you already have, or write the first step yourself.</string>
+    <string name="plan_import">Paste a routine</string>
+    <string name="plan_write">Write it myself</string>
+    <string name="plan_reorder">Drag to reorder</string>
+    <string name="plan_add_step">Add a step</string>
+    <string name="plan_template_new">New</string>
+    <string name="plan_template_edit">Edit this day</string>
+    <string name="plan_template_new_title">New day</string>
+    <string name="plan_template_edit_title">Edit day</string>
+    <string name="plan_template_name">Name</string>
+    <string name="plan_template_name_hint">Weekend</string>
+    <string name="plan_template_days">Runs on</string>
+    <string name="plan_template_delete">Delete</string>
+    <string name="plan_template_delete_body">This deletes this day\'s steps and their history. Other days stay.</string>
+    <string name="plan_time_relative">+%1$d</string>
+    <string name="plan_line_fixed">Fixed</string>
+    <string name="plan_line_after">After %1$s</string>
+    <string name="plan_line_window">Window · until %1$s</string>
+    <string name="plan_line_every">Every %1$d min until %2$s</string>
+    <plurals name="plan_line_anchor">
+        <item quantity="one">%1$d step follows this</item>
+        <item quantity="other">%1$d steps follow this</item>
+    </plurals>
+    <string name="plan_line_alarm">Alarm on</string>
+    <string name="plan_line_pinned">Pinned</string>
+    <string name="plan_line_separator">" · "</string>
+
+    <!-- Item editor -->
+    <string name="editor_new_title">New step</string>
+    <string name="editor_edit_title">Edit step</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_save_failed">That could not be saved. Nothing has changed.</string>
+    <string name="editor_cancel">Cancel</string>
+    <string name="editor_set">Set</string>
+    <string name="editor_title_label">Title</string>
+    <string name="editor_title_hint">What is this step</string>
+    <string name="editor_reason_title">Add a title to save.</string>
+    <string name="editor_reason_parent">Pick the step this one comes after.</string>
+    <string name="editor_reason_window">The end is before the start.</string>
+
+    <string name="editor_timing">Timing</string>
+    <string name="anchor_fixed">Fixed</string>
+    <string name="anchor_relative">Relative</string>
+    <string name="anchor_window">Window</string>
+    <string name="anchor_interval">Repeat</string>
+    <string name="editor_at">At</string>
+    <string name="editor_from">From</string>
+    <string name="editor_to">To</string>
+    <string name="editor_offset">Offset</string>
+    <string name="editor_after">After</string>
+    <string name="editor_every">Every</string>
+    <string name="editor_minutes_value">%1$d min</string>
+    <string name="editor_pick_parent">Pick a step</string>
+    <string name="editor_pick_parent_title">After which step</string>
+    <string name="editor_no_parents">Add a step with a fixed time first. This one needs a step to follow.</string>
+    <string name="editor_lands_at">Today this would be at %1$s.</string>
+    <plurals name="editor_lands_at_anchor">
+        <item quantity="one">Today this would be at %1$s. %2$d step follows it.</item>
+        <item quantity="other">Today this would be at %1$s. %2$d steps follow it.</item>
+    </plurals>
+
+    <string name="editor_how_loud">How loud</string>
+    <string name="salience_alarm">Alarm</string>
+    <string name="salience_notify">Remind</string>
+    <string name="salience_silent">Quiet</string>
+    <string name="salience_timeline">List only</string>
+    <string name="editor_salience_hint_alarm">Rings, takes over the screen, and gets louder until you respond.</string>
+    <string name="editor_salience_hint_notify">A notification with sound, at the right minute.</string>
+    <string name="editor_salience_hint_silent">A silent notification. There when you look.</string>
+    <string name="editor_salience_hint_timeline">Only shown in the list. No reminder.</string>
+
+    <string name="editor_which_days">Which days</string>
+    <string name="editor_no_days">No days picked, so this step will never run.</string>
+    <string name="editor_duration">Duration</string>
+    <string name="editor_duration_none">None</string>
+
+    <string name="editor_minimum_title">Smaller version</string>
+    <string name="editor_minimum_body">Decide the shorter version now. On a bad day the app offers it instead of nothing.</string>
+    <string name="editor_minimum_hint">For example, ten minutes</string>
+
+    <string name="editor_pinned_title">Stays put</string>
+    <string name="editor_pinned_body">A pinned step does not move when you shift the whole day.</string>
+    <string name="editor_catchable_title">Suggest later if missed</string>
+    <string name="editor_catchable_body">Turn off for steps that only make sense at their time, like waking up.</string>
+    <string name="editor_detail_label">Note</string>
+    <string name="editor_detail_hint">Anything you will want at the moment it comes round</string>
+    <string name="editor_detail_body">Shown on the card when the step comes up. A shelf, a page number, a bus route.</string>
+
+    <string name="editor_group">Group</string>
+    <string name="editor_group_none">Not in a group</string>
+    <string name="editor_group_pick">Which group</string>
+    <string name="editor_group_body">Steps in a group arrive as one reminder instead of many.</string>
+    <string name="editor_group_in">In %1$s. The first step in the group makes the sound; the rest stay quiet.</string>
+    <string name="editor_salience_group">%1$s decides this. Take the step out of the group to change it here.</string>
+    <string name="editor_chosen">Chosen</string>
+
+    <string name="editor_measure">Ask for a number</string>
+    <string name="editor_measure_pick">What kind of number</string>
+    <string name="editor_measure_body">Turn on for steps worth tracking with a number: weight, reps, pages.</string>
+    <string name="editor_measure_on">Asked when you mark it done. Never required.</string>
+    <string name="measure_none">None</string>
+    <string name="measure_weight">Weight</string>
+    <string name="measure_reps">Reps</string>
+    <string name="measure_pages">Pages</string>
+    <string name="measure_minutes">Minutes</string>
+    <string name="measure_count">Count</string>
+    <string name="measure_number">Number</string>
+    <string name="unit_none"></string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_reps">reps</string>
+    <string name="unit_pages">pages</string>
+    <string name="unit_minutes">min</string>
+
+    <string name="editor_archive">Remove this step</string>
+
+    <!-- Groups. Five things at eight in the morning are one interruption, not five. -->
+    <string name="plan_group_new_title">New group</string>
+    <string name="plan_group_edit_title">Edit group</string>
+    <string name="plan_group_name">Name</string>
+    <string name="plan_group_name_hint">For example, Morning routine</string>
+    <string name="plan_group_starts">Starts</string>
+    <string name="plan_group_how_loud">How loud</string>
+    <string name="plan_group_how_loud_body">The first step in the group makes the sound. The rest stay quiet, so a group is one reminder instead of many.</string>
+    <string name="plan_group_delete">Remove group</string>
+    <plurals name="plan_group_delete_body">
+        <item quantity="one">The %1$d step stays on the plan, just not grouped.</item>
+        <item quantity="other">The %1$d steps stay on the plan, just not grouped.</item>
+    </plurals>
+    <string name="plan_group_empty">Nothing in it yet</string>
+    <plurals name="plan_group_steps">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+    <string name="plan_line_measured">Asks for a number</string>
+    <string name="plan_line_note">Has a note</string>
+
+    <!--
+        Import. The first thing anybody does, and the reason the app hands out a
+        prompt rather than trying to parse every shape of prose.
+    -->
+    <string name="import_title">Paste a routine</string>
+    <string name="import_body">This app runs a routine you already have. It does not write one for you.</string>
+    <string name="import_prompt_kicker">Easiest way</string>
+    <string name="import_prompt_title">Copy the prompt, paste the answer</string>
+    <string name="import_prompt_body">Give this prompt to the AI tool that wrote your routine. Paste its answer here and every line will be read correctly.</string>
+    <string name="import_copy_prompt">Copy the prompt</string>
+    <!-- Shown in the system clipboard preview on Android 13 and above. -->
+    <string name="import_clip_label">Routine format prompt</string>
+    <string name="import_paste_label">Your routine</string>
+    <string name="import_paste_placeholder" tools:ignore="TypographyDashes">06:30 | Wake up\n+10m | Drink water\n07:30-09:30 | Study block</string>
+    <string name="import_review">Read it</string>
+    <string name="import_review_title">Check this is right</string>
+    <string name="import_nothing_understood">No step found. Check that each line has a time.</string>
+    <string name="import_note_pinned">pinned</string>
+    <string name="import_note_minimum">has a smaller version</string>
+    <string name="import_note_separator">" · "</string>
+    <string name="import_name_label">Name this routine</string>
+    <string name="import_name_hint">Weekday</string>
+    <string name="import_confirm">Save it</string>
+    <string name="import_tap_to_fix">Tap a step to change its title or time.</string>
+    <string name="import_tap_to_add">Tap a line to add it with a time.</string>
+    <string name="import_edit_kicker">Edit step</string>
+    <string name="import_add_kicker">Add as a step</string>
+    <string name="import_edit_save">Save step</string>
+    <string name="import_edit_remove">Leave this one out</string>
+    <string name="import_failed">That could not be saved. Try again.</string>
+    <plurals name="import_understood_count">
+        <item quantity="one">%1$d step understood. Check it before saving.</item>
+        <item quantity="other">%1$d steps understood. Check them before saving.</item>
+    </plurals>
+    <plurals name="import_not_understood_count">
+        <item quantity="one">%1$d line was not understood</item>
+        <item quantity="other">%1$d lines were not understood</item>
+    </plurals>
+
+    <!-- Insights -->
+    <string name="insights_title">Insights</string>
+    <string name="insights_week">Week</string>
+    <string name="insights_month">Month</string>
+    <string name="insights_kicker_week">Week %1$d · %2$s</string>
+    <string name="insights_kicker_month">Last 4 weeks · %1$s</string>
+    <string name="insights_percent">%1$d%%</string>
+    <string name="insights_steps_kept">Steps kept</string>
+    <plurals name="insights_kept_of">
+        <item quantity="one">%1$d of %2$d step</item>
+        <item quantity="other">%1$d of %2$d steps</item>
+    </plurals>
+    <string name="insights_change_up">Up %1$d on last %2$s</string>
+    <string name="insights_change_down">Down %1$d from last %2$s</string>
+    <string name="insights_change_flat">Same as last %1$s</string>
+    <string name="insights_change_none">First %1$s. Nothing to compare yet.</string>
+    <string name="insights_period_week">week</string>
+    <string name="insights_period_month">month</string>
+    <string name="insights_avg_slip">Avg start slip %1$d min</string>
+    <string name="insights_no_slip">Starts on time</string>
+    <string name="insights_kept_per_day">Kept per day</string>
+    <string name="insights_kept_per_week">Kept per week</string>
+    <string name="insights_why_skipped">Why steps were skipped</string>
+    <string name="insights_step_by_step">Step by step</string>
+    <string name="insights_table_legend">Kept: how often it got done. Slip: how late it usually starts.</string>
+    <string name="insights_col_step">Step</string>
+    <string name="insights_col_kept">Kept</string>
+    <string name="insights_col_slip">Slip</string>
+    <string name="insights_kept_cell">%1$d/%2$d</string>
+    <string name="insights_slip_late">+%1$dm</string>
+    <string name="insights_slip_early">−%1$dm</string>
+    <string name="insights_slip_none">–</string>
+    <string name="insights_one_change">One change worth making</string>
+    <string name="insights_apply">Apply</string>
+    <string name="insights_not_this_week">Not this week</string>
+    <plurals name="insights_suggestion_slipped">
+        <item quantity="one">It usually ran %1$d min late and was missed %2$d of %3$d day. The plan time is later than your real time.</item>
+        <item quantity="other">It usually ran %1$d min late and was missed %2$d of %3$d days. The plan time is later than your real time.</item>
+    </plurals>
+    <plurals name="insights_suggestion_missed">
+        <item quantity="one">Missed %1$d of %2$d days.</item>
+        <item quantity="other">Missed %1$d of %2$d days.</item>
+    </plurals>
+    <string name="insights_quiet_title">Nothing this week yet</string>
+    <string name="insights_quiet_body">The week has only just started. Switch to Month to see the last four.</string>
+    <string name="insights_empty_title">Nothing to show yet</string>
+    <string name="insights_empty_body">Keep a few steps and this fills in. The first week is still settling in, whatever the numbers say.</string>
+    <string name="insights_no_plan_title">No plan yet</string>
+    <string name="insights_no_plan_body">Once a plan is running, this is where the week shows up.</string>
+
+    <!-- The one suggested change, with the step's title in the slot. -->
+    <string name="suggestion_move_time">Move %1$s to when it actually happens</string>
+    <string name="suggestion_widen_window">Give %1$s a window instead of a minute</string>
+    <string name="suggestion_raise_salience">Make %1$s louder</string>
+    <string name="suggestion_use_minimum">Run the smaller version of %1$s by default</string>
+    <string name="suggestion_keep_and_focus">Keep %1$s as it is and focus on it</string>
+    <string name="suggestion_leave_it">Leave %1$s alone</string>
+    <string name="suggestion_remove_item">Take %1$s off the plan</string>
+
+    <!-- The shape of the week, in one line under the chart. -->
+    <string name="story_on_track">Holding steady. Nothing to change.</string>
+    <string name="story_plan_too_small">You keep the plan, but the goal is not moving. The plan is too small, not you.</string>
+    <string name="story_timing_problem">The misses come at the same times. The times are wrong, not your effort.</string>
+    <string name="story_reminder_problem">The misses are scattered and mostly forgotten. A louder reminder would help.</string>
+    <string name="story_losing_grip">Slipping week by week. Try a smaller plan before pushing harder.</string>
+    <string name="story_settling_in">First week. Too early to say anything.</string>
+    <string name="story_mixed">No clear pattern yet.</string>
+
+    <!-- The week in words, above every chart on the screen. -->
+    <string name="insights_reading">The reading</string>
+    <string name="insights_went_best">Went best</string>
+    <string name="insights_went_worst">Worth fixing</string>
+    <plurals name="insights_win">
+        <item quantity="one">%1$s: done %2$d of the %3$d time it came up.</item>
+        <item quantity="other">%1$s: done %2$d of %3$d times.</item>
+    </plurals>
+    <string name="insights_win_perfect">%1$s: done every time, all %2$d of them.</string>
+    <plurals name="insights_problem">
+        <item quantity="one">%1$s: missed %2$d of the %3$d time it came up.</item>
+        <item quantity="other">%1$s: missed %2$d of %3$d times.</item>
+    </plurals>
+    <string name="insights_patterns">What keeps happening</string>
+    <string name="insights_pattern_count">%1$d/%2$d</string>
+    <string name="insights_pattern_weekday">Almost always on a %1$s. That is a pattern, not bad luck.</string>
+    <string name="insights_other_options">Try something else</string>
+    <string name="insights_hide_options">Hide the others</string>
+    <string name="insights_goal">The goal</string>
+    <string name="insights_rewards">Points and badges</string>
+    <string name="insights_points_banked">Banked</string>
+    <string name="insights_points_week">This week</string>
+    <string name="insights_points_best">Best day</string>
+    <string name="insights_points_legend">Ten a step, five for a smaller version, twenty for a whole day. Today joins the bank at midnight.</string>
+    <string name="insights_badges">Badges</string>
+    <string name="insights_badges_count">%1$d of %2$d</string>
+    <string name="insights_badge_not_yet">Not yet</string>
+    <string name="badge_first_completion">First step</string>
+    <string name="badge_first_full_day">Whole day</string>
+    <string name="badge_first_week">One week</string>
+    <string name="badge_goal_quarter">Quarter way</string>
+    <string name="badge_goal_half">Halfway</string>
+    <string name="badge_goal_three_quarters">Three quarters</string>
+    <string name="badge_goal_reached">Goal reached</string>
+    <string name="badge_best_week">Best week</string>
+    <string name="badge_thirty_day_run">Thirty day run</string>
+
+    <string name="story_head_on_track">The week held.</string>
+    <string name="story_head_plan_too_small">The plan is the problem, not you.</string>
+    <string name="story_head_timing_problem">Some steps are at the wrong time.</string>
+    <string name="story_head_reminder_problem">Steps are being forgotten.</string>
+    <string name="story_head_losing_grip">This week slipped.</string>
+    <string name="story_head_settling_in">Still settling in.</string>
+    <string name="story_head_mixed">A mixed week.</string>
+
+    <!-- Why something keeps being missed. The reason decides the fix. -->
+    <string name="cause_timing">Something else keeps happening at that time.</string>
+    <string name="cause_motivation">Nothing was in the way. The step is probably too big.</string>
+    <string name="cause_reminder">It is being forgotten, not refused.</string>
+    <string name="cause_unknown">Not enough reasons given to tell.</string>
+
+    <!-- The goal. Optional, and the empty state is an offer rather than a nag. -->
+    <!-- The goal at the top of Today. The honest number, with today's reading beside it. -->
+    <string name="goal_hero_target">Target</string>
+    <string name="goal_hero_today">Today</string>
+    <string name="goal_hero_since">%1$s since %2$s</string>
+    <string name="goal_hero_average">7-day avg</string>
+    <string name="goal_hero_start">Start</string>
+    <string name="goal_hero_done">Done</string>
+    <string name="goal_hero_left">Left</string>
+    <string name="goal_hero_settling">First week. The average is still settling.</string>
+    <string name="goal_title">Goal</string>
+    <string name="goal_none_title">No goal yet</string>
+    <string name="goal_none_body">The routine works without a goal. Set one when you want your days to add up to something.</string>
+    <string name="goal_set_one">Set a goal</string>
+    <string name="goal_edit">Edit</string>
+    <string name="goal_retire">Remove goal</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="readings_title">Readings</string>
+    <plurals name="readings_count">
+        <item quantity="one">%1$d reading</item>
+        <item quantity="other">%1$d readings</item>
+    </plurals>
+    <string name="readings_body">Every number you have logged. Tap one to correct it or take it out.</string>
+    <string name="readings_today">Today</string>
+    <string name="readings_save">Save</string>
+    <string name="readings_add">Add a reading</string>
+    <string name="readings_add_day">Which day</string>
+    <string name="readings_day_earlier">The day before</string>
+    <string name="readings_day_later">The day after</string>
+    <string name="readings_replaces">This day already has a number. Saving replaces it.</string>
+    <string name="readings_delete">Remove</string>
+    <string name="readings_failed">That did not save. Try again.</string>
+    <string name="readings_rebuilds">Changing this rebuilds the average from that day on.</string>
+    <string name="readings_rebuilds_new">The average is rebuilt from this day on.</string>
+    <string name="readings_none_title">No readings yet</string>
+    <string name="readings_none_body">Numbers appear here once a step that asks for one has been done.</string>
+    <string name="goal_see_readings">See all readings</string>
+    <string name="goal_so_far">So far</string>
+    <string name="goal_hero_finished">Finished</string>
+    <string name="goal_finished_kicker">Goal finished</string>
+    <string name="goal_finished_reached">Reached</string>
+    <string name="goal_finished_missed">Not reached</string>
+    <string name="goal_finished_measured">From %1$s to %2$s. The target was %3$s.</string>
+    <string name="goal_finished_counted">You did %1$s of %2$s.</string>
+    <string name="goal_finished_keeps">Your history stays either way.</string>
+    <string name="goal_finished_new">Set a new goal</string>
+    <string name="goal_nothing_yet">Nothing logged yet.</string>
+    <string name="goal_ahead">Ahead of schedule.</string>
+    <string name="goal_on_pace">On track.</string>
+    <string name="goal_behind">Behind schedule. There is still time.</string>
+    <string name="goal_over">The end date has passed. Set a new goal when you are ready.</string>
+    <string name="goal_reached">Reached.</string>
+    <string name="goal_too_early">Too early to say.</string>
+    <string name="goal_current_of">%1$s of %2$s %3$s</string>
+    <string name="goal_pace_marker">The mark shows where you should be today: %1$d%%.</string>
+    <string name="goal_pace_target">Should be at</string>
+    <string name="goal_projection">At this rate</string>
+    <string name="goal_no_rate_body">Needs one full day before it can predict.</string>
+    <string name="goal_no_rate_yet">—</string>
+    <string name="goal_will_reach">You will get there in time.</string>
+    <string name="goal_will_miss">You will fall short unless something changes.</string>
+    <string name="goal_time">Time left</string>
+    <string name="goal_day_of">Day %1$d of %2$d</string>
+    <string name="goal_trail_range">%1$s to %2$s</string>
+    <plurals name="goal_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+
+    <string name="goal_form_title">What is the goal</string>
+    <string name="goal_form_title_hint">For example, twelve gym sessions</string>
+    <string name="goal_form_kind">What kind</string>
+    <string name="goal_kind_number">Reach</string>
+    <string name="goal_kind_count">Count</string>
+    <string name="goal_kind_duration">Hours</string>
+    <string name="goal_kind_consistency">Hold</string>
+    <string name="goal_kind_number_hint">Reach a number: 78 kg, or 40 pages a day.</string>
+    <string name="goal_kind_count_hint">Do one step a set number of times.</string>
+    <string name="goal_kind_duration_hint">Add up minutes on one step.</string>
+    <string name="goal_kind_consistency_hint">Keep the plan on a set share of days.</string>
+    <string name="goal_form_step">Which step</string>
+    <string name="goal_form_step_none">Pick a step</string>
+    <string name="goal_form_step_body">Only this step counts toward the goal.</string>
+    <string name="goal_form_measures">What is measured</string>
+    <string name="goal_form_measures_body">Any number of this type logged on any step counts.</string>
+    <string name="goal_form_start">Starting value</string>
+    <string name="goal_form_start_hint">Where you are today</string>
+    <string name="goal_form_target_value">Target value</string>
+    <string name="goal_form_target_times">How many times</string>
+    <string name="goal_form_target_minutes">How many minutes</string>
+    <string name="goal_form_target_percent">What percent of days</string>
+    <string name="goal_form_target_hint">A number</string>
+    <string name="goal_form_length">How long</string>
+    <string name="goal_form_length_body">Counted from today. A goal you can finish beats one you can only fail.</string>
+    <plurals name="goal_form_weeks">
+        <item quantity="one">%1$d week</item>
+        <item quantity="other">%1$d weeks</item>
+    </plurals>
+    <string name="goal_unit_times">times</string>
+    <string name="goal_unit_percent">%%</string>
+    <string name="goal_reason_title">Give the goal a name to save.</string>
+    <string name="goal_reason_target">Put a number in the target.</string>
+    <string name="goal_reason_start">Say where you are starting from.</string>
+    <string name="goal_reason_item">Pick which step this counts.</string>
+    <string name="goal_reason_nowhere">The start and the target are the same, so there is nothing to reach.</string>
+
+    <string name="settings_goal">Goal</string>
+    <string name="settings_goal_body">One target your days add up to. Optional.</string>
+
+    <!-- What the alarms actually did, as opposed to what they are allowed to do. -->
+    <string name="reliability_measured">What actually happened</string>
+    <string name="reliability_measured_none">No alarm has been due yet, so there is nothing to measure. This fills in on its own.</string>
+    <plurals name="reliability_measured_window">
+        <item quantity="one">Over the last day, on this phone.</item>
+        <item quantity="other">Over the last %1$d days, on this phone.</item>
+    </plurals>
+    <string name="reliability_on_time">Arrived on time</string>
+    <string name="reliability_of">%1$d of %2$d</string>
+    <string name="reliability_late">Arrived late</string>
+    <string name="reliability_typically_late">Usually about %1$d min behind.</string>
+    <string name="reliability_never_arrived">Never arrived</string>
+    <string name="reliability_never_arrived_body">Usually the phone\'s battery saver. The fixes above change this.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_kicker">Build or Break · %1$s</string>
+    <string name="settings_section_alarms">Alarms</string>
+    <string name="settings_reliability">Reliability</string>
+    <plurals name="settings_fixes">
+        <item quantity="one">%1$d to fix</item>
+        <item quantity="other">%1$d to fix</item>
+    </plurals>
+    <string name="settings_alarm_sound">Alarm sound and vibration</string>
+    <string name="settings_alarm_sound_body">Set in the phone\'s own settings for the Alarms channel.</string>
+    <string name="settings_dnd">Ring through Do Not Disturb</string>
+    <string name="settings_dnd_body">Turn on Override Do Not Disturb on the same page.</string>
+    <string name="settings_tolerance">Late tolerance</string>
+    <string name="settings_tolerance_body">If you finish a step this late, the steps after it stay where they were.</string>
+    <string name="settings_tolerance_off">Off</string>
+    <string name="settings_section_day">The day</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <!-- The points screen. -->
+    <string name="points_kicker">Build or Break</string>
+    <string name="points_title">Points</string>
+    <string name="points_balance">To spend</string>
+    <string name="points_earned">Earned all time</string>
+    <string name="points_spent">Used</string>
+    <string name="points_ad_title">Watch an ad · +%1$d</string>
+    <string name="points_ad_body">One a day. Nothing else on this screen changes if you skip it.</string>
+    <string name="points_ad_done">Today\'s ad is done. Another tomorrow.</string>
+    <string name="points_ad_action">Watch</string>
+    <string name="points_ad_soon_title">Not ready yet</string>
+    <string name="points_ad_soon_body">Ads are not switched on. The app does not use the internet at all today, and that stays true until this button works. Nothing was watched and nothing was earned.</string>
+    <string name="points_unlocks">What points are for</string>
+    <string name="points_planned">Planned</string>
+    <string name="points_unlock_undo">Undo a done step</string>
+    <string name="points_unlock_undo_body">Long press a done step on Today. The undo bar right after a tap stays free.</string>
+    <string name="points_unlock_freeze">Keep a run over a missed day</string>
+    <string name="points_unlock_freeze_body">Covers one day you missed so the run carries on. It does not count as a day kept.</string>
+    <string name="points_unlock_routine">A third routine</string>
+    <string name="points_unlock_routine_body">Two days are free, enough for a weekday and a weekend. Beyond that costs points.</string>
+    <string name="points_unlock_goal">A second goal at the same time</string>
+    <string name="points_unlock_goal_body">Not built yet. One goal at a time for now.</string>
+    <string name="points_history">Where they went</string>
+    <string name="points_history_none">Nothing yet. Keep a day and the first points land tonight.</string>
+    <string name="points_move_day">The day\'s routine</string>
+    <string name="points_move_ad">Watched an ad</string>
+    <string name="settings_points">Points</string>
+    <string name="settings_points_body">What your days have earned, and what it buys.</string>
+    <string name="points_too_few">Not enough points. You have %1$d and this costs %2$d.</string>
+    <string name="points_undo_title">Undo this step?</string>
+    <string name="points_undo_body">It goes back to not done, and the day, the run and the goal are worked out again. This costs %1$d points.</string>
+    <string name="points_undo_confirm">Undo for %1$d</string>
+    <string name="points_routine_title">A third routine costs points</string>
+    <string name="points_routine_body">Two days come free. This one costs %1$d points, and you have %2$d.</string>
+    <string name="points_routine_confirm">Add for %1$d</string>
+    <string name="settings_section_data">Your data</string>
+    <string name="settings_export">Export plan and history</string>
+    <string name="settings_export_body">One file with your plan and history. Share it anywhere you like.</string>
+    <string name="settings_export_chooser">Share your plan</string>
+    <string name="settings_export_file">build-or-break-%1$s.json</string>
+    <string name="action_close">Close</string>
+    <string name="settings_restore">Restore from a file</string>
+    <string name="settings_restore_body">Put back a file this app exported. Replaces what is here now.</string>
+    <string name="settings_restore_busy">Putting it back…</string>
+    <string name="settings_restore_confirm_title">Restore and replace?</string>
+    <string name="settings_restore_confirm_body">Everything on this phone will be deleted and written again from the file. This cannot be undone.</string>
+    <string name="settings_restore_confirm">Restore</string>
+    <string name="settings_restore_done_title">Put back.</string>
+    <plurals name="settings_restore_steps">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+    <plurals name="settings_restore_days">
+        <item quantity="one">%1$d day of history</item>
+        <item quantity="other">%1$d days of history</item>
+    </plurals>
+    <plurals name="settings_restore_readings">
+        <item quantity="one">%1$d reading</item>
+        <item quantity="other">%1$d readings</item>
+    </plurals>
+    <plurals name="settings_restore_badges">
+        <item quantity="one">%1$d badge</item>
+        <item quantity="other">%1$d badges</item>
+    </plurals>
+    <!-- "9 steps, 40 days of history and 12 readings." Only the parts that came back are listed. -->
+    <string name="settings_restore_done_body">%1$s.</string>
+    <string name="settings_restore_join">%1$s, %2$s</string>
+    <string name="settings_restore_join_last">%1$s and %2$s</string>
+    <string name="settings_restore_failed_title">Could not read it</string>
+    <string name="settings_restore_not_readable">That file is not one this app wrote, or it was damaged on the way. Nothing was changed.</string>
+    <string name="settings_restore_too_new">That file was written by a newer version of the app. Update first, then try again.</string>
+    <string name="settings_restore_empty">That file has no steps in it. Nothing was changed.</string>
+    <string name="settings_import">Import from text</string>
+    <string name="settings_delete">Delete everything</string>
+    <string name="settings_delete_body">Plans, history, alarms. There is no copy anywhere else.</string>
+    <string name="settings_delete_confirm_title">Delete everything?</string>
+    <string name="settings_delete_confirm_body">Every plan, every day of history and every alarm will be deleted. There is no backup on any server.</string>
+    <string name="settings_delete_confirm">Delete</string>
+    <string name="settings_delete_cancel">Keep it</string>
+    <string name="settings_footer">Everything stays on this phone. No account, no server, no tracking.</string>
+    <!-- About, and the two documents the store asks for. Plain voice, because the reader is the user. -->
+    <string name="settings_section_about">About</string>
+    <string name="settings_about">About this app</string>
+    <string name="settings_about_body">What it does, what it does not, and where your data is.</string>
+    <string name="about_kicker">Build or Break · %1$s</string>
+    <string name="about_title">About</string>
+    <string name="about_what">Build or Break runs the daily routine you already have. You write your steps once, the app reminds you of each one at the right time, and if your day runs late it moves the rest of the day for you.</string>
+    <string name="about_not">It does not write a routine for you, it does not need an account, and it does not use the internet.</string>
+    <string name="about_data">Everything you enter stays on this phone. Your plan, your history and your numbers live in one file here. Nothing is uploaded anywhere.</string>
+    <string name="about_section_documents">Documents</string>
+    <string name="about_privacy">Privacy policy</string>
+    <string name="about_terms">Terms of use</string>
+    <string name="about_section_made">Made by</string>
+    <string name="about_made_by">Built by one person, in India.</string>
+    <string name="about_contact">Contact us</string>
+    <string name="contact_kicker">Build or Break</string>
+    <string name="contact_title">Contact us</string>
+    <string name="contact_soon">Coming soon</string>
+    <string name="contact_body">There is no way to get in touch from inside the app yet. It is being worked on, and this screen is where it will live.</string>
+    <string name="contact_meanwhile">Nothing you write will be sent anywhere until this screen says otherwise.</string>
+    <string name="about_licence">Free to use. No account, and nothing to pay for.</string>
+    <string name="legal_updated">Updated %1$s</string>
+    <string name="legal_updated_on">20 September 2026</string>
+
+    <string name="privacy_short_title">The short version</string>
+    <string name="privacy_short_body">This app collects nothing about you. It has no account, no server and no internet permission. Everything you type stays on your phone.</string>
+    <string name="privacy_stored_title">What is stored on your phone</string>
+    <string name="privacy_stored_body">Your routine, the steps you marked done or skipped, any reasons you gave, any numbers you logged (like weight or minutes), your goal, and a small log of when alarms were set and when they rang. All of it is in the app\'s private storage on this device.</string>
+    <string name="privacy_leaves_title">What leaves your phone</string>
+    <string name="privacy_leaves_body">Nothing, unless you choose to export. Export makes one file and hands it to the app you pick, like email or Drive. From that point the file is under that app\'s rules, not ours. There are no analytics, no crash reports and no ads.</string>
+    <string name="privacy_points_title">Points</string>
+    <string name="privacy_points_body">Points are worked out on this phone from the days you kept, and they are stored here with everything else. They are not an account, they are not tied to a name, and they are not sent anywhere.</string>
+    <string name="privacy_ads_title">Ads</string>
+    <string name="privacy_ads_body">There are none today, and the app has no internet permission. If an ad is ever offered for points it will be something you choose to watch, never something that interrupts you, and this page will say what the ad provider receives before the first one is shown. Until then nothing on this screen has changed.</string>
+    <string name="privacy_permissions_title">Permissions and why</string>
+    <string name="privacy_permissions_body">Alarms and reminders: so a step can ring at an exact minute. Notifications: so a reminder can reach you. Full screen alarms: so an alarm can show over the lock screen. Battery: so your phone does not silence alarms to save power. Each one is optional. The app works without them, just quieter.</string>
+    <string name="privacy_delete_title">Deleting your data</string>
+    <string name="privacy_delete_body">Settings has a Delete everything button. It removes every plan, every day of history and every alarm. Uninstalling the app does the same. There is no copy anywhere else to delete.</string>
+    <string name="privacy_children_title">Children</string>
+    <string name="privacy_children_body">The app is not aimed at children under 13 and does not knowingly collect anything from anyone, of any age.</string>
+    <string name="privacy_changes_title">Changes to this policy</string>
+    <string name="privacy_changes_body">If this policy changes, the new version will be in the app with a new date at the top. The promise that nothing leaves your phone will not change.</string>
+    <string name="privacy_contact_title">Contact</string>
+    <string name="privacy_contact_body">See Contact us, under About in Settings.</string>
+
+    <string name="terms_use_title">Using the app</string>
+    <string name="terms_use_body">Build or Break is free to use for your own personal routine. Use it as it is meant to be used and do not try to break it or copy it off as your own.</string>
+    <string name="terms_alarms_title">Alarms can fail</string>
+    <string name="terms_alarms_body">The app does everything it can to ring on time, and it tells you honestly what your phone is allowing. But phone makers, battery savers and Android itself can delay or silence alarms. Do not rely on this app alone for anything where a missed alarm would cause harm, like medication or a flight.</string>
+    <string name="terms_health_title">Not medical advice</string>
+    <string name="terms_health_body">Routines, goals, weights and minutes in this app are your own numbers. The app does not give health, fitness or medical advice. Talk to a professional for that.</string>
+    <string name="terms_data_title">Your data is yours</string>
+    <string name="terms_data_body">Everything you enter belongs to you and stays on your phone. You can export it or delete it at any time. Because there is no server copy, a lost phone means lost data unless you exported.</string>
+    <string name="terms_points_title">Points</string>
+    <string name="terms_points_body">Points are a feature of the app, not money. They have no cash value, they cannot be bought, sold, transferred or exchanged for anything outside the app, and they are not refundable. They live on this phone, so deleting your data or the app deletes them, and a lost phone loses them.</string>
+    <string name="terms_points_change_title">What points cost</string>
+    <string name="terms_points_change_body">What a day earns and what each unlock costs may change in a later version of the app, and points already earned may be worth a different amount afterwards. Anything already unlocked stays unlocked. Nothing you have paid money for is affected, because nothing here is paid for with money.</string>
+    <string name="terms_ads_title">Ads</string>
+    <string name="terms_ads_body">The app shows no ads today. If one is ever offered in exchange for points, watching it will be your choice, skipping it will cost you nothing, and every part of the app you can reach now will still be reachable without watching anything.</string>
+    <string name="terms_licence_title">No warranty</string>
+    <string name="terms_licence_body">The app is provided as it is, without any warranty. Nobody is liable for damages that come from using it, to the extent the law allows. The app and its code stay the property of whoever wrote them; nothing here gives you the right to copy or republish them.</string>
+    <string name="terms_changes_title">Changes</string>
+    <string name="terms_changes_body">These terms may change with a new version of the app. The date at the top says when.</string>
+    <string name="terms_contact_title">Contact</string>
+    <string name="terms_contact_body">See Contact us, under About in Settings.</string>
 </resources>

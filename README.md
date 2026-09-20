@@ -2,6 +2,19 @@
 
 An Android routine app that runs your day and reshapes it when the day moves.
 
+Most habit apps record what you did. This one tries to get it done: it holds
+your routine, rings at the right minute, and when you fall behind it moves the
+rest of the day for you and tells you what it moved.
+
+Everything stays on the phone. No account, no server, no analytics, and no
+internet permission.
+
+<p align="left">
+  <img src="docs/screenshots/today.png" width="30%" alt="The Today screen: a ring showing steps kept, the next step with Done, Smaller version, Snooze and Skip, and the rest of the day below it" />
+  <img src="docs/screenshots/plan.png" width="30%" alt="The Plan screen: nine steps with fixed times, one hanging off the gym, and one with a window" />
+  <img src="docs/screenshots/points.png" width="30%" alt="The Points screen: a balance, what points unlock, and a ledger of where they went" />
+</p>
+
 ## Why I am building this
 
 I am trying to gain weight, and I kept missing things. Not the hard parts. The
@@ -20,32 +33,57 @@ None of them bend. So I am building the one I wanted.
 
 ## What it does
 
-- Runs a plan you already have. It does not generate one. Paste in whatever you
-  wrote, or whatever an AI tool wrote for you, and this schedules and executes it
-- Four anchor types, so a step can sit at a fixed clock time, hang off the step
-  before it, float inside a window, or repeat on an interval
-- Day templates. Office day, work from home, rest day, sick day. One tap in the
-  morning reshapes the whole timeline
-- A minimum version on every step, defined in advance. On a bad day the
-  notification offers the smaller one instead of nothing
-- Snooze that shows you what it costs. Moving one step tells you which later
-  steps move with it, before you commit
-- Whole day shift. Woke up ninety minutes late, move the day, keep the gym slot
-  where it is
-- Everything stays on the phone. No account, no server, no analytics
+**Runs a plan you already have.** It does not generate one. Paste in whatever
+you wrote, or whatever an AI tool wrote for you, and this schedules and
+executes it.
+
+**Four kinds of timing.** A step can sit at a fixed clock time, hang off the
+step before it, float inside a window, or repeat on an interval. Move one and
+the ones that depend on it move with it.
+
+**Day templates.** Office day, work from home, rest day, sick day. One tap in
+the morning reshapes the whole timeline.
+
+**A smaller version of every step,** written in advance. On a bad day the
+notification offers the shorter one instead of nothing.
+
+**Snooze that shows you the cost.** Moving one step tells you which later steps
+move with it, before you commit.
+
+**Whole day shift.** Woke up ninety minutes late, move the day, and keep the
+gym slot where it is because it is booked.
+
+**A goal your days add up to,** measured on a seven day average with a pace
+line, so one heavy meal does not look like progress and one light day does not
+look like failure.
+
+**Insights and a written weekly review** that names the win, the problem and
+the one question worth answering.
+
+**Points.** A kept day is worth points, and points buy back an undo, a streak
+that survives a missed day, or a third routine. Nothing is taken away for a bad
+day.
+
+**A backup that reads back.** One file with the plan, the history, the goal,
+the readings and the badges, shared anywhere and restored from anywhere.
+
+**English and Hindi, light and dark,** a tablet layout, and every control
+reachable with a screen reader.
 
 ## Status
 
-Early. Milestone 1 of 9, which is the build skeleton and the injected clock.
+In progress, and used daily on one phone. There is no public build yet, so
+there is nothing to install.
 
-What exists: the module structure, convention plugins, the version catalog,
-`TimeProvider` and its test fixtures, static analysis wired to fail the build,
-and an app shell that renders one line of text.
+**What works end to end:** the timeline engine and its four anchor types, day
+templates, the whole day shift and the snooze preview, the tiered scheduler
+with full screen alarms and its delivery audit, the daily close, goals with a
+seven day average and a pace line, the weekly review and Insights, import from
+pasted text, backup and restore, points with a ledger, the nine badges,
+English and Hindi, light and dark.
 
-What does not exist yet: the timeline engine, the scheduler, and every screen.
-There is nothing to install and no screenshots, because there is nothing worth
-photographing. I will put a recording here when the Today screen runs a real
-day.
+**What does not exist yet:** anything paid, the ads SDK behind the "watch an
+ad" button, multi week programs, and everything to do with the store listing.
 
 ## The hard part
 
@@ -91,8 +129,40 @@ milliseconds without an emulator. Detekt also fails the build on any direct call
 to `Instant.now`, so the clock is always injected and time is always
 controllable in a test.
 
+A few rules the code keeps to, because they are what stop the app drifting:
+
+- A ViewModel never touches Room, DataStore or AlarmManager, and never
+  computes. It holds facts, not sentences.
+- Every user visible string lives in `values/strings.xml`, with a Hindi
+  translation beside it. The design system owns no copy.
+- Derived numbers are derived. The points score is a pure function of the
+  rows the daily close already writes, so it cannot disagree with them.
+
 Kotlin, Compose with Material 3, Room, Hilt, Navigation 3, Glance. Android only,
 minSdk 26, targetSdk 36.
+
+## Building it
+
+Needs JDK 17 and an Android SDK with API 36.
+
+```bash
+./gradlew :app:assembleDebug     # a debug APK
+./gradlew :app:installDebug      # build and install on a connected device
+./gradlew qualityCheck           # spotless, detekt and every unit test
+```
+
+The device suite is a single walkthrough that drives the app through a real
+day. It reads English copy, so pin the app's locale first:
+
+```bash
+./gradlew :app:installDebug
+adb shell pm clear com.buildorbreak.app.debug
+adb shell cmd locale set-app-locales com.buildorbreak.app.debug --user 0 --locales en-US
+./gradlew :app:connectedDebugAndroidTest
+```
+
+`qualityCheck` is the gate. It runs ktlint through Spotless, detekt with the
+project's own thresholds, and the full unit suite, with warnings as errors.
 
 ## Why Android only
 
@@ -101,10 +171,12 @@ by Focus and by the ringer switch, and the Critical Alerts entitlement is not
 granted for this category. The core promise of the app cannot be kept there, so
 I would rather not ship a worse version of it than pretend.
 
-## Licence
+## Reading the code
 
-MIT. See [`LICENSE`](LICENSE).
+The repository is public so that the privacy claim can be checked rather than
+believed: there is no network call in here to find, and `scheduler/` is the
+part worth reading if you are fighting the same battle with Doze and OEM
+battery managers.
 
-Take the scheduling engine, take the tiered alarm approach, take whatever is
-useful. If you are fighting the same battle with Doze and OEM battery managers,
-`scheduler/` is the part worth reading.
+It is public to read, not to reuse. No licence is granted, so all rights are
+reserved for now. If you want to build on any of it, ask.

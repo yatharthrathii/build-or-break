@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The design system owns no user visible copy. Every component takes its
+    text from the caller, and the two exceptions that used to live here were
+    moved to the screens that show them so the wording is decided in one place.
+-->
+<resources />

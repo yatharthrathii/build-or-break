@@ -1,0 +1,81 @@
+package com.buildorbreak.core.data.dao
+
+import androidx.room.Dao
+import androidx.room.Query
+import androidx.room.Upsert
+import com.buildorbreak.core.data.entity.BlockEntity
+import com.buildorbreak.core.data.entity.ItemEntity
+import java.time.Instant
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface ItemDao {
+
+    /**
+     * The single Today query. architecture.md section 6.1.
+     *
+     * Archived rows are excluded here rather than filtered by the caller,
+     * because every caller wants the same thing and one that forgot would show
+     * somebody a step they deleted three months ago.
+     */
+    @Query(
+        """
+        SELECT * FROM item
+        WHERE template_id = :templateId AND archived_at IS NULL
+        ORDER BY sort_order, id
+        """,
+    )
+    fun observeForTemplate(templateId: Long): Flow<List<ItemEntity>>
+
+    /**
+     * Every step, archived ones included, for an export.
+     *
+     * A backup that dropped the archived ones would come back with a gap in
+     * the history rather than a smaller plan: the occurrences for those days
+     * point at steps that would no longer exist, so the days they were done
+     * on would restore empty.
+     */
+    @Query("SELECT * FROM item WHERE template_id = :templateId ORDER BY sort_order, id")
+    suspend fun allForTemplate(templateId: Long): List<ItemEntity>
+
+    @Query("SELECT * FROM block WHERE template_id = :templateId ORDER BY sort_order, id")
+    fun observeBlocksForTemplate(templateId: Long): Flow<List<BlockEntity>>
+
+    @Query("SELECT * FROM item WHERE id = :id")
+    suspend fun byId(id: Long): ItemEntity?
+
+    /** Every step in the group, archived ones included, so no row keeps pointing at a group that is gone. */
+    @Query("UPDATE item SET block_id = NULL WHERE block_id = :blockId")
+    suspend fun unlinkBlock(blockId: Long)
+
+    /** Everything hanging off this one, for the reschedule pass after a change. */
+    @Query("SELECT * FROM item WHERE anchor_parent_item_id = :parentId AND archived_at IS NULL")
+    suspend fun childrenOf(parentId: Long): List<ItemEntity>
+
+    @Upsert
+    suspend fun upsert(item: ItemEntity): Long
+
+    @Upsert
+    suspend fun upsertBlock(block: BlockEntity): Long
+
+    /**
+     * Groups are deleted outright, unlike items.
+     *
+     * Nothing points at a group from the history: occurrences reference items,
+     * and an item keeps its own title and salience whether or not it is in a
+     * group. Deleting one loses nothing, which is why this is a delete and
+     * `archive` above is not.
+     */
+    @Query("DELETE FROM block WHERE id = :id")
+    suspend fun deleteBlock(id: Long)
+
+    /**
+     * Archived, never deleted. Occurrences point at items, and a completed step
+     * that lost its title is a hole in the history rather than a tidy up.
+     */
+    @Query("UPDATE item SET archived_at = :at WHERE id = :id")
+    suspend fun archive(id: Long, at: Instant)
+
+    @Query("UPDATE item SET sort_order = :order WHERE id = :id")
+    suspend fun setSortOrder(id: Long, order: Int)
+}

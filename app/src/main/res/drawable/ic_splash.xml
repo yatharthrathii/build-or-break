@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The launch window mark: the same broken block, in the accent, on the
+    ground.
+
+    No disc behind it. The platform masks a splash icon to a circle, and the
+    earlier version painted a red square that the mask turned into a red
+    ball with a stripe: a shape the app never shows anywhere else. The block
+    sits inside the safe circle, so the mask has nothing to cut and the mark
+    on the launch window is the mark on the launcher, one size up.
+
+    The cut is transparent rather than painted, so it shows the window's own
+    ground in both palettes.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="@color/accent"
+        android:pathData="M31,31 H72 L31,72 Z" />
+
+    <path
+        android:fillColor="@color/accent"
+        android:pathData="M77,77 H36 L77,36 Z" />
+</vector>

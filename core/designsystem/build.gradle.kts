@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.buildorbreak.android.library)
     alias(libs.plugins.buildorbreak.android.compose)
-    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -9,15 +8,16 @@ android {
 }
 
 dependencies {
-    api(libs.androidx.compose.material.icons)
-    implementation(libs.kotlinx.collections.immutable)
+    implementation(projects.core.model)
 
-    testImplementation(libs.robolectric)
-    testImplementation(libs.roborazzi)
-    testImplementation(libs.roborazzi.compose)
-    testImplementation(libs.roborazzi.rule)
-    testImplementation(libs.androidx.compose.ui.test.junit4)
+    implementation(libs.androidx.compose.material.icons)
+
+    testImplementation(projects.core.testing)
 }
 
-// Every colour token, type style, shape, glyph and shared composable.
-// design.md is the specification. Nothing in this module invents a value.
+// Tokens, theme and the handful of components every screen shares.
+//
+// architecture.md section 3: this module may depend on :core:model and nothing
+// else. It cannot see the domain, the data layer or a use case, which is what
+// stops a component from quietly reaching for a repository and turning a
+// reusable piece of UI into something only one screen can use.

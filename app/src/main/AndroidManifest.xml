@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        Permissions are added in M4 alongside the code that uses them, not
-        before. See techspec.md section 7 for the full list and the Play Console
-        declaration each one needs:
-
-          USE_EXACT_ALARM, SCHEDULE_EXACT_ALARM, POST_NOTIFICATIONS,
-          USE_FULL_SCREEN_INTENT, FOREGROUND_SERVICE,
-          FOREGROUND_SERVICE_SPECIAL_USE, RECEIVE_BOOT_COMPLETED, VIBRATE
-
-        Declaring a restricted permission before there is a working fallback for
-        it is how a release gets rejected, so they land together.
+        Permissions are declared in :scheduler, with the code that uses them and
+        with the tier that degrades when one is missing. techspec.md section 7.
+        They merge into this manifest at build time.
     -->
 
     <application
@@ -36,6 +30,73 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            The alarm, over the lock screen. Reached by action from the
+            notification's full screen intent, because :scheduler builds that
+            intent and cannot see this class. Not exported: only a PendingIntent
+            this app created can start it, so nothing else can fake an alarm.
+            Its own task and out of recents, so dismissing it leaves nothing
+            behind.
+        -->
+        <activity
+            android:name=".feature.alarm.AlarmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.BuildOrBreak"
+            android:turnScreenOn="true"
+            tools:targetApi="o_mr1">
+            <!--
+                The default category is not optional here. An implicit intent
+                only matches a filter that declares it, so without this line
+                the action resolves to nothing, the full screen intent has no
+                activity to launch, and an alarm rings without ever putting a
+                screen in front of anybody. It fails silently, which is why it
+                survived until a device test tried to start it.
+            -->
+            <intent-filter>
+                <action android:name="com.buildorbreak.ACTION_ALARM_SCREEN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            The export, handed to whichever app the user picks to share it.
+
+            A file rather than a block of text in the intent: an export is a
+            document somebody keeps, and a chat app given plain text with a
+            JSON type has nowhere to put it. It is also what makes the file
+            pickable again on the other side, which is the whole point of a
+            backup.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!--
+            Rescheduling on launch is the second path to work the daily job also
+            does. WorkManager is best effort and a vendor battery manager may
+            stop it for days, so the pass runs here too. It is idempotent, which
+            is what makes the redundancy free.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="com.buildorbreak.app.startup.SchedulerStartup"
+                android:value="androidx.startup" />
+        </provider>
 
     </application>
 

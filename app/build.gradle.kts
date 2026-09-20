@@ -10,12 +10,46 @@ plugins {
 android {
     namespace = "com.buildorbreak.app"
 
+    lint {
+        // Lint is wrong about this one. It reports mipmap-anydpi-v26 as a
+        // redundant qualifier because minSdk is already 26, and merging the
+        // folder into mipmap-anydpi as it suggests makes AAPT fail to link the
+        // launcher icon at all. The qualifier stays.
+        disable += "ObsoleteSdkInt"
+    }
+
     defaultConfig {
         applicationId = "com.buildorbreak.app"
     }
 
     buildFeatures {
         buildConfig = true
+    }
+
+    buildTypes {
+        getByName("release") {
+            // Signed with the debug key for now, so a release build can be
+            // sideloaded and felt on a real phone. This is not the key the app
+            // ships with: M9 creates the upload key, and an install signed
+            // with this one has to be uninstalled before that build goes on.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    androidComponents {
+        /*
+         * Unit tests run on debug only.
+         *
+         * Compose UI tests need androidx.compose.ui:ui-test-manifest, which
+         * supplies the activity they render into and is deliberately a debug
+         * only dependency: shipping it in a release would put test scaffolding
+         * in the APK. Running the same tests twice against a variant that
+         * cannot host them adds no coverage, since unit tests never go through
+         * R8 or the release manifest anyway.
+         */
+        beforeVariants(selector().withBuildType("release")) { variant ->
+            variant.enableUnitTest = false
+        }
     }
 }
 
@@ -34,7 +68,13 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.splashscreen)
+    implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.startup)
+
+    // Named by SchedulerStartup so androidx.startup runs WorkManager's own
+    // initializer first. Without it this app's initializer can run before
+    // WorkManager exists, and getInstance throws during process start.
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
@@ -59,6 +99,18 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // The walkthrough runs on a real phone. MIUI refuses adb input injection,
+    // so this is the only way to drive the app through its own screens and
+    // find out what a tap actually does on the device it ships to.
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.truth)
+
+    // For its screenshot, which goes through the shell rather than through
+    // the instrumentation's own window capture. On an emulator the latter
+    // hands back a black rectangle, and a black rectangle is worse than no
+    // screenshot: it looks like the screen it was meant to prove.
+    androidTestImplementation(libs.androidx.uiautomator)
 }
 
 // Feature packages live inside this module for now: today, plan, insights,

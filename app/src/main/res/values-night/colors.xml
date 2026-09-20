@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The dark ground, for the window and the splash. Matches Dark.Ground in the
+    design system. Without this the window behind every screen is white, and
+    it shows through for a frame whenever two screens cross fade.
+-->
+<resources>
+    <color name="ground">#141312</color>
+</resources>
