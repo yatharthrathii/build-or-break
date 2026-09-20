@@ -44,8 +44,19 @@ import java.util.Locale
  * because a bug report without one is a guess.
  */
 @Composable
-fun AboutScreen(onOpenLegal: (LegalDocument) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    AboutContent(version = BuildConfig.VERSION_NAME, onOpenLegal = onOpenLegal, onBack = onBack, modifier = modifier)
+fun AboutScreen(
+    onOpenLegal: (LegalDocument) -> Unit,
+    onOpenContact: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AboutContent(
+        version = BuildConfig.VERSION_NAME,
+        onOpenLegal = onOpenLegal,
+        onOpenContact = onOpenContact,
+        onBack = onBack,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -54,6 +65,7 @@ fun AboutContent(
     onOpenLegal: (LegalDocument) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenContact: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -77,6 +89,7 @@ fun AboutContent(
                 onOpenLegal(LegalDocument.PRIVACY)
             })
             DocumentRow(title = stringResource(R.string.about_terms), onClick = { onOpenLegal(LegalDocument.TERMS) })
+            DocumentRow(title = stringResource(R.string.about_contact), onClick = onOpenContact)
 
             SectionLabel(text = stringResource(R.string.about_section_made), underlined = true)
             Paragraph(text = stringResource(R.string.about_made_by))

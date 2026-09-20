@@ -862,7 +862,13 @@
     <string name="about_privacy">Privacy policy</string>
     <string name="about_terms">Terms of use</string>
     <string name="about_section_made">Made by</string>
-    <string name="about_made_by">Made by Yatharth Rathi, one person, in India. Questions and problems: yatharthmaheshwari01@gmail.com</string>
+    <string name="about_made_by">Built by one person, in India.</string>
+    <string name="about_contact">Contact us</string>
+    <string name="contact_kicker">Build or Break</string>
+    <string name="contact_title">Contact us</string>
+    <string name="contact_soon">Coming soon</string>
+    <string name="contact_body">There is no way to get in touch from inside the app yet. It is being worked on, and this screen is where it will live.</string>
+    <string name="contact_meanwhile">Nothing you write will be sent anywhere until this screen says otherwise.</string>
     <string name="about_licence">The code is open source under the MIT licence.</string>
     <string name="legal_updated">Updated %1$s</string>
     <string name="legal_updated_on">11 September 2026</string>
@@ -882,7 +888,7 @@
     <string name="privacy_changes_title">Changes to this policy</string>
     <string name="privacy_changes_body">If this policy changes, the new version will be in the app with a new date at the top. The promise that nothing leaves your phone will not change.</string>
     <string name="privacy_contact_title">Contact</string>
-    <string name="privacy_contact_body">Yatharth Rathi, yatharthmaheshwari01@gmail.com</string>
+    <string name="privacy_contact_body">See Contact us, under About in Settings.</string>
 
     <string name="terms_use_title">Using the app</string>
     <string name="terms_use_body">Build or Break is free to use for your own personal routine. Use it as it is meant to be used and do not try to break it or copy it off as your own.</string>
@@ -897,5 +903,5 @@
     <string name="terms_changes_title">Changes</string>
     <string name="terms_changes_body">These terms may change with a new version of the app. The date at the top says when.</string>
     <string name="terms_contact_title">Contact</string>
-    <string name="terms_contact_body">Yatharth Rathi, yatharthmaheshwari01@gmail.com</string>
+    <string name="terms_contact_body">See Contact us, under About in Settings.</string>
 </resources>

@@ -55,6 +55,27 @@ class AboutContentTest {
     }
 
     @Test
+    fun `about offers a way to get in touch, and it is honest that there is not one yet`() {
+        var opened = false
+        compose.setContent {
+            BuildOrBreakTheme {
+                AboutContent(version = "0.3.0", onOpenLegal = {}, onBack = {}, onOpenContact = { opened = true })
+            }
+        }
+
+        compose.onNodeWithText("Contact us").performClick()
+        assertThat(opened).isTrue()
+    }
+
+    @Test
+    fun `the contact screen says coming soon rather than pretending to send`() {
+        compose.setContent { BuildOrBreakTheme { ContactScreen(onBack = {}) } }
+
+        compose.onNodeWithText("COMING SOON").assertIsDisplayed()
+        compose.onNodeWithText("no way to get in touch", substring = true).assertIsDisplayed()
+    }
+
+    @Test
     fun `the privacy policy says nothing leaves the phone`() {
         compose.setContent {
             BuildOrBreakTheme { LegalContent(document = LegalDocument.PRIVACY, onBack = {}) }

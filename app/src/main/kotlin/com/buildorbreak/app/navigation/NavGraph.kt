@@ -37,6 +37,7 @@ import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.NavDisplay
 import com.buildorbreak.app.R
 import com.buildorbreak.app.feature.about.AboutScreen
+import com.buildorbreak.app.feature.about.ContactScreen
 import com.buildorbreak.app.feature.about.LegalScreen
 import com.buildorbreak.app.feature.goal.GoalScreen
 import com.buildorbreak.app.feature.goal.ReadingsScreen
@@ -253,7 +254,15 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
     }
 
     entry<AboutRoute> {
-        AboutScreen(onOpenLegal = { backStack.add(LegalRoute(it)) }, onBack = { backStack.removeLastOrNull() })
+        AboutScreen(
+            onOpenLegal = { backStack.add(LegalRoute(it)) },
+            onOpenContact = { backStack.add(ContactRoute) },
+            onBack = { backStack.removeLastOrNull() },
+        )
+    }
+
+    entry<ContactRoute> {
+        ContactScreen(onBack = { backStack.removeLastOrNull() })
     }
 
     entry<LegalRoute> { route ->

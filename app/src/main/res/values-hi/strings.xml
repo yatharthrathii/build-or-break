@@ -813,7 +813,13 @@
     <string name="about_privacy">प्राइवेसी पॉलिसी</string>
     <string name="about_terms">इस्तेमाल की शर्तें</string>
     <string name="about_section_made">बनाया है</string>
-    <string name="about_made_by">यथार्थ राठी ने, अकेले, भारत में। सवाल या दिक्कत: yatharthmaheshwari01@gmail.com</string>
+    <string name="about_made_by">भारत में, एक आदमी द्वारा बनाया गया।</string>
+    <string name="about_contact">संपर्क करें</string>
+    <string name="contact_kicker">Build or Break</string>
+    <string name="contact_title">संपर्क करें</string>
+    <string name="contact_soon">जल्द आ रहा है</string>
+    <string name="contact_body">अभी ऐप के अंदर से संपर्क करने का कोई रास्ता नहीं है। उस पर काम चल रहा है, और वह यहीं पर आएगा।</string>
+    <string name="contact_meanwhile">जब तक यह स्क्रीन कुछ और न कहे, तब तक यहाँ से कुछ भी कहीं नहीं जाएगा।</string>
     <string name="about_licence">कोड MIT लाइसेंस के तहत ओपन सोर्स है।</string>
     <string name="legal_updated">अपडेट %1$s</string>
     <string name="legal_updated_on">11 सितंबर 2026</string>
@@ -833,7 +839,7 @@
     <string name="privacy_changes_title">इस पॉलिसी में बदलाव</string>
     <string name="privacy_changes_body">अगर यह पॉलिसी बदली, तो नया वर्ज़न ऐप में ऊपर नई तारीख के साथ होगा। यह वादा कि कुछ भी फ़ोन से बाहर नहीं जाता, नहीं बदलेगा।</string>
     <string name="privacy_contact_title">संपर्क</string>
-    <string name="privacy_contact_body">यथार्थ राठी, yatharthmaheshwari01@gmail.com</string>
+    <string name="privacy_contact_body">सेटिंग में अबाउट के नीचे "संपर्क करें" देखें।</string>
 
     <string name="terms_use_title">ऐप का इस्तेमाल</string>
     <string name="terms_use_body">Build or Break आपकी अपनी रूटीन के लिए मुफ़्त है। इसे वैसे ही इस्तेमाल करें जैसे बनाया गया है, इसे तोड़ने या अपना बताकर कॉपी करने की कोशिश न करें।</string>
@@ -848,5 +854,5 @@
     <string name="terms_changes_title">बदलाव</string>
     <string name="terms_changes_body">ये शर्तें ऐप के नए वर्ज़न के साथ बदल सकती हैं। ऊपर की तारीख बताती है कब।</string>
     <string name="terms_contact_title">संपर्क</string>
-    <string name="terms_contact_body">यथार्थ राठी, yatharthmaheshwari01@gmail.com</string>
+    <string name="terms_contact_body">सेटिंग में अबाउट के नीचे "संपर्क करें" देखें।</string>
 </resources>

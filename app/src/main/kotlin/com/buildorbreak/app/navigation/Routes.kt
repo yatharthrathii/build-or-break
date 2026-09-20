@@ -50,6 +50,9 @@ data object ImportRoute : NavKey
 data object AboutRoute : NavKey
 
 @Serializable
+data object ContactRoute : NavKey
+
+@Serializable
 data class LegalRoute(val document: LegalDocument) : NavKey
 
 /**
