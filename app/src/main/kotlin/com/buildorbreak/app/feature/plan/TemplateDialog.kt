@@ -42,7 +42,12 @@ internal fun TemplateDialog(
     onSave: (String, Weekdays) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
+    /** What a new one costs past the free two. Zero while they are still free. */
+    cost: Int = 0,
+    balance: Int = 0,
 ) {
+    val charged = existing == null && cost > 0
+    val affordable = !charged || balance >= cost
     var name by rememberSaveable { mutableStateOf(existing?.name.orEmpty()) }
     var weekdays by rememberSaveable { mutableStateOf(existing?.weekdays?.bits ?: Weekdays.EveryDay.bits) }
 
@@ -68,8 +73,24 @@ internal fun TemplateDialog(
                     showDeleteNote = existing != null && canDelete,
                 )
 
+                // Said before the save, not after it fails. Somebody who
+                // cannot afford a third routine should learn that from the
+                // dialog rather than from a button that quietly does nothing.
+                if (charged) {
+                    Text(
+                        text = stringResource(R.string.points_routine_body, cost, balance),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (affordable) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
+
                 Actions(
-                    canSave = name.isNotBlank(),
+                    saveLabel = if (charged) stringResource(R.string.points_routine_confirm, cost) else null,
+                    canSave = name.isNotBlank() && affordable,
                     canDelete = existing != null && canDelete,
                     onSave = { onSave(name, Weekdays(weekdays)) },
                     onDelete = onDelete,
@@ -116,6 +137,8 @@ private fun Actions(
     onSave: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
+    /** "Add for 500" when it costs something. Null keeps the plain Save. */
+    saveLabel: String? = null,
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (canDelete) {
@@ -129,6 +152,10 @@ private fun Actions(
         Spacer(Modifier.weight(1f))
 
         GhostButton(text = stringResource(R.string.editor_cancel), onClick = onDismiss)
-        FillButton(text = stringResource(R.string.editor_save), onClick = onSave, enabled = canSave)
+        FillButton(
+            text = saveLabel ?: stringResource(R.string.editor_save),
+            onClick = onSave,
+            enabled = canSave,
+        )
     }
 }

@@ -60,6 +60,8 @@ data class TodayUiState(
      * and this is a moment in the interface that no other screen shares.
      */
     val undo: UndoOffer? = null,
+    /** A long press on a done row, waiting to be paid for or dismissed. */
+    val undoAsk: UndoAsk? = null,
     /** A skip made outside the app that nobody has been asked about yet. */
     val askAbout: SkipAsk? = null,
     /**
@@ -370,6 +372,17 @@ data class NextUp(
 
     /** Skipping in advance is allowed. Deciding not to do something later is a real decision. */
     val isSkippable: Boolean get() = occurrenceId > 0
+}
+
+/**
+ * The step a long press offered to put back, and what it would cost.
+ *
+ * Held in the state rather than in the screen because affording it is a
+ * fact about the wallet, and the screen is not allowed to work that out.
+ */
+@Immutable
+data class UndoAsk(val occurrenceId: Long, val title: String, val cost: Int, val balance: Int) {
+    val affordable: Boolean get() = balance >= cost
 }
 
 /** One row, already formatted. */

@@ -77,6 +77,7 @@ private val ToleranceWidth = 150.dp
 fun SettingsScreen(
     onOpenReliability: () -> Unit,
     onOpenGoal: () -> Unit,
+    onOpenPoints: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenLegal: (LegalDocument) -> Unit,
     onImport: () -> Unit,
@@ -117,6 +118,7 @@ fun SettingsScreen(
         state = state,
         onOpenReliability = onOpenReliability,
         onOpenGoal = onOpenGoal,
+        onOpenPoints = onOpenPoints,
         onOpenAbout = onOpenAbout,
         onOpenLegal = onOpenLegal,
         onThemeMode = viewModel::onThemeMode,
@@ -150,6 +152,7 @@ fun SettingsContent(
     onOpenReliability: () -> Unit,
     onOpenGoal: () -> Unit,
     onOpenAbout: () -> Unit,
+    onOpenPoints: () -> Unit = {},
     onOpenLegal: (LegalDocument) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
     onLateTolerance: (Int) -> Unit,
@@ -179,7 +182,12 @@ fun SettingsContent(
             ReliabilityRow(state = state, onClick = onOpenReliability)
             AlarmRows(state = state, onOpenAlarmChannel = onOpenAlarmChannel, onLateTolerance = onLateTolerance)
 
-            DayRows(state = state, onOpenGoal = onOpenGoal, onThemeMode = onThemeMode)
+            DayRows(
+                state = state,
+                onOpenGoal = onOpenGoal,
+                onOpenPoints = onOpenPoints,
+                onThemeMode = onThemeMode,
+            )
 
             SectionLabel(text = stringResource(R.string.settings_section_data), underlined = true)
             DataRows(
@@ -211,13 +219,24 @@ fun SettingsContent(
 
 /** The goal and the palette: the two things that shape a day rather than deliver it. */
 @Composable
-private fun DayRows(state: SettingsUiState, onOpenGoal: () -> Unit, onThemeMode: (ThemeMode) -> Unit) {
+private fun DayRows(
+    state: SettingsUiState,
+    onOpenGoal: () -> Unit,
+    onOpenPoints: () -> Unit,
+    onThemeMode: (ThemeMode) -> Unit,
+) {
     SectionLabel(text = stringResource(R.string.settings_section_day), underlined = true)
 
     SettingsRow(
         title = stringResource(R.string.settings_goal),
         body = stringResource(R.string.settings_goal_body),
         onClick = onOpenGoal,
+    ) { Chevron() }
+
+    SettingsRow(
+        title = stringResource(R.string.settings_points),
+        body = stringResource(R.string.settings_points_body),
+        onClick = onOpenPoints,
     ) { Chevron() }
 
     ThemeRow(mode = state.themeMode, onThemeMode = onThemeMode)

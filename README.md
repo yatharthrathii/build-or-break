@@ -44,10 +44,12 @@ screen alarms and its delivery audit, the daily close, goals with a seven day
 average and a pace line, the weekly review and the Insights screen, import
 from pasted text, a backup that exports as a file and reads back, English and
 Hindi, light and dark, and an onboarding that writes a starter day, points
-worked out from the daily close, and a wall of the nine badges.
+worked out from the daily close, a wall of the nine badges, and a points
+wallet with a ledger that pays for an undo, a streak freeze and a third
+routine.
 
-What does not exist yet: anything paid, multi week programs, and the store
-listing. There is no public build yet, so there is
+What does not exist yet: anything paid, the ads SDK behind the "watch an ad"
+button, multi week programs, and the store listing. There is no public build yet, so there is
 nothing to install; it is being used daily on one phone while the rough
 edges come off.
 

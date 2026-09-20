@@ -19,4 +19,30 @@ object Migrations {
             db.execSQL("ALTER TABLE item ADD COLUMN catchable INTEGER NOT NULL DEFAULT 1")
         }
     }
+
+    /**
+     * Adds the point ledger.
+     *
+     * A new table only, so there is nothing to convert and nobody upgrading
+     * loses anything. An empty ledger means a balance equal to everything the
+     * daily closes have earned, which is exactly right for somebody who has
+     * never spent a point.
+     */
+    val FROM_2_TO_3: Migration = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `point_entry` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `at` INTEGER NOT NULL,
+                    `date` INTEGER NOT NULL,
+                    `delta` INTEGER NOT NULL,
+                    `reason` TEXT NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_point_entry_date` ON `point_entry` (`date`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_point_entry_reason` ON `point_entry` (`reason`)")
+        }
+    }
 }

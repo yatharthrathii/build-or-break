@@ -6,7 +6,7 @@ import com.buildorbreak.core.domain.repository.DayCloseRepository
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 
 /** How far back a run is worth counting. Beyond this the number is the point. */
 private const val RUN_WINDOW_DAYS = 90L
@@ -20,10 +20,12 @@ private const val RUN_WINDOW_DAYS = 90L
  */
 class ObserveRunUseCase @Inject constructor(
     private val closes: DayCloseRepository,
+    private val frozenDays: ObserveFrozenDaysUseCase,
     private val time: TimeProvider,
 ) {
 
-    operator fun invoke(today: LocalDate = time.today()): Flow<Int> =
-        closes.observeRange(today.minusDays(RUN_WINDOW_DAYS), today.minusDays(1))
-            .map { history -> Streaks.currentRun(history, today) }
+    operator fun invoke(today: LocalDate = time.today()): Flow<Int> = combine(
+        closes.observeRange(today.minusDays(RUN_WINDOW_DAYS), today.minusDays(1)),
+        frozenDays(),
+    ) { history, frozen -> Streaks.currentRun(history, today, frozen) }
 }

@@ -9,6 +9,7 @@ import com.buildorbreak.core.data.dao.MeasurementDao
 import com.buildorbreak.core.data.dao.MilestoneDao
 import com.buildorbreak.core.data.dao.OccurrenceDao
 import com.buildorbreak.core.data.dao.PlanDao
+import com.buildorbreak.core.data.dao.PointEntryDao
 import com.buildorbreak.core.data.dao.TemplateDao
 import com.buildorbreak.core.data.dao.TrackDao
 import com.buildorbreak.core.data.database.BuildOrBreakDatabase
@@ -67,4 +68,7 @@ object DaoModule {
 
     @Provides
     fun provideDeliveryAuditDao(database: BuildOrBreakDatabase): DeliveryAuditDao = database.deliveryAuditDao()
+
+    @Provides
+    fun providePointEntryDao(database: BuildOrBreakDatabase): PointEntryDao = database.pointEntryDao()
 }

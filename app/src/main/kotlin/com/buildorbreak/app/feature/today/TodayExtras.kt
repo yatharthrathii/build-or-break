@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.buildorbreak.app.R
 import com.buildorbreak.app.feature.plan.valueKindLabel
 import com.buildorbreak.app.feature.plan.valueKindUnit
@@ -354,4 +355,55 @@ private fun milestoneBody(milestone: Milestone): Int = when (milestone) {
     Milestone.GOAL_REACHED -> R.string.milestone_goal_reached_body
     Milestone.BEST_WEEK -> R.string.milestone_best_week_body
     Milestone.ITEM_THIRTY_DAY_RUN -> R.string.milestone_thirty_day_run_body
+}
+
+/**
+ * The second, deliberate tap before a settled step is put back.
+ *
+ * A long press alone is not enough. This rewrites a record that the day,
+ * the run and the goal are all built on, and it costs points, so the price
+ * and the balance are both on screen before anything is taken.
+ *
+ * With too few points it says so and offers nothing else. An app that sent
+ * somebody to watch an ad at the moment they were trying to correct a
+ * mistake would be using the mistake as leverage.
+ */
+@Composable
+internal fun UndoForPointsDialog(ask: UndoAsk, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Panel {
+            Column(modifier = Modifier.padding(Theme.spacing.medium)) {
+                Kicker(text = ask.title)
+
+                Text(
+                    text = stringResource(R.string.points_undo_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = Theme.spacing.tight),
+                )
+
+                Text(
+                    text = if (ask.affordable) {
+                        stringResource(R.string.points_undo_body, ask.cost)
+                    } else {
+                        stringResource(R.string.points_too_few, ask.balance, ask.cost)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Theme.spacing.small, bottom = Theme.spacing.medium),
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small)) {
+                    if (ask.affordable) {
+                        FillButton(
+                            text = stringResource(R.string.points_undo_confirm, ask.cost),
+                            onClick = onConfirm,
+                        )
+                    }
+
+                    GhostButton(text = stringResource(R.string.action_cancel), onClick = onDismiss)
+                }
+            }
+        }
+    }
 }

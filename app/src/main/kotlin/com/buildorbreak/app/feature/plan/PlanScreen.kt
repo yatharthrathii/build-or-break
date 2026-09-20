@@ -257,6 +257,8 @@ private fun TemplateDialogHost(
             onClose()
         },
         onDismiss = onClose,
+        cost = state.routineCost,
+        balance = state.balance,
     )
 }
 

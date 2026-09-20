@@ -82,6 +82,9 @@ fun TodayScreen(
             onSnooze = viewModel::onSnooze,
             onSkip = viewModel::onSkip,
             onUndo = viewModel::onUndo,
+            onAskUndo = viewModel::onAskUndo,
+            onConfirmUndo = viewModel::onConfirmUndoForPoints,
+            onDismissUndoAsk = viewModel::onDismissUndoAsk,
             onMoveToSlot = viewModel::onMoveToSlot,
             onLogNumber = viewModel::onLogNumber,
             onDismissNumber = viewModel::onDismissNumber,
@@ -108,6 +111,10 @@ data class TodayActions(
     val onSnooze: (Long) -> Unit,
     val onSkip: (Long, SkipChip?) -> Unit,
     val onUndo: () -> Unit,
+    /** A long press on a done row. Offers to put it back for points. */
+    val onAskUndo: (Long) -> Unit,
+    val onConfirmUndo: () -> Unit,
+    val onDismissUndoAsk: () -> Unit,
     /** Moves a missed step to the slot the catch up plan found for it. */
     val onMoveToSlot: (Long, Int) -> Unit,
     val onLogNumber: (Double) -> Unit,
@@ -132,6 +139,9 @@ data class TodayActions(
             onSnooze = {},
             onSkip = { _, _ -> },
             onUndo = {},
+            onAskUndo = {},
+            onConfirmUndo = {},
+            onDismissUndoAsk = {},
             onMoveToSlot = { _, _ -> },
             onLogNumber = {},
             onDismissNumber = {},
@@ -183,6 +193,14 @@ fun TodayContent(state: TodayUiState, actions: TodayActions, modifier: Modifier 
         // down on every completion would move the next row out from under the
         // finger already on its way to tap it.
         UndoBar(offer = state.undo, onUndo = actions.onUndo, modifier = Modifier.align(Alignment.BottomCenter))
+    }
+
+    state.undoAsk?.let { ask ->
+        UndoForPointsDialog(
+            ask = ask,
+            onConfirm = actions.onConfirmUndo,
+            onDismiss = actions.onDismissUndoAsk,
+        )
     }
 
     Sheets(
@@ -329,7 +347,7 @@ private fun Day(
 
         item { SectionLabel(text = stringResource(R.string.today_the_day)) }
 
-        timeline(state)
+        timeline(state = state, onAskUndo = actions.onAskUndo)
 
         // Room for the undo bar, so the last row of the day can still be read
         // while it is on screen.
@@ -396,7 +414,7 @@ private fun LazyListScope.top(
  * one above it was done must keep its row rather than be torn down and rebuilt
  * halfway through the animation that is meant to show it moving.
  */
-private fun LazyListScope.timeline(state: TodayUiState) {
+private fun LazyListScope.timeline(state: TodayUiState, onAskUndo: (Long) -> Unit) {
     itemsIndexed(items = state.entries, key = { _, entry -> "${entry.itemId}:${entry.sequence}" }) { index, entry ->
         val rowState = rowState(entry, isNext = index == state.nowIndex)
 
@@ -413,6 +431,14 @@ private fun LazyListScope.timeline(state: TodayUiState) {
                 last = index == state.entries.lastIndex,
                 wideTime = !rememberClockFormat().is24Hour,
                 alarm = entry.isAlarm,
+                // Held, not tapped. Putting a settled step back long after
+                // the fact rewrites the day, the run and the goal, so it is
+                // deliberately awkward to reach and it costs points.
+                onLongClick = if (rowState == RowState.DONE && entry.occurrenceId > 0) {
+                    { onAskUndo(entry.occurrenceId) }
+                } else {
+                    null
+                },
                 // A step being done re times everything below it, which moves
                 // rows up the list. Animating that move is what makes it read
                 // as the day adjusting rather than as the screen redrawing.

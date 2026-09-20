@@ -12,6 +12,9 @@ import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.domain.usecase.ReorderItemsUseCase
 import com.buildorbreak.core.domain.usecase.SaveBlockUseCase
+import com.buildorbreak.core.domain.usecase.AddRoutineUseCase
+import com.buildorbreak.core.domain.usecase.ObserveRoutineCostUseCase
+import com.buildorbreak.core.domain.usecase.ObserveWalletUseCase
 import com.buildorbreak.core.domain.usecase.SaveTemplateUseCase
 import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.Salience
@@ -34,6 +37,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -85,6 +89,9 @@ data class PlanUiState(
     val firstTime: String?,
     val lastTime: String?,
     val hasPlan: Boolean,
+    /** What a new routine costs past the free two. Zero while they are free. */
+    val routineCost: Int = 0,
+    val balance: Int = 0,
 ) {
     val isEmpty: Boolean get() = hasPlan && rows.isEmpty()
 
@@ -163,6 +170,9 @@ data class PlanItemRow(
 class PlanViewModel @Inject constructor(
     observePlan: ObservePlanUseCase,
     private val saveTemplate: SaveTemplateUseCase,
+    observeRoutineCost: ObserveRoutineCostUseCase,
+    observeWallet: ObserveWalletUseCase,
+    private val addRoutine: AddRoutineUseCase,
     private val deleteTemplate: DeleteTemplateUseCase,
     private val saveBlock: SaveBlockUseCase,
     private val deleteBlock: DeleteBlockUseCase,
@@ -176,9 +186,13 @@ class PlanViewModel @Inject constructor(
     private var latest: PlanContents.Loaded? = null
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val state: StateFlow<PlanUiState> = selectedTemplate
-        .flatMapLatest { observePlan(it) }
-        .map(::toUiState)
+    val state: StateFlow<PlanUiState> = combine(
+        selectedTemplate.flatMapLatest { observePlan(it) }.map(::toUiState),
+        observeRoutineCost(),
+        observeWallet(),
+    ) { plan, cost, wallet ->
+        plan.copy(routineCost = cost, balance = wallet.balance)
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
@@ -209,7 +223,12 @@ class PlanViewModel @Inject constructor(
             sortOrder = loaded.templates.size,
         )
 
-        saveTemplate(template).getOrNull()?.let { selectedTemplate.value = it }
+        // A new one past the free two is charged for, and the use case is
+        // the only thing that knows that. An edit is never charged: changing
+        // the name of a day is not buying a day.
+        val written = if (existing == null) addRoutine(template) else saveTemplate(template)
+
+        written.getOrNull()?.let { selectedTemplate.value = it }
     }
 
     /** Refused by the use case when it is the last one. The screen never offers that. */

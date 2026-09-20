@@ -217,3 +217,25 @@ enum class ReviewStory {
 
 /** Which palette the app draws in. `SYSTEM` follows the phone. */
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/**
+ * Why points moved.
+ *
+ * Stored by name, so the ledger can still be read back after a reason is
+ * renamed in code. Everything a person can buy has an entry here, and the
+ * screen turns each one into a sentence; nothing in the domain knows the
+ * wording.
+ */
+enum class PointReason {
+    /** Granted for watching a rewarded ad through to the end. */
+    AD_REWARD,
+
+    /** A step put back to not done, after the undo bar had gone. */
+    UNDO_STEP,
+
+    /** A missed day covered so the run carries on across it. */
+    STREAK_FREEZE,
+
+    /** A day template beyond the ones every plan gets. */
+    EXTRA_ROUTINE,
+}

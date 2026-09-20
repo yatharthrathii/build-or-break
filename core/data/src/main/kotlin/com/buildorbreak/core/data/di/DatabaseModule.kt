@@ -35,7 +35,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): BuildOrBreakDatabase =
         Room.databaseBuilder(context, BuildOrBreakDatabase::class.java, BuildOrBreakDatabase.NAME)
-            .addMigrations(Migrations.FROM_1_TO_2)
+            .addMigrations(Migrations.FROM_1_TO_2, Migrations.FROM_2_TO_3)
             .build()
 
     @Provides

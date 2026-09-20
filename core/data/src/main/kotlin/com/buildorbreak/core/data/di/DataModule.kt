@@ -9,6 +9,7 @@ import com.buildorbreak.core.data.repository.MeasurementRepositoryImpl
 import com.buildorbreak.core.data.repository.MilestoneRepositoryImpl
 import com.buildorbreak.core.data.repository.OccurrenceRepositoryImpl
 import com.buildorbreak.core.data.repository.PlanRepositoryImpl
+import com.buildorbreak.core.data.repository.PointLedgerRepositoryImpl
 import com.buildorbreak.core.data.repository.ResetRepositoryImpl
 import com.buildorbreak.core.data.repository.SettingsRepositoryImpl
 import com.buildorbreak.core.data.repository.TemplateRepositoryImpl
@@ -22,6 +23,7 @@ import com.buildorbreak.core.domain.repository.MeasurementRepository
 import com.buildorbreak.core.domain.repository.MilestoneRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
+import com.buildorbreak.core.domain.repository.PointLedgerRepository
 import com.buildorbreak.core.domain.repository.ResetRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
@@ -98,4 +100,8 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindResetRepository(impl: ResetRepositoryImpl): ResetRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPointLedgerRepository(impl: PointLedgerRepositoryImpl): PointLedgerRepository
 }

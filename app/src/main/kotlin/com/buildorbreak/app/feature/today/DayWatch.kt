@@ -10,8 +10,10 @@ import com.buildorbreak.core.domain.usecase.ObserveEarnedMilestoneUseCase
 import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
 import com.buildorbreak.core.domain.usecase.ObservePointsUseCase
 import com.buildorbreak.core.domain.usecase.ObserveRunUseCase
+import com.buildorbreak.core.domain.usecase.ObserveWalletUseCase
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.goal.MilestoneAward
+import com.buildorbreak.core.model.goal.Wallet
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +33,7 @@ class DayWatch @Inject constructor(
     private val observeMilestone: ObserveEarnedMilestoneUseCase,
     private val observeGoal: ObserveGoalUseCase,
     private val observePoints: ObservePointsUseCase,
+    private val observeWallet: ObserveWalletUseCase,
     private val markSeen: MarkMilestoneSeenUseCase,
     private val logNumber: LogMeasurementUseCase,
 ) {
@@ -43,6 +46,8 @@ class DayWatch @Inject constructor(
     fun goal(): Flow<GoalSnapshot?> = observeGoal()
 
     fun points(on: LocalDate): Flow<PointsTally> = observePoints(on)
+
+    fun wallet(): Flow<Wallet> = observeWallet()
 
     suspend fun markMilestoneSeen(milestone: Milestone) {
         markSeen(milestone)

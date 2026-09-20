@@ -64,3 +64,7 @@ desktop.ini
 **/build/outputs/roborazzi/
 *_compare.png
 *_actual.png
+
+# Kotlin's build session and error scratch files. Machine local, never useful
+# in a diff, and written by any Gradle invocation.
+.kotlin/

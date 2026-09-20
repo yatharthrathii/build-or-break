@@ -3,7 +3,7 @@ package com.buildorbreak.core.designsystem.component
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,16 +74,24 @@ enum class RowState {
  */
 /** A row that answers a tap, with the tick that says it landed. Untouched when there is nothing to tap. */
 @Composable
-private fun Modifier.tappable(onClick: (() -> Unit)?): Modifier {
+private fun Modifier.tappable(onClick: (() -> Unit)?, onLongClick: (() -> Unit)?): Modifier {
     val feedback = rememberFeedback()
 
-    return if (onClick == null) {
+    return if (onClick == null && onLongClick == null) {
         this
     } else {
-        clickable {
-            feedback.tap()
-            onClick()
-        }
+        combinedClickable(
+            onLongClick = onLongClick?.let {
+                {
+                    feedback.tap()
+                    it()
+                }
+            },
+            onClick = {
+                feedback.tap()
+                onClick?.invoke()
+            },
+        )
     }
 }
 
@@ -98,6 +106,14 @@ fun TimelineRow(
     noteAccent: Boolean = false,
     last: Boolean = false,
     onClick: (() -> Unit)? = null,
+    /**
+     * Held rather than tapped.
+     *
+     * The second thing a row can do, for something that should not happen by
+     * accident. Today uses it to put a step back to not done long after the
+     * undo bar has gone, which is a rewrite of the record and costs points.
+     */
+    onLongClick: (() -> Unit)? = null,
     /** True on a twelve hour clock, where a time carries its am or pm. */
     wideTime: Boolean = false,
     /** This step rings and takes over the screen. Everything else is a notification. */
@@ -118,7 +134,7 @@ fun TimelineRow(
         // fillMaxHeight child of a Row measures as zero.
         modifier = modifier
             .fillMaxWidth()
-            .tappable(onClick)
+            .tappable(onClick = onClick, onLongClick = onLongClick)
             // One node per row for a reader: the time, the title and the
             // state in a single announcement, not five stops down a rail.
             .semantics(mergeDescendants = true) { stateLabel?.let { stateDescription = it } }

@@ -38,6 +38,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.buildorbreak.app.R
 import com.buildorbreak.app.feature.about.AboutScreen
 import com.buildorbreak.app.feature.about.ContactScreen
+import com.buildorbreak.app.feature.points.PointsScreen
 import com.buildorbreak.app.feature.about.LegalScreen
 import com.buildorbreak.app.feature.goal.GoalScreen
 import com.buildorbreak.app.feature.goal.ReadingsScreen
@@ -236,6 +237,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
         SettingsScreen(
             onOpenReliability = { backStack.add(ReliabilityRoute) },
             onOpenGoal = { backStack.add(GoalRoute) },
+            onOpenPoints = { backStack.add(PointsRoute) },
             onOpenAbout = { backStack.add(AboutRoute) },
             onOpenLegal = { backStack.add(LegalRoute(it)) },
             onImport = { backStack.add(ImportRoute) },
@@ -263,6 +265,10 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
 
     entry<ContactRoute> {
         ContactScreen(onBack = { backStack.removeLastOrNull() })
+    }
+
+    entry<PointsRoute> {
+        PointsScreen(onBack = { backStack.removeLastOrNull() })
     }
 
     entry<LegalRoute> { route ->

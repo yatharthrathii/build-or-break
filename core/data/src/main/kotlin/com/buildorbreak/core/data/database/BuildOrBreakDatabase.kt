@@ -12,6 +12,7 @@ import com.buildorbreak.core.data.dao.MeasurementDao
 import com.buildorbreak.core.data.dao.MilestoneDao
 import com.buildorbreak.core.data.dao.OccurrenceDao
 import com.buildorbreak.core.data.dao.PlanDao
+import com.buildorbreak.core.data.dao.PointEntryDao
 import com.buildorbreak.core.data.dao.TemplateDao
 import com.buildorbreak.core.data.dao.TrackDao
 import com.buildorbreak.core.data.entity.BlockEntity
@@ -26,6 +27,7 @@ import com.buildorbreak.core.data.entity.MeasurementEntity
 import com.buildorbreak.core.data.entity.MilestoneAwardEntity
 import com.buildorbreak.core.data.entity.OccurrenceEntity
 import com.buildorbreak.core.data.entity.PlanEntity
+import com.buildorbreak.core.data.entity.PointEntryEntity
 import com.buildorbreak.core.data.entity.SkipReasonEntity
 import com.buildorbreak.core.data.entity.TrackEntity
 import com.buildorbreak.core.data.entity.TrackSessionEntity
@@ -69,6 +71,7 @@ import com.buildorbreak.core.data.entity.TrackUnitEntity
         TrackUnitEntity::class,
         TrackSessionEntity::class,
         DeliveryAuditEntity::class,
+        PointEntryEntity::class,
     ],
     version = BuildOrBreakDatabase.VERSION,
     exportSchema = true,
@@ -88,8 +91,10 @@ abstract class BuildOrBreakDatabase : RoomDatabase() {
     abstract fun trackDao(): TrackDao
     abstract fun deliveryAuditDao(): DeliveryAuditDao
 
+    abstract fun pointEntryDao(): PointEntryDao
+
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
 
         const val NAME = "buildorbreak.db"
     }

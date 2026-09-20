@@ -19,7 +19,9 @@ import com.buildorbreak.core.model.resolved.ResolvedDay
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.buildorbreak.core.domain.goal.Prices
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -166,6 +168,7 @@ class TodayViewModel @Inject constructor(
         combine(day, extras) { state, extra ->
             state.copy(
                 undo = extra.local.undo,
+                undoAsk = extra.local.undoAsk,
                 askAbout = extra.ask,
                 actionFailed = extra.local.failed,
                 askNumber = extra.local.measure,
@@ -253,6 +256,41 @@ class TodayViewModel @Inject constructor(
      * The optimistic entry goes first, so the row returns on the same frame as
      * the tap rather than when the database has finished agreeing.
      */
+    /**
+     * Offers to put a done step back, for points.
+     *
+     * Nothing is spent here. The offer says the price and the balance, and
+     * the confirm is a second, deliberate tap, because this rewrites a
+     * record the day, the run and the goal are all built on.
+     */
+    fun onAskUndo(occurrenceId: Long) = viewModelScope.launch {
+        val entry = state.value.entries.firstOrNull { it.occurrenceId == occurrenceId } ?: return@launch
+        if (!entry.isDone) return@launch
+
+        local.update {
+            it.copy(
+                undoAsk = UndoAsk(
+                    occurrenceId = occurrenceId,
+                    title = entry.title,
+                    cost = Prices.UNDO_STEP,
+                    balance = watch.wallet().first().balance,
+                ),
+            )
+        }
+    }
+
+    fun onDismissUndoAsk() {
+        local.update { it.copy(undoAsk = null) }
+    }
+
+    /** Takes the points, then puts the step back. A failed spend undoes nothing. */
+    fun onConfirmUndoForPoints() = viewModelScope.launch {
+        val ask = local.value.undoAsk ?: return@launch
+
+        local.update { it.copy(undoAsk = null) }
+        report(ask.occurrenceId, actions.undoForPoints(ask.occurrenceId))
+    }
+
     fun onUndo() = viewModelScope.launch {
         val offer = local.value.undo ?: return@launch
 
@@ -378,6 +416,8 @@ class TodayViewModel @Inject constructor(
     /** Everything this screen holds that the database has no opinion about. */
     private data class Local(
         val undo: UndoOffer? = null,
+        /** The long press offer, waiting on a second, deliberate tap. */
+        val undoAsk: UndoAsk? = null,
         /**
          * Skips this session is finished asking about, whether answered or
          * waved away. Deliberately not persisted: an answer is already in the

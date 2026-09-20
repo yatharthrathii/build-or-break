@@ -52,4 +52,23 @@ class StreaksTest {
     fun `nothing closed is a run of zero`() {
         assertThat(Streaks.currentRun(emptyList(), today)).isEqualTo(0)
     }
+
+    @Test
+    fun `a frozen day carries the run across the gap`() {
+        val before = GoalFixtures.closes(from = today.minusDays(4), days = 2, itemsDone = 9, itemsTotal = 10)
+        val after = GoalFixtures.closes(from = today.minusDays(1), days = 1, itemsDone = 9, itemsTotal = 10)
+
+        val run = Streaks.currentRun(before + after, today, frozen = setOf(today.minusDays(2)))
+
+        assertThat(run).isEqualTo(3)
+    }
+
+    @Test
+    fun `a freeze holds the run open but is not itself a kept day`() {
+        val kept = GoalFixtures.closes(from = today.minusDays(1), days = 1, itemsDone = 9, itemsTotal = 10)
+
+        val run = Streaks.currentRun(kept, today, frozen = setOf(today.minusDays(2)))
+
+        assertThat(run).isEqualTo(1)
+    }
 }

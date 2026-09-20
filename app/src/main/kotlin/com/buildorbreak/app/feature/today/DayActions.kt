@@ -8,6 +8,7 @@ import com.buildorbreak.core.domain.usecase.SkipItemUseCase
 import com.buildorbreak.core.domain.usecase.SnoozeItemUseCase
 import com.buildorbreak.core.domain.usecase.SwitchDayTemplateUseCase
 import com.buildorbreak.core.domain.usecase.UndoSettleUseCase
+import com.buildorbreak.core.domain.usecase.UndoStepForPointsUseCase
 import javax.inject.Inject
 
 /**
@@ -22,6 +23,8 @@ class DayActions @Inject constructor(
     val snooze: SnoozeItemUseCase,
     val skip: SkipItemUseCase,
     val undo: UndoSettleUseCase,
+    /** The other undo: long after the bar has gone, and it costs points. */
+    val undoForPoints: UndoStepForPointsUseCase,
     val explainSkip: ExplainSkipUseCase,
     /** Writes the rows a new day needs. Called when the date turns over under an open app. */
     val rollOver: RescheduleAllUseCase,
