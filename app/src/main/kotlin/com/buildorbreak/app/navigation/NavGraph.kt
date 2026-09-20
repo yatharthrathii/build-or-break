@@ -26,8 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -38,7 +40,6 @@ import androidx.navigation3.ui.NavDisplay
 import com.buildorbreak.app.R
 import com.buildorbreak.app.feature.about.AboutScreen
 import com.buildorbreak.app.feature.about.ContactScreen
-import com.buildorbreak.app.feature.points.PointsScreen
 import com.buildorbreak.app.feature.about.LegalScreen
 import com.buildorbreak.app.feature.goal.GoalScreen
 import com.buildorbreak.app.feature.goal.ReadingsScreen
@@ -48,6 +49,7 @@ import com.buildorbreak.app.feature.onboarding.StartChoice
 import com.buildorbreak.app.feature.plan.ImportScreen
 import com.buildorbreak.app.feature.plan.ItemEditorScreen
 import com.buildorbreak.app.feature.plan.PlanScreen
+import com.buildorbreak.app.feature.points.PointsScreen
 import com.buildorbreak.app.feature.settings.ReliabilityScreen
 import com.buildorbreak.app.feature.settings.SettingsScreen
 import com.buildorbreak.app.feature.today.TodayScreen
@@ -96,7 +98,14 @@ fun BuildOrBreakNavGraph(startRoute: NavKey, actions: ShellActions, modifier: Mo
 
     // Wide enough for a rail: a tablet, or a phone on its side. Below this
     // the bar across the bottom is the one a thumb reaches.
-    val wide = LocalConfiguration.current.screenWidthDp >= WIDE_DP
+    //
+    // Measured from the window rather than from the configuration. The
+    // configuration reports the whole screen, so an app in a split screen
+    // or a resizable window on a tablet would put a rail beside a column
+    // half its width. The window is what the app actually has.
+    val density = LocalDensity.current
+    val widthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val wide = widthDp >= WIDE_DP
     val onSelect = { index: Int -> backStack.openTab(TopLevelRoutes[index]) }
 
     // The ground colour under the nav host, so a cross fade between two
@@ -128,7 +137,7 @@ fun BuildOrBreakNavGraph(startRoute: NavKey, actions: ShellActions, modifier: Mo
 }
 
 /** Material's medium width class. A rail from here; a bar below it. */
-private const val WIDE_DP = 840
+private val WIDE_DP = 840.dp
 
 @Composable
 private fun NavHostPage(backStack: NavBackStack<NavKey>, actions: ShellActions) {

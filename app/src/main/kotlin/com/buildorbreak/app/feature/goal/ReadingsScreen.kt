@@ -52,8 +52,15 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
-/** "Fri 12 Sep". Long enough to place the day, short enough for a list. */
-private val RowDate = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
+/**
+ * "Fri 12 Sep". Long enough to place the day, short enough for a list.
+ *
+ * A function rather than a value, because a value is read once when the
+ * class loads and would keep the locale the app started in. Somebody who
+ * switches the phone to Hindi and comes back would find the dates still in
+ * English until the process was killed.
+ */
+private fun rowDate(): DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
 
 /**
  * Every number behind the goal, and a way to fix one.
@@ -191,7 +198,7 @@ private fun ReadingRowView(row: ReadingRow, unit: String, onEdit: (Long) -> Unit
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = row.date.format(RowDate),
+                    text = row.date.format(rowDate()),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -251,6 +258,44 @@ private fun EditDialog(
 }
 
 /**
+ * The day the number is for.
+ *
+ * Fixed when a row is being corrected, because the question there is which
+ * value was wrong rather than which day. Stepped a day at a time when one is
+ * being added: the day being looked for is today or the one before it, and a
+ * month grid is a lot of screen for a question with two likely answers.
+ */
+@Composable
+private fun WhichDay(draft: ReadingDraft, onShiftDay: (Long) -> Unit) {
+    if (!draft.isNew) {
+        Kicker(text = draft.date.format(rowDate()))
+        return
+    }
+
+    Kicker(text = stringResource(R.string.readings_add_day))
+
+    Stepper(
+        value = draft.date.format(rowDate()),
+        onDecrement = { onShiftDay(-1) },
+        onIncrement = { onShiftDay(1) },
+        modifier = Modifier.fillMaxWidth().padding(top = Theme.spacing.small),
+        decrementLabel = stringResource(R.string.readings_day_earlier),
+        incrementLabel = stringResource(R.string.readings_day_later),
+    )
+}
+
+/** A line under the box: what saving will replace, or why it did not save. */
+@Composable
+private fun Note(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier.padding(top = Theme.spacing.small),
+    )
+}
+
+/**
  * The inside of the editor, without the window around it.
  *
  * Separate so it can be tested. A `Dialog` opens a window of its own, and
@@ -270,43 +315,13 @@ internal fun ReadingEditor(
     onCancel: () -> Unit,
 ) {
     Column(modifier = Modifier.padding(Theme.spacing.medium)) {
-        if (draft.isNew) {
-            Kicker(text = stringResource(R.string.readings_add_day))
-
-            // Steps a day at a time rather than opening a calendar. The day
-            // being looked for is today or the one before it; a month grid is
-            // a lot of screen for a question with two likely answers.
-            Stepper(
-                value = draft.date.format(RowDate),
-                onDecrement = { onShiftDay(-1) },
-                onIncrement = { onShiftDay(1) },
-                modifier = Modifier.fillMaxWidth().padding(top = Theme.spacing.small),
-                decrementLabel = stringResource(R.string.readings_day_earlier),
-                incrementLabel = stringResource(R.string.readings_day_later),
-            )
-        } else {
-            Kicker(text = draft.date.format(RowDate))
-        }
+        WhichDay(draft = draft, onShiftDay = onShiftDay)
 
         NumberBox(typed = draft.typed, unit = stringResource(goalUnit(unit, GoalKind.NUMBER)), onTyped = onTyped)
 
-        if (draft.isNew && draft.replaces) {
-            Text(
-                text = stringResource(R.string.readings_replaces),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(top = Theme.spacing.small),
-            )
-        }
+        if (draft.isNew && draft.replaces) Note(text = stringResource(R.string.readings_replaces))
 
-        if (failed) {
-            Text(
-                text = stringResource(R.string.readings_failed),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(top = Theme.spacing.small),
-            )
-        }
+        if (failed) Note(text = stringResource(R.string.readings_failed))
 
         Text(
             text = stringResource(

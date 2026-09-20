@@ -24,12 +24,10 @@ class PointLedgerRepositoryImpl @Inject constructor(
         .map { rows -> rows.mapNotNull { it.toModelOrNull() } }
         .flowOn(dispatchers.io)
 
-    override fun observeGranted(): Flow<Int> =
-        entries.observeGranted().map { it ?: 0 }.flowOn(dispatchers.io)
+    override fun observeGranted(): Flow<Int> = entries.observeGranted().map { it ?: 0 }.flowOn(dispatchers.io)
 
     /** Stored negative, reported positive, because "spent" is a size and not a direction. */
-    override fun observeSpent(): Flow<Int> =
-        entries.observeSpent().map { -(it ?: 0) }.flowOn(dispatchers.io)
+    override fun observeSpent(): Flow<Int> = entries.observeSpent().map { -(it ?: 0) }.flowOn(dispatchers.io)
 
     override fun observeDatesFor(reason: PointReason): Flow<List<LocalDate>> =
         entries.observeDatesFor(reason.name).flowOn(dispatchers.io)

@@ -1,5 +1,7 @@
 package com.buildorbreak.app.feature.settings
 
+import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -93,26 +95,11 @@ fun SettingsScreen(
         onPauseOrDispose { }
     }
 
-    // Picking a file needs a content resolver, so the file is read here and
-    // the ViewModel is handed the text. The mirror of the export, which builds
-    // its text here and hands it out for somebody else to send.
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var offered by remember { mutableStateOf<String?>(null) }
-
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-
-        scope.launch {
-            val text = withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-                }.getOrNull()
-            }
-
-            if (text == null) viewModel.onRestoreUnreadable() else offered = text
-        }
-    }
+    val picker = rememberBackupPicker(
+        onRead = { offered = it },
+        onUnreadable = viewModel::onRestoreUnreadable,
+    )
 
     SettingsContent(
         state = state,
@@ -146,23 +133,58 @@ fun SettingsScreen(
     }
 }
 
+/**
+ * The file picker behind "restore from a file".
+ *
+ * Reading it needs a content resolver, which is a framework type, so the
+ * file is turned into text here and the ViewModel is handed the text. The
+ * mirror of the export, which builds its text in the ViewModel and hands it
+ * out for somebody else to send.
+ *
+ * Any file type, because a backup sent through a chat app often arrives typed
+ * as plain text or as nothing at all, and a picker that greys out the file
+ * somebody was just sent is a picker that cannot be used.
+ */
+@Composable
+private fun rememberBackupPicker(
+    onRead: (String) -> Unit,
+    onUnreadable: () -> Unit,
+): ManagedActivityResultLauncher<Array<String>, Uri?> {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    return rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        scope.launch {
+            val text = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+                }.getOrNull()
+            }
+
+            if (text == null) onUnreadable() else onRead(text)
+        }
+    }
+}
+
 @Composable
 fun SettingsContent(
     state: SettingsUiState,
     onOpenReliability: () -> Unit,
     onOpenGoal: () -> Unit,
     onOpenAbout: () -> Unit,
-    onOpenPoints: () -> Unit = {},
     onOpenLegal: (LegalDocument) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
     onLateTolerance: (Int) -> Unit,
     onOpenAlarmChannel: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
-    onRestore: () -> Unit = {},
-    onDismissRestore: () -> Unit = {},
     onWipe: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPoints: () -> Unit = {},
+    onRestore: () -> Unit = {},
+    onDismissRestore: () -> Unit = {},
 ) {
     var confirmingWipe by rememberSaveable { mutableStateOf(false) }
 
@@ -177,43 +199,90 @@ fun SettingsContent(
             title = stringResource(R.string.settings_title),
         )
 
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            SectionLabel(text = stringResource(R.string.settings_section_alarms), underlined = true)
-            ReliabilityRow(state = state, onClick = onOpenReliability)
-            AlarmRows(state = state, onOpenAlarmChannel = onOpenAlarmChannel, onLateTolerance = onLateTolerance)
-
-            DayRows(
-                state = state,
-                onOpenGoal = onOpenGoal,
-                onOpenPoints = onOpenPoints,
-                onThemeMode = onThemeMode,
-            )
-
-            SectionLabel(text = stringResource(R.string.settings_section_data), underlined = true)
-            DataRows(
-                state = state,
-                onExport = onExport,
-                onImport = onImport,
-                onRestore = onRestore,
-                onDelete = { confirmingWipe = true },
-            )
-
-            AboutRows(onOpenAbout = onOpenAbout, onOpenLegal = onOpenLegal)
-
-            Footer()
-        }
+        Rows(
+            state = state,
+            onOpenReliability = onOpenReliability,
+            onOpenAlarmChannel = onOpenAlarmChannel,
+            onLateTolerance = onLateTolerance,
+            onOpenGoal = onOpenGoal,
+            onOpenPoints = onOpenPoints,
+            onThemeMode = onThemeMode,
+            onExport = onExport,
+            onImport = onImport,
+            onRestore = onRestore,
+            onDelete = { confirmingWipe = true },
+            onOpenAbout = onOpenAbout,
+            onOpenLegal = onOpenLegal,
+        )
     }
 
+    Dialogs(
+        state = state,
+        confirmingWipe = confirmingWipe,
+        onWipe = onWipe,
+        onCancelWipe = { confirmingWipe = false },
+        onDismissRestore = onDismissRestore,
+    )
+}
+
+/** The two things this screen can interrupt with: a wipe, and what a restore did. */
+@Composable
+private fun Dialogs(
+    state: SettingsUiState,
+    confirmingWipe: Boolean,
+    onWipe: () -> Unit,
+    onCancelWipe: () -> Unit,
+    onDismissRestore: () -> Unit,
+) {
     state.restored?.let { RestoreReport(result = it, onDismiss = onDismissRestore) }
 
     if (confirmingWipe) {
         WipeDialog(
             onConfirm = {
-                confirmingWipe = false
+                onCancelWipe()
                 onWipe()
             },
-            onDismiss = { confirmingWipe = false },
+            onDismiss = onCancelWipe,
         )
+    }
+}
+
+/** Every row, in the four sections the screen is divided into. */
+@Composable
+private fun Rows(
+    state: SettingsUiState,
+    onOpenReliability: () -> Unit,
+    onOpenAlarmChannel: () -> Unit,
+    onLateTolerance: (Int) -> Unit,
+    onOpenGoal: () -> Unit,
+    onOpenPoints: () -> Unit,
+    onThemeMode: (ThemeMode) -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+    onRestore: () -> Unit,
+    onDelete: () -> Unit,
+    onOpenAbout: () -> Unit,
+    onOpenLegal: (LegalDocument) -> Unit,
+) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        SectionLabel(text = stringResource(R.string.settings_section_alarms), underlined = true)
+        ReliabilityRow(state = state, onClick = onOpenReliability)
+        AlarmRows(state = state, onOpenAlarmChannel = onOpenAlarmChannel, onLateTolerance = onLateTolerance)
+
+        DayRows(state = state, onOpenGoal = onOpenGoal, onOpenPoints = onOpenPoints, onThemeMode = onThemeMode)
+
+        SectionLabel(text = stringResource(R.string.settings_section_data), underlined = true)
+        DataRows(
+            state = state,
+            onExport = onExport,
+            onImport = onImport,
+            onRestore = onRestore,
+            onDelete = onDelete,
+        )
+
+        AboutRows(onOpenAbout = onOpenAbout, onOpenLegal = onOpenLegal)
+
+        Footer()
     }
 }
 

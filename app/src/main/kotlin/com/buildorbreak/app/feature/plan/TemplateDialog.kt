@@ -73,20 +73,7 @@ internal fun TemplateDialog(
                     showDeleteNote = existing != null && canDelete,
                 )
 
-                // Said before the save, not after it fails. Somebody who
-                // cannot afford a third routine should learn that from the
-                // dialog rather than from a button that quietly does nothing.
-                if (charged) {
-                    Text(
-                        text = stringResource(R.string.points_routine_body, cost, balance),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (affordable) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
-                    )
-                }
+                if (charged) Price(cost = cost, balance = balance, affordable = affordable)
 
                 Actions(
                     saveLabel = if (charged) stringResource(R.string.points_routine_confirm, cost) else null,
@@ -99,6 +86,21 @@ internal fun TemplateDialog(
             }
         }
     }
+}
+
+/**
+ * What a third routine costs, said before the save rather than after it fails.
+ *
+ * Somebody who cannot afford one should learn that from the dialog, not from
+ * a button that quietly does nothing.
+ */
+@Composable
+private fun Price(cost: Int, balance: Int, affordable: Boolean) {
+    Text(
+        text = stringResource(R.string.points_routine_body, cost, balance),
+        style = MaterialTheme.typography.bodySmall,
+        color = if (affordable) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+    )
 }
 
 @Composable

@@ -25,11 +25,7 @@ class PointsContentTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun render(
-        state: PointsUiState = loaded(),
-        onWatchAd: () -> Unit = {},
-        onDismissAd: () -> Unit = {},
-    ) {
+    private fun render(state: PointsUiState = loaded(), onWatchAd: () -> Unit = {}, onDismissAd: () -> Unit = {}) {
         compose.setContent {
             BuildOrBreakTheme {
                 PointsContent(state = state, onWatchAd = onWatchAd, onDismissAd = onDismissAd, onBack = {})
@@ -37,11 +33,7 @@ class PointsContentTest {
         }
     }
 
-    private fun loaded(
-        balance: Int = 640,
-        adAvailable: Boolean = true,
-        adNotReady: Boolean = false,
-    ) = PointsUiState(
+    private fun loaded(balance: Int = 640, adAvailable: Boolean = true, adNotReady: Boolean = false) = PointsUiState(
         loaded = true,
         balance = balance,
         earned = 940,

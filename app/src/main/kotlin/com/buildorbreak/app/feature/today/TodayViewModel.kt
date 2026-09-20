@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.gateway.AlarmGateway
+import com.buildorbreak.core.domain.goal.Prices
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.ObserveTodayUseCase
 import com.buildorbreak.core.domain.usecase.ObserveUnexplainedSkipsUseCase
@@ -19,9 +20,7 @@ import com.buildorbreak.core.model.resolved.ResolvedDay
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
-import com.buildorbreak.core.domain.goal.Prices
 import javax.inject.Inject
-import kotlinx.coroutines.flow.first
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,6 +33,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -53,6 +53,15 @@ private const val MILLIS_PER_MINUTE = 60_000L
  * AlarmManager, and never works anything out. The mapping is `TodayMapper`'s;
  * the actions are use cases; this holds the flows together.
  */
+/**
+ * The function count rule is suppressed rather than worked around. Today is
+ * the screen the whole app exists for, and every function here is one thing
+ * a thumb can do to a step: done, smaller, snooze, skip, undo, explain, move,
+ * log a number. Splitting them across two ViewModels to satisfy a counter
+ * would put half the day's actions somewhere nobody looks for them, and both
+ * halves would still need the same state.
+ */
+@Suppress("TooManyFunctions")
 @HiltViewModel
 class TodayViewModel @Inject constructor(
     observeToday: ObserveTodayUseCase,

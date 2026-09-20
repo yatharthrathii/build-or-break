@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -173,34 +174,27 @@ fun TodayContent(state: TodayUiState, actions: TodayActions, modifier: Modifier 
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             Header(state)
 
-            when {
-                // Nothing, rather than "no plan yet". One is a fact and the other
-                // is a guess made before the database has answered.
-                state.isLoading -> Unit
-                !state.hasPlan -> NoPlan(actions = actions)
-                state.isEmptyDay -> EmptyDay(startsTomorrow = state.startsTomorrow, onAddStep = actions.onAddStep)
-                else -> Day(
-                    state = state,
-                    actions = actions,
-                    onRunningLate = { choosingShift = true },
-                    onSkip = { skipping = it },
-                    onAnswerAsk = { explaining = it },
-                )
-            }
+            Middle(
+                state = state,
+                actions = actions,
+                onRunningLate = { choosingShift = true },
+                onSkip = { skipping = it },
+                onAnswerAsk = { explaining = it },
+            )
         }
 
         // Over the list rather than above it. A bar that pushed the timeline
         // down on every completion would move the next row out from under the
         // finger already on its way to tap it.
         UndoBar(offer = state.undo, onUndo = actions.onUndo, modifier = Modifier.align(Alignment.BottomCenter))
-    }
 
-    state.undoAsk?.let { ask ->
-        UndoForPointsDialog(
-            ask = ask,
-            onConfirm = actions.onConfirmUndo,
-            onDismiss = actions.onDismissUndoAsk,
-        )
+        state.undoAsk?.let { ask ->
+            UndoForPointsDialog(
+                ask = ask,
+                onConfirm = actions.onConfirmUndo,
+                onDismiss = actions.onDismissUndoAsk,
+            )
+        }
     }
 
     Sheets(
@@ -274,6 +268,34 @@ private fun Sheets(
  * exists leaves a lone dot on screen, which reads as broken rather than as
  * loading.
  */
+/**
+ * Whichever of the four things the day currently is.
+ *
+ * Loading shows nothing rather than "no plan yet". One of those is a fact
+ * and the other is a guess made before the database has answered.
+ */
+@Composable
+private fun ColumnScope.Middle(
+    state: TodayUiState,
+    actions: TodayActions,
+    onRunningLate: () -> Unit,
+    onSkip: (Long) -> Unit,
+    onAnswerAsk: (Long) -> Unit,
+) {
+    when {
+        state.isLoading -> Unit
+        !state.hasPlan -> NoPlan(actions = actions)
+        state.isEmptyDay -> EmptyDay(startsTomorrow = state.startsTomorrow, onAddStep = actions.onAddStep)
+        else -> Day(
+            state = state,
+            actions = actions,
+            onRunningLate = onRunningLate,
+            onSkip = onSkip,
+            onAnswerAsk = onAnswerAsk,
+        )
+    }
+}
+
 @Composable
 private fun Header(state: TodayUiState) {
     ScreenHeader(
