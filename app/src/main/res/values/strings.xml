@@ -904,7 +904,7 @@
     <string name="contact_soon">Coming soon</string>
     <string name="contact_body">There is no way to get in touch from inside the app yet. It is being worked on, and this screen is where it will live.</string>
     <string name="contact_meanwhile">Nothing you write will be sent anywhere until this screen says otherwise.</string>
-    <string name="about_licence">The code is open source under the MIT licence.</string>
+    <string name="about_licence">Free to use. No account, and nothing to pay for.</string>
     <string name="legal_updated">Updated %1$s</string>
     <string name="legal_updated_on">20 September 2026</string>
 
@@ -943,8 +943,8 @@
     <string name="terms_points_change_body">What a day earns and what each unlock costs may change in a later version of the app, and points already earned may be worth a different amount afterwards. Anything already unlocked stays unlocked. Nothing you have paid money for is affected, because nothing here is paid for with money.</string>
     <string name="terms_ads_title">Ads</string>
     <string name="terms_ads_body">The app shows no ads today. If one is ever offered in exchange for points, watching it will be your choice, skipping it will cost you nothing, and every part of the app you can reach now will still be reachable without watching anything.</string>
-    <string name="terms_licence_title">Open source</string>
-    <string name="terms_licence_body">The app\'s code is published under the MIT licence. It is provided as is, without any warranty. Nobody is liable for damages that come from using it, to the extent the law allows.</string>
+    <string name="terms_licence_title">No warranty</string>
+    <string name="terms_licence_body">The app is provided as it is, without any warranty. Nobody is liable for damages that come from using it, to the extent the law allows. The app and its code stay the property of whoever wrote them; nothing here gives you the right to copy or republish them.</string>
     <string name="terms_changes_title">Changes</string>
     <string name="terms_changes_body">These terms may change with a new version of the app. The date at the top says when.</string>
     <string name="terms_contact_title">Contact</string>

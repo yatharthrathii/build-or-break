@@ -171,10 +171,12 @@ by Focus and by the ringer switch, and the Critical Alerts entitlement is not
 granted for this category. The core promise of the app cannot be kept there, so
 I would rather not ship a worse version of it than pretend.
 
-## Licence
+## Reading the code
 
-MIT. See [`LICENSE`](LICENSE).
+The repository is public so that the privacy claim can be checked rather than
+believed: there is no network call in here to find, and `scheduler/` is the
+part worth reading if you are fighting the same battle with Doze and OEM
+battery managers.
 
-Take the scheduling engine, take the tiered alarm approach, take whatever is
-useful. If you are fighting the same battle with Doze and OEM battery managers,
-`scheduler/` is the part worth reading.
+It is public to read, not to reuse. No licence is granted, so all rights are
+reserved for now. If you want to build on any of it, ask.

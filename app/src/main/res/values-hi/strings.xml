@@ -854,7 +854,7 @@
     <string name="contact_soon">जल्द आ रहा है</string>
     <string name="contact_body">अभी ऐप के अंदर से संपर्क करने का कोई रास्ता नहीं है। उस पर काम चल रहा है, और वह यहीं पर आएगा।</string>
     <string name="contact_meanwhile">जब तक यह स्क्रीन कुछ और न कहे, तब तक यहाँ से कुछ भी कहीं नहीं जाएगा।</string>
-    <string name="about_licence">कोड MIT लाइसेंस के तहत ओपन सोर्स है।</string>
+    <string name="about_licence">मुफ़्त है। ना अकाउंट, ना कोई पैसा।</string>
     <string name="legal_updated">अपडेट %1$s</string>
     <string name="legal_updated_on">11 सितंबर 2026</string>
 
@@ -893,8 +893,8 @@
     <string name="terms_points_change_body">एक दिन कितना कमाता है और हर चीज़ कितने की है, यह आगे के वर्ज़न में बदल सकता है। जो पहले से खुल चुका है वह खुला रहेगा।</string>
     <string name="terms_ads_title">ऐड</string>
     <string name="terms_ads_body">अभी ऐप में कोई ऐड नहीं है। अगर कभी पॉइंट्स के बदले ऐड आया, तो देखना आपकी मर्ज़ी होगी, ना देखने से कुछ नहीं जाएगा, और आज जो भी हिस्सा खुला है वह बिना ऐड देखे खुला रहेगा।</string>
-    <string name="terms_licence_title">ओपन सोर्स</string>
-    <string name="terms_licence_body">ऐप का कोड MIT लाइसेंस के तहत प्रकाशित है। यह जैसा है वैसा दिया गया है, बिना किसी वारंटी के। इसके इस्तेमाल से हुए नुकसान के लिए कोई ज़िम्मेदार नहीं है, जहाँ तक कानून इजाज़त देता है।</string>
+    <string name="terms_licence_title">कोई वारंटी नहीं</string>
+    <string name="terms_licence_body">ऐप जैसा है वैसा दिया गया है, बिना किसी वारंटी के। इसके इस्तेमाल से हुए नुकसान के लिए कोई ज़िम्मेदार नहीं है, जहाँ तक कानून इजाज़त देता है। ऐप और उसका कोड उसी का है जिसने लिखा है।</string>
     <string name="terms_changes_title">बदलाव</string>
     <string name="terms_changes_body">ये शर्तें ऐप के नए वर्ज़न के साथ बदल सकती हैं। ऊपर की तारीख बताती है कब।</string>
     <string name="terms_contact_title">संपर्क</string>
