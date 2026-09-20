@@ -76,23 +76,21 @@ class SpendPointsUseCase @Inject constructor(
      * [on] is the day the purchase is about. A freeze is bought for a
      * particular missed day; everything else is about today.
      */
-    suspend operator fun invoke(
-        reason: PointReason,
-        on: LocalDate? = null,
-    ): Outcome<Unit, DataError> = withContext(dispatchers.io) {
-        val cost = Prices.of(reason)
-        if (!wallet().first().canAfford(cost)) return@withContext Outcome.Failure(DataError.ConstraintViolation)
+    suspend operator fun invoke(reason: PointReason, on: LocalDate? = null): Outcome<Unit, DataError> =
+        withContext(dispatchers.io) {
+            val cost = Prices.of(reason)
+            if (!wallet().first().canAfford(cost)) return@withContext Outcome.Failure(DataError.ConstraintViolation)
 
-        ledger.add(
-            PointEntry(
-                id = 0,
-                at = time.now(),
-                date = on ?: time.today(),
-                delta = -cost,
-                reason = reason,
-            ),
-        )
-    }
+            ledger.add(
+                PointEntry(
+                    id = 0,
+                    at = time.now(),
+                    date = on ?: time.today(),
+                    delta = -cost,
+                    reason = reason,
+                ),
+            )
+        }
 }
 
 /**
@@ -157,8 +155,7 @@ class ObserveFrozenDaysUseCase @Inject constructor(
     private val ledger: PointLedgerRepository,
 ) {
 
-    operator fun invoke(): Flow<Set<LocalDate>> =
-        ledger.observeDatesFor(PointReason.STREAK_FREEZE).map { it.toSet() }
+    operator fun invoke(): Flow<Set<LocalDate>> = ledger.observeDatesFor(PointReason.STREAK_FREEZE).map { it.toSet() }
 }
 
 /**

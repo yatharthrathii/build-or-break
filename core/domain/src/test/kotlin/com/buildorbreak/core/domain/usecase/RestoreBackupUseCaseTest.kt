@@ -2,11 +2,11 @@ package com.buildorbreak.core.domain.usecase
 
 import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.common.result.Outcome
+import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.export.BackupProblem
 import com.buildorbreak.core.domain.export.CURRENT_SCHEMA_VERSION
 import com.buildorbreak.core.domain.export.ExportBuilder
 import com.buildorbreak.core.domain.export.ExportReader
-import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.fake.FakeDayCloseRepository
 import com.buildorbreak.core.domain.fake.FakeDayLogRepository
 import com.buildorbreak.core.domain.fake.FakeGoalRepository
@@ -125,15 +125,20 @@ class RestoreBackupUseCaseTest {
         dispatchers = dispatchers,
     )
 
-    private val export = ExportPlanUseCase(
+    /** The eight tables a backup touches, as the use cases take them. */
+    private val backup = BackupSources(
         plans = plans,
         templates = templates,
         items = items,
-        occurrences = occurrences,
         goals = goals,
+        occurrences = occurrences,
         measurements = measurements,
         milestones = milestones,
         closes = closes,
+    )
+
+    private val export = ExportPlanUseCase(
+        sources = backup,
         builder = ExportBuilder(),
         time = time,
         dispatchers = dispatchers,
@@ -142,14 +147,7 @@ class RestoreBackupUseCaseTest {
     private val restore = RestoreBackupUseCase(
         reader = ExportReader(),
         reset = reset,
-        plans = plans,
-        templates = templates,
-        items = items,
-        goals = goals,
-        occurrences = occurrences,
-        measurements = measurements,
-        milestones = milestones,
-        closes = closes,
+        sources = backup,
         settings = settings,
         reschedule = RescheduleAllUseCase(observeToday, occurrences, alarms, time, dispatchers),
         alarms = alarms,

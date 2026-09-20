@@ -16,14 +16,11 @@ class FakePointLedgerRepository : PointLedgerRepository {
     val entries = MutableStateFlow<List<PointEntry>>(emptyList())
     private var nextId = 1L
 
-    override fun observeAll(): Flow<List<PointEntry>> =
-        entries.map { list -> list.sortedByDescending { it.at } }
+    override fun observeAll(): Flow<List<PointEntry>> = entries.map { list -> list.sortedByDescending { it.at } }
 
-    override fun observeGranted(): Flow<Int> =
-        entries.map { list -> list.filter { it.delta > 0 }.sumOf { it.delta } }
+    override fun observeGranted(): Flow<Int> = entries.map { list -> list.filter { it.delta > 0 }.sumOf { it.delta } }
 
-    override fun observeSpent(): Flow<Int> =
-        entries.map { list -> -list.filter { it.delta < 0 }.sumOf { it.delta } }
+    override fun observeSpent(): Flow<Int> = entries.map { list -> -list.filter { it.delta < 0 }.sumOf { it.delta } }
 
     override fun observeDatesFor(reason: PointReason): Flow<List<LocalDate>> =
         entries.map { list -> list.filter { it.reason == reason }.map { it.date } }

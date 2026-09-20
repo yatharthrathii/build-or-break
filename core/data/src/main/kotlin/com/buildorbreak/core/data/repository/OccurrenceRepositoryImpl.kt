@@ -68,10 +68,9 @@ class OccurrenceRepositoryImpl @Inject constructor(
             occurrences.insertIgnoringExisting(rows)
         }
 
-    override suspend fun restore(rows: List<Occurrence>): Outcome<Unit, DataError> =
-        sqlOutcome(dispatchers.io) {
-            occurrences.insertIgnoringExisting(rows.map { it.copy(id = 0).toEntity() })
-        }
+    override suspend fun restore(rows: List<Occurrence>): Outcome<Unit, DataError> = sqlOutcome(dispatchers.io) {
+        occurrences.insertIgnoringExisting(rows.map { it.copy(id = 0).toEntity() })
+    }
 
     override suspend fun settle(id: Long, state: OccurrenceState, at: Instant): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { occurrences.settle(id, state.name, at) }

@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,8 +40,15 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
-/** "Fri 12 Sep". The same shape the readings list uses. */
-private val RowDate = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
+/**
+ * "Fri 12 Sep". Long enough to place the day, short enough for a list.
+ *
+ * A function rather than a value, because a value is read once when the
+ * class loads and would keep the locale the app started in. Somebody who
+ * switches the phone to Hindi and comes back would find the dates still in
+ * English until the process was killed.
+ */
+private fun rowDate(): DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())
 
 /**
  * What the routine has earned, what it buys, and where it went.
@@ -239,7 +245,7 @@ private fun MovementRow(movement: MovementUi) {
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                Kicker(text = movement.date.format(RowDate))
+                Kicker(text = movement.date.format(rowDate()))
             }
 
             Text(
@@ -318,8 +324,7 @@ private fun movementTitle(reason: PointReason?): Int = when (reason) {
 private fun count(value: Int): String = NumberFormat.getIntegerInstance().format(value)
 
 /** A spend reads as "−150" rather than as a bare number that could be either. */
-private fun signed(value: Int): String =
-    if (value < 0) "−" + count(-value) else "+" + count(value)
+private fun signed(value: Int): String = if (value < 0) "−" + count(-value) else "+" + count(value)
 
 @Preview(name = "Points", showBackground = true)
 @Composable

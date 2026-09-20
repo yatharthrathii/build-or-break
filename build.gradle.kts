@@ -109,11 +109,35 @@ tasks.wrapper {
 // Convenience aggregate used by CI. Keeps the workflow file short.
 // Android modules expose `testDebugUnitTest`, pure JVM modules expose `test`.
 // Resolving them lazily avoids depending on plugin application order.
+//
+// **Every dependency here is named per module, deliberately.** `dependsOn`
+// with a bare task name resolves against this project only, and the root has
+// no Kotlin source and no Android variant, so `dependsOn("detekt")` was a
+// no-op that made the gate look green while every module went unchecked. CI
+// runs `./gradlew detekt lintDebug`, which does reach the subprojects, so the
+// two disagreed and CI was the only one telling the truth.
 tasks.register("qualityCheck") {
     group = "verification"
-    description = "Runs spotless, detekt and every module's unit tests."
+    description = "Runs spotless, detekt, Android lint and every module's unit tests."
     dependsOn("spotlessCheck")
-    dependsOn("detekt")
+    dependsOn(
+        provider {
+            subprojects.flatMap { module ->
+                buildList {
+                    add("${module.path}:spotlessCheck")
+                    add("${module.path}:detekt")
+
+                    // :benchmark is a com.android.test module. It has no debug
+                    // variant to lint, and it also applies com.android.base,
+                    // so it has to be ruled out before that check.
+                    val lintable = !module.plugins.hasPlugin("com.android.test") &&
+                        module.plugins.hasPlugin("com.android.base")
+
+                    if (lintable) add("${module.path}:lintDebug")
+                }
+            }
+        },
+    )
     dependsOn(
         provider {
             subprojects.mapNotNull { module ->

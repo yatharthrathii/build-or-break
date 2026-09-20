@@ -142,10 +142,11 @@
     <string name="today_row_rings">Rings</string>
     <string name="stepper_less">Less</string>
     <string name="stepper_more">More</string>
-    <string name="goal_hero_bar_a11y">%1$d percent of the way, pace at %2$d percent</string>
-    <string name="insights_bar_a11y">%1$s, %2$d percent kept</string>
+    <!-- Read aloud, never shown. "Percent" does not inflect, so a plural would be three copies of one word. -->
+    <string name="goal_hero_bar_a11y" tools:ignore="PluralsCandidate">%1$d percent of the way, pace at %2$d percent</string>
+    <string name="insights_bar_a11y" tools:ignore="PluralsCandidate">%1$s, %2$d percent kept</string>
     <string name="insights_bar_none_a11y">%1$s, nothing yet</string>
-    <string name="today_points_today">+%1$d today</string>
+    <string name="today_points_today" tools:ignore="PluralsCandidate">+%1$d today</string>
     <plurals name="today_shift_line">
         <item quantity="one">Day shifted +%1$d min · %2$d alarm moved</item>
         <item quantity="other">Day shifted +%1$d min · %2$d alarms moved</item>
@@ -554,7 +555,7 @@
         <item quantity="other">%1$d of %2$d steps</item>
     </plurals>
     <string name="insights_change_up">Up %1$d on last %2$s</string>
-    <string name="insights_change_down">Down %1$d from last %2$s</string>
+    <string name="insights_change_down" tools:ignore="PluralsCandidate">Down %1$d from last %2$s</string>
     <string name="insights_change_flat">Same as last %1$s</string>
     <string name="insights_change_none">First %1$s. Nothing to compare yet.</string>
     <string name="insights_period_week">week</string>
@@ -832,12 +833,11 @@
     <string name="points_move_ad">Watched an ad</string>
     <string name="settings_points">Points</string>
     <string name="settings_points_body">What your days have earned, and what it buys.</string>
-    <string name="points_too_few">Not enough points. You have %1$d and this costs %2$d.</string>
+    <string name="points_too_few" tools:ignore="PluralsCandidate">Not enough points. You have %1$d and this costs %2$d.</string>
     <string name="points_undo_title">Undo this step?</string>
-    <string name="points_undo_body">It goes back to not done, and the day, the run and the goal are worked out again. This costs %1$d points.</string>
+    <string name="points_undo_body" tools:ignore="PluralsCandidate">It goes back to not done, and the day, the run and the goal are worked out again. This costs %1$d points.</string>
     <string name="points_undo_confirm">Undo for %1$d</string>
-    <string name="points_routine_title">A third routine costs points</string>
-    <string name="points_routine_body">Two days come free. This one costs %1$d points, and you have %2$d.</string>
+    <string name="points_routine_body" tools:ignore="PluralsCandidate">Two days come free. This one costs %1$d points, and you have %2$d.</string>
     <string name="points_routine_confirm">Add for %1$d</string>
     <string name="settings_section_data">Your data</string>
     <string name="settings_export">Export plan and history</string>

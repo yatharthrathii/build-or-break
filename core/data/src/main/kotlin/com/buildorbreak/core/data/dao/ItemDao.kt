@@ -8,6 +8,13 @@ import com.buildorbreak.core.data.entity.ItemEntity
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * The function count rule is suppressed rather than worked around. It counts
+ * a class doing too many things; this is one table's whole query surface, and
+ * splitting it in two to satisfy a counter would leave the same eleven
+ * queries somewhere less obvious.
+ */
+@Suppress("TooManyFunctions")
 @Dao
 interface ItemDao {
 

@@ -6,15 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.common.result.getOrNull
+import com.buildorbreak.core.domain.usecase.AddRoutineUseCase
 import com.buildorbreak.core.domain.usecase.DeleteBlockUseCase
 import com.buildorbreak.core.domain.usecase.DeleteTemplateUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.domain.usecase.ReorderItemsUseCase
 import com.buildorbreak.core.domain.usecase.SaveBlockUseCase
-import com.buildorbreak.core.domain.usecase.AddRoutineUseCase
-import com.buildorbreak.core.domain.usecase.ObserveRoutineCostUseCase
-import com.buildorbreak.core.domain.usecase.ObserveWalletUseCase
 import com.buildorbreak.core.domain.usecase.SaveTemplateUseCase
 import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.Salience
@@ -36,8 +34,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -170,8 +168,7 @@ data class PlanItemRow(
 class PlanViewModel @Inject constructor(
     observePlan: ObservePlanUseCase,
     private val saveTemplate: SaveTemplateUseCase,
-    observeRoutineCost: ObserveRoutineCostUseCase,
-    observeWallet: ObserveWalletUseCase,
+    private val points: RoutinePrice,
     private val addRoutine: AddRoutineUseCase,
     private val deleteTemplate: DeleteTemplateUseCase,
     private val saveBlock: SaveBlockUseCase,
@@ -188,8 +185,8 @@ class PlanViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<PlanUiState> = combine(
         selectedTemplate.flatMapLatest { observePlan(it) }.map(::toUiState),
-        observeRoutineCost(),
-        observeWallet(),
+        points.cost(),
+        points.wallet(),
     ) { plan, cost, wallet ->
         plan.copy(routineCost = cost, balance = wallet.balance)
     }

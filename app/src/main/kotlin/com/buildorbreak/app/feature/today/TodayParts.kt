@@ -163,6 +163,21 @@ private fun PointsFigure(points: PointsUi, modifier: Modifier = Modifier, alignE
 }
 
 /** The three lines beside the ring: the count, the run, and the steadier number. */
+/** How many days in a row, or the invitation to start one. */
+@Composable
+private fun RunLine(runDays: Int) {
+    Text(
+        text = if (runDays > 0) {
+            pluralStringResource(R.plurals.today_run_days, runDays, runDays)
+        } else {
+            stringResource(R.string.today_run_none)
+        },
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = Theme.spacing.small),
+    )
+}
+
 @Composable
 private fun RingCounts(
     header: DayHeader,
@@ -193,16 +208,7 @@ private fun RingCounts(
             maxLines = 2,
         )
 
-        Text(
-            text = if (runDays > 0) {
-                pluralStringResource(R.plurals.today_run_days, runDays, runDays)
-            } else {
-                stringResource(R.string.today_run_none)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = Theme.spacing.small),
-        )
+        RunLine(runDays = runDays)
 
         // The number that survives a bad day. A run resets to nothing the
         // first morning somebody oversleeps; this goes down by one and can go

@@ -106,8 +106,6 @@ fun GoalScreen(
 fun GoalContent(
     state: GoalUiState,
     onNew: () -> Unit,
-    onOpenReadings: () -> Unit = {},
-    onAddReading: () -> Unit = {},
     onEdit: () -> Unit,
     onChange: (GoalDraft) -> Unit,
     onSave: () -> Unit,
@@ -115,6 +113,8 @@ fun GoalContent(
     onRetire: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenReadings: () -> Unit = {},
+    onAddReading: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -208,6 +208,34 @@ private fun BlockerLine(text: String, error: Boolean = false) {
     )
 }
 
+/**
+ * See the numbers, and add one.
+ *
+ * The two sit together because they are the same question from either end: a
+ * step ticked from a notification settles the day and asks for no figure, and
+ * the figure still has to go somewhere afterwards.
+ */
+@Composable
+private fun ReadingActions(onOpenReadings: () -> Unit, onAddReading: () -> Unit) {
+    Row(
+        modifier = Modifier.padding(start = Theme.spacing.tight, top = Theme.spacing.small),
+        horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GhostButton(
+            text = stringResource(R.string.goal_see_readings),
+            onClick = onOpenReadings,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+
+        GhostButton(
+            text = stringResource(R.string.readings_add),
+            onClick = onAddReading,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
 @Composable
 private fun GoalBody(
     goal: GoalCardUi,
@@ -232,27 +260,7 @@ private fun GoalBody(
         // Only a measured goal has readings. A count of gym sessions is
         // corrected by un-ticking the step, not by editing a figure.
         if (goal.kind == GoalKind.NUMBER) {
-            // Adding is offered next to reading, because the two are the same
-            // question from either end: a step ticked from a notification
-            // settles the day and asks for no figure, and the figure still
-            // has to go somewhere afterwards.
-            Row(
-                modifier = Modifier.padding(start = Theme.spacing.tight, top = Theme.spacing.small),
-                horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                GhostButton(
-                    text = stringResource(R.string.goal_see_readings),
-                    onClick = onOpenReadings,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-
-                GhostButton(
-                    text = stringResource(R.string.readings_add),
-                    onClick = onAddReading,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
+            ReadingActions(onOpenReadings = onOpenReadings, onAddReading = onAddReading)
         }
 
         Row(

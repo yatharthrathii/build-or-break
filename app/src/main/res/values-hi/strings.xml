@@ -788,7 +788,6 @@
     <string name="points_undo_title">यह स्टेप वापस लें?</string>
     <string name="points_undo_body">यह फिर से नहीं किया हो जाएगा, और दिन, रन और गोल दोबारा गिने जाएंगे। इसके %1$d पॉइंट्स लगेंगे।</string>
     <string name="points_undo_confirm">%1$d में वापस लें</string>
-    <string name="points_routine_title">तीसरे रूटीन के पॉइंट्स लगते हैं</string>
     <string name="points_routine_body">दो दिन फ्री हैं। यह %1$d का है, और आपके पास %2$d हैं।</string>
     <string name="points_routine_confirm">%1$d में जोड़ें</string>
     <string name="settings_section_data">आपका डेटा</string>

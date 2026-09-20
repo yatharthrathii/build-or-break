@@ -14,16 +14,8 @@ import com.buildorbreak.core.domain.export.ExportReader
 import com.buildorbreak.core.domain.export.ExportTemplate
 import com.buildorbreak.core.domain.gateway.AlarmGateway
 import com.buildorbreak.core.domain.gateway.WidgetGateway
-import com.buildorbreak.core.domain.repository.DayCloseRepository
-import com.buildorbreak.core.domain.repository.GoalRepository
-import com.buildorbreak.core.domain.repository.ItemRepository
-import com.buildorbreak.core.domain.repository.MeasurementRepository
-import com.buildorbreak.core.domain.repository.MilestoneRepository
-import com.buildorbreak.core.domain.repository.OccurrenceRepository
-import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.ResetRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
-import com.buildorbreak.core.domain.repository.TemplateRepository
 import com.buildorbreak.core.model.enums.AnchorType
 import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.DayQuality
@@ -90,14 +82,7 @@ data class RestoreSummary(
 class RestoreBackupUseCase @Inject constructor(
     private val reader: ExportReader,
     private val reset: ResetRepository,
-    private val plans: PlanRepository,
-    private val templates: TemplateRepository,
-    private val items: ItemRepository,
-    private val goals: GoalRepository,
-    private val occurrences: OccurrenceRepository,
-    private val measurements: MeasurementRepository,
-    private val milestones: MilestoneRepository,
-    private val closes: DayCloseRepository,
+    private val sources: BackupSources,
     private val settings: SettingsRepository,
     private val reschedule: RescheduleAllUseCase,
     private val alarms: AlarmGateway,
@@ -106,36 +91,35 @@ class RestoreBackupUseCase @Inject constructor(
     private val dispatchers: AppDispatchers,
 ) {
 
-    suspend operator fun invoke(text: String): Outcome<RestoreSummary, BackupProblem> =
-        withContext(dispatchers.io) {
-            val document = reader.read(text).getOrElse { failure ->
-                return@withContext Outcome.Failure(
-                    (failure as? BackupUnreadable)?.problem ?: BackupProblem.NOT_READABLE,
-                )
-            }
-
-            clearEverything()
-
-            val planId = writePlan(document) ?: return@withContext Outcome.Failure(BackupProblem.NOT_READABLE)
-            val itemIds = writeTemplates(document.templates, planId)
-
-            pointRelativeAnchorsAtTheirParents(document.templates, itemIds)
-            document.goals.forEach { writeGoal(it, planId, itemIds) }
-            writeHistory(document, planId, itemIds)
-
-            reschedule()
-            widget.refresh()
-
-            Outcome.Success(
-                RestoreSummary(
-                    steps = itemIds.size,
-                    days = document.history.dayCloses.size,
-                    hasGoal = document.goals.isNotEmpty(),
-                    readings = document.history.measurements.size,
-                    badges = document.history.milestones.size,
-                ),
+    suspend operator fun invoke(text: String): Outcome<RestoreSummary, BackupProblem> = withContext(dispatchers.io) {
+        val document = reader.read(text).getOrElse { failure ->
+            return@withContext Outcome.Failure(
+                (failure as? BackupUnreadable)?.problem ?: BackupProblem.NOT_READABLE,
             )
         }
+
+        clearEverything()
+
+        val planId = writePlan(document) ?: return@withContext Outcome.Failure(BackupProblem.NOT_READABLE)
+        val itemIds = writeTemplates(document.templates, planId)
+
+        pointRelativeAnchorsAtTheirParents(document.templates, itemIds)
+        document.goals.forEach { writeGoal(it, planId, itemIds) }
+        writeHistory(document, planId, itemIds)
+
+        reschedule()
+        widget.refresh()
+
+        Outcome.Success(
+            RestoreSummary(
+                steps = itemIds.size,
+                days = document.history.dayCloses.size,
+                hasGoal = document.goals.isNotEmpty(),
+                readings = document.history.measurements.size,
+                badges = document.history.milestones.size,
+            ),
+        )
+    }
 
     /**
      * The wipe the settings screen offers, alarms first, preferences kept.
@@ -153,7 +137,7 @@ class RestoreBackupUseCase @Inject constructor(
      */
     private suspend fun clearEverything() {
         val today = time.today()
-        occurrences.between(today.minusDays(1), today.plusDays(1)).forEach { alarms.cancel(it.id) }
+        sources.occurrences.between(today.minusDays(1), today.plusDays(1)).forEach { alarms.cancel(it.id) }
 
         val theme = settings.themeMode.first()
         val tolerance = settings.lateTolerance.first()
@@ -168,7 +152,7 @@ class RestoreBackupUseCase @Inject constructor(
     private suspend fun writePlan(document: ExportDocument): Long? {
         val zone = runCatching { ZoneId.of(document.plan.zone) }.getOrNull() ?: time.zone()
 
-        val planId = plans.upsert(
+        val planId = sources.plans.upsert(
             Plan(
                 id = 0,
                 name = document.plan.name,
@@ -180,17 +164,17 @@ class RestoreBackupUseCase @Inject constructor(
             ),
         ).getOrNull() ?: return null
 
-        plans.setActive(planId)
+        sources.plans.setActive(planId)
 
         return planId
     }
 
     /** Returns old item id to new item id, for everything that points at a step. */
-    private suspend fun writeTemplates(sources: List<ExportTemplate>, planId: Long): Map<Long, Long> {
+    private suspend fun writeTemplates(fromFile: List<ExportTemplate>, planId: Long): Map<Long, Long> {
         val itemIds = mutableMapOf<Long, Long>()
 
-        sources.forEach { source ->
-            val templateId = templates.upsert(
+        fromFile.forEach { source ->
+            val templateId = sources.templates.upsert(
                 DayTemplate(
                     id = 0,
                     planId = planId,
@@ -203,7 +187,7 @@ class RestoreBackupUseCase @Inject constructor(
             ).getOrNull() ?: return@forEach
 
             val blockIds = source.blocks.associate { block ->
-                block.id to items.upsertBlock(
+                block.id to sources.items.upsertBlock(
                     Block(
                         id = 0,
                         templateId = templateId,
@@ -219,7 +203,7 @@ class RestoreBackupUseCase @Inject constructor(
                 // Written with the anchor as the file has it. A RELATIVE one
                 // still points at an old id here; the second pass repoints it
                 // once every step in the file has a new id to point at.
-                val written = items.upsert(item.toItem(templateId, blockIds[item.blockId])).getOrNull()
+                val written = sources.items.upsert(item.toItem(templateId, blockIds[item.blockId])).getOrNull()
 
                 if (written != null) itemIds[item.id] = written
             }
@@ -238,24 +222,21 @@ class RestoreBackupUseCase @Inject constructor(
      * chain that came back pointing at a stranger's row would be a plan that
      * is subtly not the one that was exported.
      */
-    private suspend fun pointRelativeAnchorsAtTheirParents(
-        sources: List<ExportTemplate>,
-        itemIds: Map<Long, Long>,
-    ) {
-        sources.flatMap { it.items }
+    private suspend fun pointRelativeAnchorsAtTheirParents(fromFile: List<ExportTemplate>, itemIds: Map<Long, Long>) {
+        fromFile.flatMap { it.items }
             .filter { it.anchor.type == AnchorType.RELATIVE.name }
             .forEach { source ->
                 val id = itemIds[source.id] ?: return@forEach
                 val parent = itemIds[source.anchor.parentItemId] ?: return@forEach
-                val current = items.byId(id) ?: return@forEach
+                val current = sources.items.byId(id) ?: return@forEach
                 val anchor = current.anchor as? Anchor.Relative ?: return@forEach
 
-                items.upsert(current.copy(anchor = anchor.copy(parentItemId = parent)))
+                sources.items.upsert(current.copy(anchor = anchor.copy(parentItemId = parent)))
             }
     }
 
     private suspend fun writeGoal(source: ExportGoal, planId: Long, itemIds: Map<Long, Long>) {
-        goals.upsert(
+        sources.goals.upsert(
             Goal(
                 id = 0,
                 planId = planId,
@@ -272,15 +253,15 @@ class RestoreBackupUseCase @Inject constructor(
         )
     }
 
-    /**
-     * What happened, as opposed to what was planned.
-     *
-     * The closes are written as they stand rather than recomputed from the
-     * occurrences. A close is a record of a day that ended, `GoalProgressWriter`
-     * says a row is written once, and a restore that recounted them could hand
-     * somebody a streak they did not have.
-     */
+    /** What happened, as opposed to what was planned, in the order it depends on. */
     private suspend fun writeHistory(document: ExportDocument, planId: Long, itemIds: Map<Long, Long>) {
+        writeOccurrences(document, itemIds)
+        writeReadings(document, itemIds)
+        writeBadges(document)
+        writeCloses(document, planId)
+    }
+
+    private suspend fun writeOccurrences(document: ExportDocument, itemIds: Map<Long, Long>) {
         val restored = document.history.occurrences.mapNotNull { source ->
             Occurrence(
                 id = 0,
@@ -296,10 +277,12 @@ class RestoreBackupUseCase @Inject constructor(
             )
         }
 
-        occurrences.restore(restored)
+        sources.occurrences.restore(restored)
+    }
 
+    private suspend fun writeReadings(document: ExportDocument, itemIds: Map<Long, Long>) {
         document.history.measurements.forEach { source ->
-            measurements.upsert(
+            sources.measurements.upsert(
                 Measurement(
                     id = 0,
                     itemId = itemIds[source.itemId] ?: return@forEach,
@@ -313,9 +296,11 @@ class RestoreBackupUseCase @Inject constructor(
                 ),
             )
         }
+    }
 
+    private suspend fun writeBadges(document: ExportDocument) {
         document.history.milestones.forEach { source ->
-            milestones.award(
+            sources.milestones.award(
                 MilestoneAward(
                     milestone = enumOrNull<Milestone>(source.milestone) ?: return@forEach,
                     goalId = null,
@@ -328,11 +313,20 @@ class RestoreBackupUseCase @Inject constructor(
                 ),
             )
         }
+    }
 
+    /**
+     * The closes, written as they stand rather than recounted.
+     *
+     * A close is a record of a day that ended, `GoalProgressWriter` says a
+     * row is written once, and a restore that added the occurrences up again
+     * could hand somebody a streak they did not have.
+     */
+    private suspend fun writeCloses(document: ExportDocument, planId: Long) {
         document.history.dayCloses.forEach { source ->
             val date = source.date.toDateOrNull() ?: return@forEach
 
-            closes.upsert(
+            sources.closes.upsert(
                 DayClose(
                     date = date,
                     planId = planId,
