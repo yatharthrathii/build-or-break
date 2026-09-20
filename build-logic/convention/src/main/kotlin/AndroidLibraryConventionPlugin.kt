@@ -35,7 +35,20 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                     // mean an upgrade nobody asked for becomes the only way to
                     // ship. Versions here are pinned on purpose and upgraded
                     // deliberately, not because lint noticed a release.
-                    disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
+                    //
+                    // OldTargetApi is the same nag on a calendar. It fires the
+                    // day Google ships an API level above targetSdk, whatever
+                    // the code does, so leaving it on means every Android
+                    // release breaks this build overnight. Raising targetSdk
+                    // changes how the app behaves at runtime and is done after
+                    // testing on a device, never to quieten a check. Play's own
+                    // deadline is the thing that actually forces it.
+                    disable += setOf(
+                        "AndroidGradlePluginVersion",
+                        "GradleDependency",
+                        "NewerVersionAvailable",
+                        "OldTargetApi",
+                    )
                 }
             }
 
