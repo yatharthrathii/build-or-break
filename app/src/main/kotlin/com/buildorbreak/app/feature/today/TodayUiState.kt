@@ -94,6 +94,8 @@ data class TodayUiState(
      * routine exists.
      */
     val goal: GoalHeroUi? = null,
+    /** The other running goal, when there are two. There is never a third. */
+    val secondGoal: GoalHeroUi? = null,
     /**
      * Points in the bank and points earned so far today.
      *
@@ -282,8 +284,8 @@ data class GoalHeroUi(
 data class MilestoneNotice(val milestone: Milestone)
 
 /**
- * [banked] is every closed day; [today] moves with each tap and is not yet
- * banked. The screen shows the sum and says how much of it is today's.
+ * [banked] is what closed days have left to spend; [today] moves with each
+ * tap and is not yet banked. The screen shows the sum and says how much of it is today's.
  */
 @Immutable
 data class PointsUi(val banked: Int, val today: Int) {

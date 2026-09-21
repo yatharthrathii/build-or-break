@@ -18,10 +18,12 @@ import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -106,14 +108,26 @@ class ReadingsViewModel @Inject constructor(
     private val draft = MutableStateFlow<ReadingDraft?>(null)
     private val failed = MutableStateFlow(false)
 
+    /**
+     * Which goal, now that two can run. Null is "the measured one", which is
+     * the answer whenever the screen was opened from somewhere that does not
+     * know, and the only possible answer while there is one goal.
+     */
+    private val goalId = MutableStateFlow<Long?>(null)
+
+    fun forGoal(id: Long?) {
+        goalId.value = id
+    }
+
     /** Kept so an edit can be written back as the row it came from, not as a new one. */
     private var series: List<Measurement> = emptyList()
 
     /** The earliest day a reading may be added for. Before the goal it would not count. */
     private var firstDay: LocalDate? = null
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<ReadingsUiState> =
-        combine(observeReadings(), draft, failed) { found, editing, failure ->
+        combine(goalId.flatMapLatest { observeReadings(it) }, draft, failed) { found, editing, failure ->
             series = found?.readings.orEmpty()
             firstDay = found?.goal?.startDate
 
@@ -178,7 +192,7 @@ class ReadingsViewModel @Inject constructor(
         val value = current.value ?: return@launch
 
         val written = if (current.isNew) {
-            addReading(current.date, value) is Outcome.Success
+            addReading(current.date, value, goalId.value) is Outcome.Success
         } else {
             val row = series.firstOrNull { it.id == current.id } ?: return@launch
             saveReading(row, value) is Outcome.Success

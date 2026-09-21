@@ -45,6 +45,7 @@ class GoalContentTest {
         state: GoalUiState,
         onNew: () -> Unit = {},
         onWeekCounted: (LocalDate, Boolean) -> Unit = { _, _ -> },
+        onSelect: (Long) -> Unit = {},
         onChange: (GoalDraft) -> Unit = {},
     ) {
         compose.setContent {
@@ -59,6 +60,7 @@ class GoalContentTest {
                     onRetire = {},
                     onBack = {},
                     onWeekCounted = onWeekCounted,
+                    onSelect = onSelect,
                 )
             }
         }
@@ -240,6 +242,27 @@ class GoalContentTest {
         compose.onNodeWithText("−").performClick()
 
         assertThat(changed).isNull()
+    }
+
+    @Test
+    fun `a goal a year old can still have its end date opened`() {
+        // Its year ran out before today, so the latest day allowed would have
+        // fallen before the earliest, and the calendar threw on opening.
+        val draft = GoalDraft(
+            title = "Twelve gym sessions",
+            targetValue = "12",
+            itemId = 3,
+            startDate = TODAY.minusDays(400),
+            targetDate = TODAY.minusDays(36),
+            byDate = true,
+            earliestEnd = TODAY.plusDays(1),
+        )
+        render(GoalUiState.Empty.copy(loaded = true, draft = draft))
+
+        scrollTo("END DATE")
+        compose.onNodeWithText(draft.targetDate.format(longDate())).performClick()
+
+        compose.onNodeWithText("SET").assertIsDisplayed()
     }
 
     @Test

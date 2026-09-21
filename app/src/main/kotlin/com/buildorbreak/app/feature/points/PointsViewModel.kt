@@ -29,15 +29,9 @@ import kotlinx.coroutines.launch
 @Immutable
 data class MovementUi(val date: LocalDate, val delta: Int, val reason: PointReason?)
 
-/**
- * One thing points are for.
- *
- * [cost] is null for an entry that is planned rather than built, which is
- * the honest way to show somebody what the points are heading towards
- * without letting them spend on something that does not exist.
- */
+/** One thing points are for, and whether there are enough of them for it. */
 @Immutable
-data class UnlockUi(val kind: UnlockKind, val cost: Int?, val affordable: Boolean)
+data class UnlockUi(val kind: UnlockKind, val cost: Int, val affordable: Boolean)
 
 /**
  * The one missed day a freeze is worth buying for, and what it would do.
@@ -180,7 +174,7 @@ class PointsViewModel @Inject constructor(
         UnlockUi(UnlockKind.UNDO_STEP, Prices.UNDO_STEP, balance >= Prices.UNDO_STEP),
         UnlockUi(UnlockKind.STREAK_FREEZE, Prices.STREAK_FREEZE, balance >= Prices.STREAK_FREEZE),
         UnlockUi(UnlockKind.EXTRA_ROUTINE, Prices.EXTRA_ROUTINE, balance >= Prices.EXTRA_ROUTINE),
-        UnlockUi(UnlockKind.SECOND_GOAL, null, false),
+        UnlockUi(UnlockKind.SECOND_GOAL, Prices.SECOND_GOAL, balance >= Prices.SECOND_GOAL),
     ).toImmutableList()
 
     private fun PointMovement.toUi() = MovementUi(date = date, delta = delta, reason = reason)

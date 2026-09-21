@@ -1,5 +1,10 @@
 package com.buildorbreak.app.feature.plan
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +52,9 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 private const val OFFSET_STEP = 5
+
+/** Quick. The tabs above have already moved, and this only has to follow. */
+private const val SWAP_MILLIS = 140
 private const val MAX_OFFSET = 720
 private const val MIN_INTERVAL = 5
 private const val MAX_INTERVAL = 240
@@ -77,28 +85,44 @@ internal fun TimingSection(state: ItemEditorUiState, onChange: (ItemEditorUiStat
         // Four bare words taught nobody anything, and everybody picked the
         // first one. A routine made entirely of fixed times cannot move when
         // the morning runs late, which is the one thing this app is for.
-        Text(
-            text = stringResource(anchorHint(state.anchor.kind)),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = Theme.spacing.small),
-        )
-
-        Box(modifier = Modifier.padding(top = 14.dp)) {
-            when (state.anchor.kind) {
-                AnchorType.FIXED -> TimeField(
-                    label = stringResource(R.string.editor_at),
-                    time = state.anchor.at,
-                    onPicked = { onChange(state.copy(anchor = state.anchor.copy(at = it))) },
+        // Keyed on the kind alone. Keyed on the whole state it would fade
+        // on every minute of a time being picked.
+        AnimatedContent(
+            targetState = state.anchor.kind,
+            transitionSpec = { fadeIn(tween(SWAP_MILLIS)) togetherWith fadeOut(tween(SWAP_MILLIS)) },
+            label = "timing",
+        ) { kind ->
+            Column {
+                Text(
+                    text = stringResource(anchorHint(kind)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Theme.spacing.small),
                 )
 
-                AnchorType.RELATIVE -> RelativeFields(state = state, onChange = onChange)
-                AnchorType.WINDOW -> WindowFields(state = state, onChange = onChange)
-                AnchorType.INTERVAL -> IntervalFields(state = state, onChange = onChange)
+                Box(modifier = Modifier.padding(top = 14.dp)) {
+                    TimingFields(kind = kind, state = state, onChange = onChange)
+                }
             }
         }
 
         LandsAt(state = state)
+    }
+}
+
+/** The one or two rows that belong to a kind of timing. */
+@Composable
+private fun TimingFields(kind: AnchorType, state: ItemEditorUiState, onChange: (ItemEditorUiState) -> Unit) {
+    when (kind) {
+        AnchorType.FIXED -> TimeField(
+            label = stringResource(R.string.editor_at),
+            time = state.anchor.at,
+            onPicked = { onChange(state.copy(anchor = state.anchor.copy(at = it))) },
+        )
+
+        AnchorType.RELATIVE -> RelativeFields(state = state, onChange = onChange)
+        AnchorType.WINDOW -> WindowFields(state = state, onChange = onChange)
+        AnchorType.INTERVAL -> IntervalFields(state = state, onChange = onChange)
     }
 }
 

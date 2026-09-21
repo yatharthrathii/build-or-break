@@ -372,6 +372,15 @@ class TodayContentTest {
     )
 
     @Test
+    fun `with two goals running, both are on Today`() {
+        render(previewState().copy(goal = weightGoal(), secondGoal = weightGoal().copy(title = "Read more")))
+
+        compose.onNodeWithText("GAIN WEIGHT").assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("READ MORE"))
+        compose.onNodeWithText("READ MORE").assertIsDisplayed()
+    }
+
+    @Test
     fun `the goal card shows the average, today's reading and the change since the start`() {
         render(previewState().copy(goal = weightGoal()))
 

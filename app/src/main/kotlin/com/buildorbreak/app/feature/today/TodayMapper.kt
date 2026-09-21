@@ -55,8 +55,10 @@ data class DayFacts(
     val runDays: Int,
     val consistency: Consistency?,
     val degradedTier: DeliveryTier?,
-    val goal: GoalSnapshot? = null,
+    val goals: List<GoalSnapshot> = emptyList(),
     val points: PointsTally? = null,
+    /** What is left to spend from closed days: earned, less everything spent. Null until read. */
+    val balance: Int? = null,
 )
 
 /** Zero to one, drawn as zero to a hundred. */
@@ -117,8 +119,9 @@ class TodayMapper @Inject constructor(
             hasPlan = true,
             isReduced = day.mode == DayMode.REDUCED,
             reducedCount = day.entries.count { it.reduced },
-            goal = facts.goal?.let(::toGoalHero),
-            points = facts.points?.let { pointsFor(day, states.values, it) },
+            goal = facts.goals.getOrNull(0)?.let(::toGoalHero),
+            secondGoal = facts.goals.getOrNull(1)?.let(::toGoalHero),
+            points = facts.points?.let { pointsFor(day, states.values, facts.balance ?: it.banked) },
             startsTomorrow = day.entries.isEmpty() && day.hiddenBeforeStart > 0,
             templates = plan?.templates.orEmpty().map { DayChoice(it.id, it.name) }.toImmutableList(),
             currentTemplateId = day.template.id,
@@ -127,14 +130,18 @@ class TodayMapper @Inject constructor(
     }
 
     /**
-     * The bank plus today, live.
+     * What can be spent, plus today, live.
+     *
+     * The balance rather than everything ever earned. Once points could be
+     * spent the two came apart, and this tile went on showing 990 beside a
+     * points screen that said 790.
      *
      * Today's figure is worked out from the same states the ring uses, so a
      * tap moves both at once. It is not written anywhere: the close writes
      * the row at midnight and the bank picks it up from there.
      */
-    private fun pointsFor(day: ResolvedDay, states: Collection<OccurrenceState?>, tally: PointsTally) = PointsUi(
-        banked = tally.banked,
+    private fun pointsFor(day: ResolvedDay, states: Collection<OccurrenceState?>, balance: Int) = PointsUi(
+        banked = balance,
         today = Points.of(
             done = states.count { it == OccurrenceState.DONE },
             minimum = states.count { it == OccurrenceState.DONE_MINIMUM },

@@ -36,12 +36,12 @@ class PointsContentTest {
     private fun loaded(balance: Int = 640, adAvailable: Boolean = true, adNotReady: Boolean = false) = PointsUiState(
         loaded = true,
         balance = balance,
-        earned = 940,
-        spent = 300,
+        earned = 890,
+        spent = 250,
         adAvailable = adAvailable,
         unlocks = persistentListOf(
             UnlockUi(UnlockKind.UNDO_STEP, 150, affordable = true),
-            UnlockUi(UnlockKind.SECOND_GOAL, null, affordable = false),
+            UnlockUi(UnlockKind.SECOND_GOAL, 300, affordable = true),
         ),
         movements = persistentListOf(
             MovementUi(LocalDate.of(2026, 9, 19), -150, PointReason.UNDO_STEP),
@@ -55,8 +55,8 @@ class PointsContentTest {
         render()
 
         compose.onNodeWithText("640").assertIsDisplayed()
-        compose.onNodeWithText("940").assertIsDisplayed()
-        compose.onNodeWithText("300").assertIsDisplayed()
+        compose.onNodeWithText("890").assertIsDisplayed()
+        compose.onNodeWithText("250").assertIsDisplayed()
     }
 
     @Test
@@ -68,11 +68,11 @@ class PointsContentTest {
     }
 
     @Test
-    fun `something not built yet is marked rather than priced`() {
+    fun `a second goal is priced, and says where it is bought`() {
         render()
 
-        compose.onNodeWithText("PLANNED").assertIsDisplayed()
-        compose.onNodeWithText("Not built yet", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("A second goal").assertIsDisplayed()
+        compose.onNodeWithText("Add it from the Goal screen", substring = true).assertIsDisplayed()
     }
 
     @Test
