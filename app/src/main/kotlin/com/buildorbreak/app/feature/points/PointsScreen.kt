@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import com.buildorbreak.app.R
 import com.buildorbreak.app.feature.about.BackHeader
 import com.buildorbreak.core.designsystem.component.Badge
 import com.buildorbreak.core.designsystem.component.FillButton
+import com.buildorbreak.core.designsystem.component.GhostButton
 import com.buildorbreak.core.designsystem.component.HairlineRule
 import com.buildorbreak.core.designsystem.component.Kicker
 import com.buildorbreak.core.designsystem.component.Label
@@ -70,6 +72,11 @@ fun PointsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: P
         state = state,
         onWatchAd = viewModel::onWatchAd,
         onDismissAd = viewModel::onDismissAd,
+        freezeActions = FreezeActions(
+            onAsk = viewModel::onAskFreeze,
+            onConfirm = { viewModel.onConfirmFreeze() },
+            onDismiss = viewModel::onDismissFreeze,
+        ),
         onBack = onBack,
         modifier = modifier,
     )
@@ -82,6 +89,7 @@ fun PointsContent(
     onDismissAd: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    freezeActions: FreezeActions = FreezeActions(),
 ) {
     Column(
         modifier = modifier
@@ -100,7 +108,13 @@ fun PointsContent(
             item { AdRow(reward = state.adReward, available = state.adAvailable, onWatchAd = onWatchAd) }
 
             item { SectionLabel(text = stringResource(R.string.points_unlocks), underlined = true) }
-            items(items = state.unlocks, key = { it.kind.name }) { UnlockRow(unlock = it) }
+            items(items = state.unlocks, key = { it.kind.name }) { unlock ->
+                UnlockRow(unlock = unlock) {
+                    if (unlock.kind == UnlockKind.STREAK_FREEZE) {
+                        FreezeOffer(freeze = state.freeze, onAsk = freezeActions.onAsk)
+                    }
+                }
+            }
 
             item { SectionLabel(text = stringResource(R.string.points_history), underlined = true) }
 
@@ -113,6 +127,8 @@ fun PointsContent(
     }
 
     if (state.adNotReady) AdNotReadyDialog(onDismiss = onDismissAd)
+
+    state.freeze?.takeIf { it.asking }?.let { FreezeDialog(freeze = it, actions = freezeActions) }
 }
 
 /** The number that matters, with the two it is made of underneath. */
@@ -192,8 +208,105 @@ private fun AdRow(reward: Int, available: Boolean, onWatchAd: () -> Unit) {
     }
 }
 
+/** The three things the freeze row can ask for, so they travel as one parameter. */
+@Immutable
+data class FreezeActions(
+    val onAsk: () -> Unit = {},
+    val onConfirm: () -> Unit = {},
+    val onDismiss: () -> Unit = {},
+)
+
+/**
+ * The day on offer, or a line saying there is none.
+ *
+ * The row used to show a price and nothing else, which is a shop window
+ * with no door. Now it always says where things stand: either here is the
+ * day and the button, or there is nothing to cover and this is where it
+ * will appear.
+ */
 @Composable
-private fun UnlockRow(unlock: UnlockUi) {
+private fun FreezeOffer(freeze: FreezeUi?, onAsk: () -> Unit) {
+    if (freeze == null) {
+        Text(
+            text = stringResource(R.string.points_freeze_none),
+            style = MaterialTheme.typography.bodySmall,
+            color = Theme.colours.faint,
+            modifier = Modifier.padding(bottom = Theme.spacing.small),
+        )
+        return
+    }
+
+    Column(modifier = Modifier.padding(bottom = Theme.spacing.inset)) {
+        Text(
+            text = stringResource(
+                R.string.points_freeze_offer,
+                freeze.date.format(rowDate()),
+                freeze.runNow,
+                freeze.runAfter,
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.padding(bottom = Theme.spacing.small),
+        )
+
+        OutlineButton(
+            text = stringResource(R.string.points_freeze_action),
+            onClick = onAsk,
+            enabled = freeze.affordable,
+        )
+
+        if (!freeze.affordable) NotEnough(cost = freeze.cost)
+    }
+}
+
+@Composable
+private fun NotEnough(cost: Int) {
+    Text(
+        text = stringResource(R.string.points_freeze_short, cost),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = Theme.spacing.small),
+    )
+}
+
+@Composable
+private fun FreezeDialog(freeze: FreezeUi, actions: FreezeActions) {
+    Dialog(onDismissRequest = actions.onDismiss) {
+        Panel {
+            Column(modifier = Modifier.padding(Theme.spacing.medium)) {
+                Text(
+                    text = stringResource(R.string.points_freeze_title, freeze.date.format(rowDate())),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                Text(
+                    text = stringResource(
+                        if (freeze.failed) R.string.points_freeze_failed else R.string.points_freeze_body,
+                        freeze.cost,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Theme.spacing.small, bottom = Theme.spacing.medium),
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Theme.spacing.small),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    FillButton(
+                        text = stringResource(R.string.points_freeze_confirm, freeze.cost),
+                        onClick = actions.onConfirm,
+                    )
+                    GhostButton(text = stringResource(R.string.editor_cancel), onClick = actions.onDismiss)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UnlockRow(unlock: UnlockUi, extra: @Composable () -> Unit = {}) {
     Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = Theme.spacing.small),
@@ -227,6 +340,8 @@ private fun UnlockRow(unlock: UnlockUi) {
                 )
             }
         }
+
+        extra()
 
         HairlineRule()
     }

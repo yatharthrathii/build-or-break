@@ -7,6 +7,7 @@ import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.domain.usecase.ArchiveItemUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
+import com.buildorbreak.core.domain.usecase.ObserveReadingsUseCase
 import com.buildorbreak.core.domain.usecase.ObserveTodayUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.domain.usecase.SaveItemUseCase
@@ -33,6 +34,9 @@ import kotlinx.coroutines.launch
 
 private const val DEFAULT_INTERVAL_MINUTES = 45
 private const val DEFAULT_OFFSET_MINUTES = 15
+
+/** A month of daily numbers. More columns than that and each one is a hair. */
+private const val READINGS_SHOWN = 30
 
 /**
  * Where a new step starts before anybody has said otherwise.
@@ -113,6 +117,13 @@ data class ItemEditorUiState(
      * broken, and they are not wrong.
      */
     val saveFailed: Boolean = false,
+    /**
+     * The numbers this step has collected, oldest first.
+     *
+     * Asking for a number and never showing it back is a form, not a
+     * tracker. Empty for a new step and for one that asks for nothing.
+     */
+    val readings: ImmutableList<Double> = persistentListOf(),
 ) {
     /** The group this step is in, when it is in one. */
     val group: GroupChoice? get() = groups.firstOrNull { it.id == blockId }
@@ -180,6 +191,7 @@ data class ItemEditorUiState(
 class ItemEditorViewModel @Inject constructor(
     private val observePlan: ObservePlanUseCase,
     private val observeToday: ObserveTodayUseCase,
+    private val observeReadings: ObserveReadingsUseCase,
     private val saveItem: SaveItemUseCase,
     private val archiveItem: ArchiveItemUseCase,
     private val clock: ClockFormat,
@@ -224,7 +236,14 @@ class ItemEditorViewModel @Inject constructor(
 
         val context = EditorContext(parents.toImmutableList(), groups.toImmutableList(), landsAt, children)
 
-        _state.value = existing?.let { toState(it, context) } ?: newState(context)
+        _state.value = existing?.let { toState(it, context).copy(readings = readingsOf(it)) } ?: newState(context)
+    }
+
+    /** Read once. The editor is open for a minute, and nothing is logged from inside it. */
+    private suspend fun readingsOf(item: Item): ImmutableList<Double> = if (item.valueKind == ValueKind.NONE) {
+        persistentListOf()
+    } else {
+        observeReadings(item.id).first().map { it.value }.takeLast(READINGS_SHOWN).toImmutableList()
     }
 
     /** What the editor knows about the rest of the plan, kept out of the row it is editing. */

@@ -44,9 +44,6 @@ import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.enums.ValueKind
 
-private const val MIN_WEEKS = 1
-private const val MAX_WEEKS = 52
-
 /** A measured goal reads a series, and only these kinds are a series worth reading. */
 private val MEASURED_KINDS = listOf(ValueKind.WEIGHT_KG, ValueKind.REPS, ValueKind.PAGES, ValueKind.MINUTES)
 
@@ -59,9 +56,10 @@ private val MEASURED_KINDS = listOf(ValueKind.WEIGHT_KG, ValueKind.REPS, ValueKi
  * accumulate and a consistency goal is a rate to hold. Presenting them as one
  * form with a hidden switch would make three of the four confusing.
  *
- * The length is in weeks rather than as a target date. "In two months" is a
- * real thought; "by the 14th of March" is arithmetic somebody has to do
- * first, and doing arithmetic is not the mood in which anybody sets a goal.
+ * The length opens in weeks. "In two months" is a real thought; "by the 14th
+ * of March" is arithmetic somebody has to do first, and doing arithmetic is
+ * not the mood in which anybody sets a goal. The date is one tap away for
+ * the goals that really do belong to a day on the calendar.
  */
 @Composable
 internal fun GoalForm(draft: GoalDraft, items: List<GoalItemChoice>, onChange: (GoalDraft) -> Unit) {
@@ -206,22 +204,87 @@ private fun LengthSection(draft: GoalDraft, onChange: (GoalDraft) -> Unit) {
     Column {
         Kicker(text = stringResource(R.string.goal_form_length))
 
-        Stepper(
-            decrementLabel = stringResource(R.string.stepper_less),
-            incrementLabel = stringResource(R.string.stepper_more),
-            value = pluralStringResource(R.plurals.goal_form_weeks, draft.weeks, draft.weeks),
-            onDecrement = { onChange(draft.copy(weeks = (draft.weeks - 1).coerceAtLeast(MIN_WEEKS))) },
-            onIncrement = { onChange(draft.copy(weeks = (draft.weeks + 1).coerceAtMost(MAX_WEEKS))) },
+        SegmentedTabs(
+            options = listOf(
+                stringResource(R.string.goal_form_length_weeks),
+                stringResource(R.string.goal_form_length_date),
+            ),
+            selectedIndex = if (draft.byDate) 1 else 0,
+            onSelect = { index -> onChange(lengthMode(draft, byDate = index == 1)) },
+            stretch = true,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
         )
 
+        Box(modifier = Modifier.padding(top = Theme.spacing.inset)) {
+            if (draft.byDate) EndDateField(draft = draft, onChange = onChange) else WeeksStepper(draft, onChange)
+        }
+
         Text(
-            text = stringResource(R.string.goal_form_length_body),
+            text = if (draft.byDate) {
+                pluralStringResource(R.plurals.goal_form_days_long, draft.days, draft.days)
+            } else {
+                stringResource(R.string.goal_form_ends, draft.targetDate.format(longDate()))
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Theme.spacing.small),
+        )
+    }
+}
+
+/**
+ * Going back to weeks snaps the end onto a whole week.
+ *
+ * Otherwise the stepper would say "3 weeks" over a goal that ends in
+ * eighteen days, and the first tap on it would move the end by four days
+ * rather than seven.
+ */
+private fun lengthMode(draft: GoalDraft, byDate: Boolean): GoalDraft =
+    if (byDate) draft.copy(byDate = true) else (draft.endingAfter(draft.weeks) ?: draft).copy(byDate = false)
+
+@Composable
+private fun WeeksStepper(draft: GoalDraft, onChange: (GoalDraft) -> Unit) {
+    Stepper(
+        decrementLabel = stringResource(R.string.stepper_less),
+        incrementLabel = stringResource(R.string.stepper_more),
+        value = pluralStringResource(R.plurals.goal_form_weeks, draft.weeks, draft.weeks),
+        // A week that cannot be had leaves the draft as it is, rather than
+        // clamping to a date the user did not ask for.
+        onDecrement = { draft.endingAfter(draft.weeks - 1)?.let(onChange) },
+        onIncrement = { draft.endingAfter(draft.weeks + 1)?.let(onChange) },
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun EndDateField(draft: GoalDraft, onChange: (GoalDraft) -> Unit) {
+    var picking by remember { mutableStateOf(false) }
+
+    PickerField(
+        label = stringResource(R.string.goal_form_date_label),
+        value = draft.targetDate.format(longDate()),
+        onClick = { picking = true },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.KeyboardArrowDown,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+
+    if (picking) {
+        GoalDateDialog(
+            initial = draft.targetDate,
+            bounds = DateBounds(earliest = draft.earliestEnd, latest = draft.latestEnd),
+            onDismiss = { picking = false },
+            onPicked = {
+                onChange(draft.copy(targetDate = it))
+                picking = false
+            },
         )
     }
 }
