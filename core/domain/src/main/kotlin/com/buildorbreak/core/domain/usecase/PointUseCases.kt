@@ -4,8 +4,10 @@ import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.error.DomainError.DataError
+import com.buildorbreak.core.domain.goal.FreezeOffer
 import com.buildorbreak.core.domain.goal.Points
 import com.buildorbreak.core.domain.goal.Prices
+import com.buildorbreak.core.domain.goal.Streaks
 import com.buildorbreak.core.domain.repository.DayCloseRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.PointLedgerRepository
@@ -156,6 +158,25 @@ class ObserveFrozenDaysUseCase @Inject constructor(
 ) {
 
     operator fun invoke(): Flow<Set<LocalDate>> = ledger.observeDatesFor(PointReason.STREAK_FREEZE).map { it.toSet() }
+}
+
+/**
+ * The day a freeze is worth buying for right now, or null when there is none.
+ *
+ * The screen never picks the day. `Streaks` finds the one missed day that
+ * ended the run, and that is the only day on offer, so nobody can spend
+ * points on a day that would not bring the run back.
+ */
+class ObserveFreezeOfferUseCase @Inject constructor(
+    private val closes: DayCloseRepository,
+    private val frozenDays: ObserveFrozenDaysUseCase,
+    private val time: TimeProvider,
+    private val dispatchers: AppDispatchers,
+) {
+
+    operator fun invoke(): Flow<FreezeOffer?> = combine(closes.observeAll(), frozenDays()) { history, frozen ->
+        Streaks.freezeOffer(history, time.today(), frozen)
+    }.flowOn(dispatchers.default)
 }
 
 /**

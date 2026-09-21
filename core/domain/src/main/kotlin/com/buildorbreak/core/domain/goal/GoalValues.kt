@@ -22,6 +22,11 @@ fun GoalProgress.currentFor(goal: Goal): Double = when (goal.kind) {
     GoalKind.NUMBER, GoalKind.CONSISTENCY -> smoothedValue ?: rawValue ?: goal.startValue
 }
 
-/** The same question asked of a whole history. The newest counted row wins. */
-fun List<GoalProgress>.currentFor(goal: Goal): Double =
-    filter { it.counted }.maxByOrNull { it.date }?.currentFor(goal) ?: goal.startValue
+/**
+ * The same question asked of a whole history. The newest row wins.
+ *
+ * Whether or not its week counts. Leaving a week out is a statement about
+ * the rate, and where the goal stands is not a rate: what was done in that
+ * week was done.
+ */
+fun List<GoalProgress>.currentFor(goal: Goal): Double = maxByOrNull { it.date }?.currentFor(goal) ?: goal.startValue

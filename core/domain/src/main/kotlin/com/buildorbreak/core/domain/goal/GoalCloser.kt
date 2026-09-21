@@ -68,9 +68,14 @@ class GoalCloser @Inject constructor(
             ),
         )
 
-        sources.goals.upsertProgress(row)
+        // A day that is written again keeps what the user said about it. The
+        // writer only knows the day before, so the Monday of a week that was
+        // left out came back as counting every time a reading was corrected.
+        val kept = history.firstOrNull { it.date == date }?.let { row.copy(counted = it.counted) } ?: row
 
-        return GoalCloseResult(goal.id, calculator.percentComplete(goal, row.currentFor(goal), date))
+        sources.goals.upsertProgress(kept)
+
+        return GoalCloseResult(goal.id, calculator.percentComplete(goal, kept.currentFor(goal), date))
     }
 
     /**

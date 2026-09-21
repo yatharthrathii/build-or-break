@@ -71,14 +71,62 @@ class PaceProjectorTest {
     }
 
     @Test
-    fun `a week the user marked as not counting is left out of the rate`() {
+    fun `a week left out changes the rate, not where the goal stands`() {
+        // Three sessions in three days, then three days of flu with nothing done.
+        val counting = goal(kind = GoalKind.COUNT, targetValue = 12.0)
         val progress = listOf(
-            progress(date = start.plusDays(5), smoothedValue = 6.0),
-            progress(date = start.plusDays(8), smoothedValue = 1.0, counted = false),
+            progress(date = start.plusDays(3), cumulative = 3.0),
+            progress(date = start.plusDays(6), cumulative = 3.0, counted = false),
         )
 
-        // The uncounted day is the latest, but the rate still comes from day five.
-        assertThat(pace.project(goal(), progress)).isWithin(TOLERANCE).of(12.0)
+        // One a day while well, carried over the four days left: three plus four.
+        // Counting the flu it would have been three in six days, so five.
+        assertThat(pace.project(counting, progress)).isWithin(TOLERANCE).of(7.0)
+    }
+
+    @Test
+    fun `an older week left out still matters once newer days exist`() {
+        val counting = goal(kind = GoalKind.COUNT, targetValue = 12.0)
+        val progress = listOf(
+            progress(date = start.plusDays(3), cumulative = 3.0),
+            progress(date = start.plusDays(6), cumulative = 3.0, counted = false),
+            progress(date = start.plusDays(8), cumulative = 5.0),
+        )
+
+        // Five sessions over the five days that count is one a day, with two days to go.
+        assertThat(pace.project(counting, progress)).isWithin(TOLERANCE).of(7.0)
+    }
+
+    @Test
+    fun `what was done in a week left out is kept, only its pace is dropped`() {
+        val counting = goal(kind = GoalKind.COUNT, targetValue = 12.0)
+        val progress = listOf(
+            progress(date = start.plusDays(3), cumulative = 3.0),
+            progress(date = start.plusDays(6), cumulative = 4.0, counted = false),
+        )
+
+        // The one session done while ill is banked: four, plus one a day for four days.
+        assertThat(pace.project(counting, progress)).isWithin(TOLERANCE).of(8.0)
+    }
+
+    @Test
+    fun `a measured goal carries its healthy rate on from where it really is`() {
+        val progress = listOf(
+            progress(date = start.plusDays(5), smoothedValue = 6.0),
+            progress(date = start.plusDays(8), smoothedValue = 3.0, counted = false),
+        )
+
+        // The drop happened, so the line starts from three, not from six. The
+        // rate is the 1.2 a day from before it, over the two days that remain.
+        assertThat(pace.project(goal(), progress)).isWithin(TOLERANCE).of(5.4)
+    }
+
+    @Test
+    fun `with every day left out there is no rate, so the line stays flat`() {
+        val counting = goal(kind = GoalKind.COUNT, targetValue = 12.0)
+        val progress = listOf(progress(date = start.plusDays(4), cumulative = 2.0, counted = false))
+
+        assertThat(pace.project(counting, progress)).isWithin(TOLERANCE).of(2.0)
     }
 
     @Test
