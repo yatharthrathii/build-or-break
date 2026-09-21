@@ -63,6 +63,13 @@ private val TimeColumn = 74.dp
  * about. The contrast is stated plainly because the difference between this
  * app and the twenty next to it in search results is genuinely one behaviour,
  * and nobody will find it by exploring.
+ *
+ * It says that once. An earlier version said it three times, in the body, in
+ * the contrast and again in the first point, ran to a hundred and thirty
+ * words, and pushed its own third point off the bottom of a Pixel 8. Nobody
+ * reads a wall on the first screen of an app they have not decided to keep.
+ * Every line here is one sentence, and the points are their titles alone:
+ * each of them is shown properly, with the real thing, on a later screen.
  */
 @Composable
 internal fun WelcomeStep() {
@@ -121,9 +128,9 @@ private fun BeforeAndAfter() {
 private fun ThreePoints() {
     Column(modifier = Modifier.padding(top = 24.dp)) {
         HeavyRule()
-        Point(number = "01", title = R.string.onboarding_point_1_title, body = R.string.onboarding_point_1_body)
-        Point(number = "02", title = R.string.onboarding_point_2_title, body = R.string.onboarding_point_2_body)
-        Point(number = "03", title = R.string.onboarding_point_3_title, body = R.string.onboarding_point_3_body)
+        Point(number = "01", title = R.string.onboarding_point_1_title)
+        Point(number = "02", title = R.string.onboarding_point_2_title)
+        Point(number = "03", title = R.string.onboarding_point_3_title)
     }
 }
 
@@ -163,8 +170,8 @@ private fun Rise(shown: Boolean, order: Int, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Point(number: String, @StringRes title: Int, @StringRes body: Int) {
-    Row(modifier = Modifier.padding(vertical = 15.dp)) {
+private fun Point(number: String, @StringRes title: Int) {
+    Row(modifier = Modifier.padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = number,
             style = MaterialTheme.typography.titleLarge,
@@ -172,20 +179,11 @@ private fun Point(number: String, @StringRes title: Int, @StringRes body: Int) {
             modifier = Modifier.padding(end = 12.dp),
         )
 
-        Column {
-            Text(
-                text = stringResource(title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Text(
-                text = stringResource(body),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
+        Text(
+            text = stringResource(title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 
     HairlineRule()

@@ -70,6 +70,29 @@ data class GoalProgressEntity(
     val counted: Boolean,
 )
 
+/**
+ * A week the user left out of a goal. The row existing is the whole fact.
+ *
+ * Its own table rather than only the flag on each day, because a week can be
+ * left out before it has any days. [weekStart] is always a Monday.
+ */
+@Entity(
+    tableName = "goal_week_skip",
+    primaryKeys = ["goal_id", "week_start"],
+    foreignKeys = [
+        ForeignKey(
+            entity = GoalEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["goal_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class GoalWeekSkipEntity(
+    @ColumnInfo(name = "goal_id") val goalId: Long,
+    @ColumnInfo(name = "week_start") val weekStart: LocalDate,
+)
+
 /** How a finished day went. Written once, at the daily close. */
 @Entity(tableName = "day_close", indices = [Index("plan_id"), Index("quality")])
 data class DayCloseEntity(

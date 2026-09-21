@@ -17,6 +17,8 @@ dependencies {
     implementation(libs.androidx.glance.material3)
 
     testImplementation(projects.core.testing)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.ext.junit)
 }
 
 // Glance home screen widget. One size that works, not five that are mediocre.

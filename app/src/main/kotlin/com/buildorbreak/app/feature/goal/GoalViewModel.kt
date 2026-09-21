@@ -8,8 +8,10 @@ import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.goal.GoalSnapshot
 import com.buildorbreak.core.domain.goal.GoalStanding
 import com.buildorbreak.core.domain.goal.GoalWeek
+import com.buildorbreak.core.domain.usecase.ObserveGoalCostUseCase
 import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
+import com.buildorbreak.core.domain.usecase.ObserveWalletUseCase
 import com.buildorbreak.core.domain.usecase.PlanItemChoice
 import com.buildorbreak.core.domain.usecase.RetireGoalUseCase
 import com.buildorbreak.core.domain.usecase.SaveGoalUseCase
@@ -86,9 +88,21 @@ data class GoalDraft(
      * edited into yesterday would finish the moment it was saved.
      */
     val earliestEnd: LocalDate = startDate.plusDays(1),
+    /** What saving this will cost. Zero for the first goal and for every edit. */
+    val cost: Int = 0,
+    /** Points in hand, so the form can say so beside the price. */
+    val balance: Int = 0,
+    /** The finished goal this one takes over from, which is retired as it is saved. */
+    val replaces: Long? = null,
 ) {
-    /** A year. Past that a goal is a wish, and the pace line is too flat to read. */
-    val latestEnd: LocalDate get() = startDate.plusDays(MAX_WEEKS * DAYS_PER_WEEK)
+    /**
+     * A year. Past that a goal is a wish, and the pace line is too flat to read.
+     *
+     * Never before [earliestEnd]. A goal that began a year ago has a year that
+     * ends in the past, and a range that ends before it starts is an exception
+     * the moment the calendar is opened on it, not an empty calendar.
+     */
+    val latestEnd: LocalDate get() = maxOf(startDate.plusDays(MAX_WEEKS * DAYS_PER_WEEK), earliestEnd)
 
     val days: Int get() = ChronoUnit.DAYS.between(startDate, targetDate).toInt()
 
@@ -112,6 +126,7 @@ data class GoalDraft(
 
     val blocker: GoalBlocker?
         get() = when {
+            cost > balance -> GoalBlocker.NO_POINTS
             title.isBlank() -> GoalBlocker.NO_TITLE
             target == null -> GoalBlocker.NO_TARGET
             needsStart && start == null -> GoalBlocker.NO_START
@@ -125,7 +140,23 @@ data class GoalDraft(
 }
 
 /** Why Save is off. Facts; the screen has the words. */
-enum class GoalBlocker { NO_TITLE, NO_TARGET, NO_START, NO_ITEM, GOES_NOWHERE }
+enum class GoalBlocker { NO_TITLE, NO_TARGET, NO_START, NO_ITEM, GOES_NOWHERE, NO_POINTS }
+
+/** One running goal, as a tab. Only drawn when there are two. */
+@Immutable
+data class GoalTabUi(val id: Long, val title: String)
+
+/**
+ * The offer of a second goal: what it costs, and what there is to pay with.
+ *
+ * Null on the state when there is nothing to offer, which is when there is
+ * no goal yet (the first is free and has its own button) and when two are
+ * already running.
+ */
+@Immutable
+data class SecondGoalUi(val cost: Int, val balance: Int) {
+    val affordable: Boolean get() = balance >= cost
+}
 
 /**
  * The goal as it stands, or the form for writing one.
@@ -140,6 +171,9 @@ data class GoalUiState(
     val draft: GoalDraft?,
     val items: ImmutableList<GoalItemChoice>,
     val saveFailed: Boolean = false,
+    /** Every running goal. [goal] is the one of these being looked at. */
+    val tabs: ImmutableList<GoalTabUi> = persistentListOf(),
+    val second: SecondGoalUi? = null,
 ) {
     val isEditing: Boolean get() = draft != null
 
@@ -203,6 +237,8 @@ data class GoalCardUi(
 @HiltViewModel
 class GoalViewModel @Inject constructor(
     observeGoal: ObserveGoalUseCase,
+    observeCost: ObserveGoalCostUseCase,
+    observeWallet: ObserveWalletUseCase,
     private val observePlan: ObservePlanUseCase,
     private val saveGoal: SaveGoalUseCase,
     private val retireGoal: RetireGoalUseCase,
@@ -213,14 +249,32 @@ class GoalViewModel @Inject constructor(
     private val draft = MutableStateFlow<GoalDraft?>(null)
     private val failed = MutableStateFlow(false)
 
+    /** The goal being looked at. Null is the first, which is the only one most people have. */
+    private val selected = MutableStateFlow<Long?>(null)
+
+    /** The running goals and which is in front, together, because a tab is both. */
+    private data class Shown(val cards: List<GoalCardUi>, val front: GoalCardUi?)
+
+    private val shown = combine(observeGoal.all(), selected) { snapshots, chosen ->
+        val cards = snapshots.map(::toCard)
+        Shown(cards = cards, front = cards.firstOrNull { it.id == chosen } ?: cards.firstOrNull())
+    }
+
+    /** Null when no second goal is on offer: none yet, or two already. */
+    private val second = combine(observeCost(), observeWallet()) { cost, wallet ->
+        SecondGoalUi(cost = cost.points, balance = wallet.balance).takeIf { cost.points > 0 && !cost.atLimit }
+    }
+
     val state: StateFlow<GoalUiState> =
-        combine(observeGoal(), observePlan.allItems(), draft, failed) { snapshot, steps, editing, failure ->
+        combine(shown, observePlan.allItems(), draft, failed, second) { goals, steps, editing, failure, offer ->
             GoalUiState(
                 loaded = true,
-                goal = snapshot?.let(::toCard),
+                goal = goals.front,
                 draft = editing,
                 items = choicesOf(steps),
                 saveFailed = failure,
+                tabs = goals.cards.map { GoalTabUi(it.id, it.title) }.toImmutableList(),
+                second = offer,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -243,10 +297,31 @@ class GoalViewModel @Inject constructor(
             .toImmutableList()
     }
 
-    /** Opens the form on a blank goal, starting today. */
+    fun onSelect(goalId: Long) {
+        selected.value = goalId
+    }
+
+    /**
+     * Opens the form on a blank goal, starting today.
+     *
+     * What it will cost is worked out here, once, from what the screen is
+     * showing. A finished goal is replaced, and its successor is free like it
+     * was. A goal started beside one that is still running is the second, and
+     * carries the price the button quoted.
+     */
     fun onNew() {
         val today = time.today()
-        draft.value = GoalDraft(startDate = today, earliestEnd = today.plusDays(1))
+        val front = state.value.goal
+        val replaces = front?.id.takeIf { front?.isFinished == true }
+        val offer = state.value.second.takeIf { front != null && replaces == null }
+
+        draft.value = GoalDraft(
+            startDate = today,
+            earliestEnd = today.plusDays(1),
+            cost = offer?.cost ?: 0,
+            balance = offer?.balance ?: 0,
+            replaces = replaces,
+        )
         failed.value = false
     }
 
@@ -290,10 +365,15 @@ class GoalViewModel @Inject constructor(
         val current = draft.value ?: return@launch
         if (!current.canSave) return@launch
 
-        val written = saveGoal(toGoal(current)) is Outcome.Success
+        val written = saveGoal(toGoal(current), replaces = current.replaces)
 
-        if (written) draft.value = null
-        failed.value = !written
+        if (written is Outcome.Success) {
+            draft.value = null
+            // The goal just written comes to the front. Saving a second goal
+            // and landing back on the first looked like nothing had happened.
+            selected.value = written.value
+        }
+        failed.value = written !is Outcome.Success
     }
 
     /** Leaves a week out of the goal, or puts it back. The days themselves are untouched. */

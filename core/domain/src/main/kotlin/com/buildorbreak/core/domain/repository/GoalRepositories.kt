@@ -12,17 +12,21 @@ import kotlinx.coroutines.flow.Flow
 
 /** Goals and their per day progress. architecture.md section 5.2. */
 interface GoalRepository {
+    /** The first goal that is running, oldest first. The one a screen with room for one shows. */
     fun observeActive(planId: Long): Flow<Goal?>
+
+    /** Every goal that is running, oldest first. Never more than `Prices.MAX_GOALS`. */
+    fun observeAllActive(planId: Long): Flow<List<Goal>>
 
     suspend fun byId(goalId: Long): Goal?
 
     /**
-     * Writes a goal and makes it the only active one on its plan.
+     * Writes a goal, and touches no other.
      *
-     * The two happen together because they are one decision. Two active goals
-     * on the free tier would make every screen that says "the goal" ambiguous,
-     * and a save that left the old one active would produce exactly that state
-     * with no way for the user to see it had happened.
+     * It used to retire every other goal on the plan, because only one was
+     * allowed. How many may run at once is a rule now, with a price attached,
+     * and rules live in `SaveGoalUseCase`. Left here it would also have
+     * retired the first goal every time a backup holding two was restored.
      */
     suspend fun upsert(goal: Goal): Outcome<Long, DataError>
 
@@ -36,8 +40,15 @@ interface GoalRepository {
     /**
      * Marks a week as not counting. Illness and travel should not permanently
      * bend a projection the user never agreed to.
+     *
+     * The week is remembered in its own right, not only on the days it
+     * already has. Somebody who falls ill on a Monday morning has a week with
+     * no days in it yet, and that is exactly the week they want to leave out.
      */
     suspend fun setWeekCounted(goalId: Long, week: LocalDate, counted: Boolean): Outcome<Unit, DataError>
+
+    /** The Mondays of every week left out of this goal. */
+    fun observeLeftOutWeeks(goalId: Long): Flow<Set<LocalDate>>
 }
 
 interface DayCloseRepository {

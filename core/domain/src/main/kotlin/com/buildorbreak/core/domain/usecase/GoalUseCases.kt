@@ -7,6 +7,7 @@ import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.goal.GoalCalculator
 import com.buildorbreak.core.domain.goal.GoalSnapshot
 import com.buildorbreak.core.domain.goal.GoalWeek
+import com.buildorbreak.core.domain.goal.Prices
 import com.buildorbreak.core.domain.goal.currentFor
 import com.buildorbreak.core.domain.repository.GoalRepository
 import com.buildorbreak.core.domain.repository.ItemRepository
@@ -14,6 +15,7 @@ import com.buildorbreak.core.domain.repository.MeasurementRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.model.enums.GoalKind
+import com.buildorbreak.core.model.enums.PointReason
 import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.goal.Goal
 import com.buildorbreak.core.model.goal.GoalProgress
@@ -64,12 +66,27 @@ class ObserveGoalUseCase @Inject constructor(
         .flatMapLatest { goal -> if (goal == null) flowOf(null) else snapshots(goal) }
         .flowOn(dispatchers.default)
 
+    /**
+     * Every running goal, oldest first. Empty is the ordinary state.
+     *
+     * [invoke] stays for the screens with room for one line about one goal,
+     * and answers with the first of these.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun all(): Flow<List<GoalSnapshot>> = plans.observeActive()
+        .flatMapLatest { plan -> if (plan == null) flowOf(emptyList()) else goals.observeAllActive(plan.id) }
+        .flatMapLatest { running ->
+            if (running.isEmpty()) flowOf(emptyList()) else combine(running.map(::snapshots)) { it.toList() }
+        }
+        .flowOn(dispatchers.default)
+
     private fun snapshots(goal: Goal): Flow<GoalSnapshot> = combine(
         goals.observeProgress(goal.id),
+        goals.observeLeftOutWeeks(goal.id),
         today.contributionTo(goal),
         today.readingFor(goal),
-    ) { rows, sinceMidnight, reading ->
-        snapshotOf(goal, rows, sinceMidnight, reading)
+    ) { rows, leftOut, sinceMidnight, reading ->
+        snapshotOf(goal, rows, sinceMidnight, reading).copy(weeks = weeksOf(goal, rows, leftOut))
     }
 
     private fun snapshotOf(
@@ -109,19 +126,30 @@ class ObserveGoalUseCase @Inject constructor(
             hasProjection = closed && rows.maxByOrNull { it.date }?.let { goal.daysElapsed(it.date) > 0 } == true,
             on = today,
             todayReading = reading,
-            weeks = weeksOf(rows),
         )
     }
 
     /**
-     * From every row, not only the counted ones, or a week that was left out
-     * would vanish from the list and could never be put back.
+     * This week, and the recent weeks that have days in them.
+     *
+     * This week is always offered while the goal is running, days or no
+     * days: the morning somebody wakes up ill is the morning they open this
+     * screen, and it is usually a Monday. Whether a week counts is read from
+     * the list of weeks left out, never from the days, so a week with
+     * nothing in it yet can still be switched off and stay off.
      */
-    private fun weeksOf(rows: List<GoalProgress>): List<GoalWeek> = rows
-        .groupBy { it.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
-        .map { (monday, days) -> GoalWeek(start = monday, counted = days.any { it.counted }) }
-        .sortedByDescending { it.start }
-        .take(WEEKS_SHOWN)
+    private fun weeksOf(goal: Goal, rows: List<GoalProgress>, leftOut: Set<LocalDate>): List<GoalWeek> {
+        val today = time.today()
+        val running = today >= goal.startDate && today <= goal.targetDate
+
+        return (rows.map { mondayOf(it.date) } + listOfNotNull(mondayOf(today).takeIf { running }))
+            .distinct()
+            .sortedDescending()
+            .take(WEEKS_SHOWN)
+            .map { GoalWeek(start = it, counted = it !in leftOut) }
+    }
+
+    private fun mondayOf(date: LocalDate): LocalDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
     private fun trailOf(goal: Goal, rows: List<GoalProgress>): List<Double> = rows
         .sortedBy { it.date }
@@ -204,30 +232,87 @@ class GoalToday @Inject constructor(
 }
 
 /**
- * Writes the one goal a plan is allowed.
+ * Writes a goal, and keeps the rules about how many there may be.
  *
- * Saving a goal retires whichever one was active, in the same transaction, for
- * the reason in `GoalDao.upsertAsOnlyActive`. Refuses a goal that goes nowhere:
- * a start and a target that are equal on a NUMBER goal is a typo, and it would
- * produce a progress bar that is either empty or full forever.
+ * The first goal is free. A second running beside it costs points, and there
+ * is no third. An edit is never charged and never refused, however many are
+ * running: the rules are about starting a goal, not about fixing a typo in
+ * one.
+ *
+ * [replaces] is the goal this one takes over from, which is how "set a new
+ * goal" works once the old one has finished. It does not count against the
+ * new one, so the successor to a finished goal is free like the goal it
+ * follows.
+ *
+ * Points are taken before the write, as everywhere else they are spent. A
+ * spend that succeeded against a save that then failed would charge for
+ * nothing. Refuses a goal that goes nowhere: a start and a target that are
+ * equal on a NUMBER goal is a typo, and it would produce a progress bar that
+ * is either empty or full forever.
  */
 class SaveGoalUseCase @Inject constructor(
+    private val plans: PlanRepository,
+    private val goals: GoalRepository,
+    private val spend: SpendPointsUseCase,
+    private val dispatchers: AppDispatchers,
+) {
+
+    suspend operator fun invoke(goal: Goal, replaces: Long? = null): Outcome<Long, DataError> =
+        withContext(dispatchers.io) {
+            if (goal.targetDate <= goal.startDate || !goal.isWellFormed) {
+                return@withContext Outcome.Failure(DataError.ConstraintViolation)
+            }
+
+            val planId = goal.planId.takeIf { it > 0 }
+                ?: plans.observeActive().first()?.id
+                ?: return@withContext Outcome.Failure(DataError.NotFound)
+
+            if (goal.id == 0L) {
+                val refused = makeRoomFor(planId, replaces)
+                if (refused != null) return@withContext refused
+            }
+
+            goals.upsert(goal.copy(planId = planId, isActive = true))
+        }
+
+    /** Null when the new goal may be written. Otherwise why not. */
+    private suspend fun makeRoomFor(planId: Long, replaces: Long?): Outcome.Failure<DataError>? {
+        val running = goals.observeAllActive(planId).first().filterNot { it.id == replaces }
+        if (running.size >= Prices.MAX_GOALS) return Outcome.Failure(DataError.ConstraintViolation)
+
+        if (running.size >= Prices.FREE_GOALS) {
+            val paid = spend(PointReason.SECOND_GOAL)
+            if (paid is Outcome.Failure) return Outcome.Failure(paid.reason)
+        }
+
+        // Only once the new goal is certain to be allowed. Retiring first and
+        // then failing on points would have cost somebody their old goal.
+        replaces?.let { goals.deactivate(it) }
+
+        return null
+    }
+}
+
+/** What starting one more goal would cost, and whether one more is allowed at all. */
+data class GoalCost(val points: Int, val atLimit: Boolean)
+
+/** The price of the next goal, for the button that offers it. */
+class ObserveGoalCostUseCase @Inject constructor(
     private val plans: PlanRepository,
     private val goals: GoalRepository,
     private val dispatchers: AppDispatchers,
 ) {
 
-    suspend operator fun invoke(goal: Goal): Outcome<Long, DataError> = withContext(dispatchers.io) {
-        if (goal.targetDate <= goal.startDate || !goal.isWellFormed) {
-            return@withContext Outcome.Failure(DataError.ConstraintViolation)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    operator fun invoke(): Flow<GoalCost> = plans.observeActive()
+        .flatMapLatest { plan -> if (plan == null) flowOf(emptyList()) else goals.observeAllActive(plan.id) }
+        .map { running ->
+            GoalCost(
+                points = if (running.size >= Prices.FREE_GOALS) Prices.SECOND_GOAL else 0,
+                atLimit = running.size >= Prices.MAX_GOALS,
+            )
         }
-
-        val planId = goal.planId.takeIf { it > 0 }
-            ?: plans.observeActive().first()?.id
-            ?: return@withContext Outcome.Failure(DataError.NotFound)
-
-        goals.upsert(goal.copy(planId = planId, isActive = true))
-    }
+        .flowOn(dispatchers.default)
 }
 
 /** Retires the active goal. Its history stays, because it happened. */

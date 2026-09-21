@@ -211,21 +211,31 @@ class GoalProgressWriterTest {
     }
 
     @Test
-    fun `a week marked as not counting stays not counting the next day`() {
-        val previous = progress(date = start, counted = false)
-
-        val row = writer.rowFor(day(GoalKind.COUNT, start.plusDays(1), previous = previous))
+    fun `a day in a week that was left out is written as left out`() {
+        // The first of January 2026 is a Thursday, in the week of the 29th.
+        val row = writer.rowFor(day(GoalKind.COUNT, start).copy(leftOutWeeks = setOf(LocalDate.of(2025, 12, 29))))
 
         assertThat(row.counted).isFalse()
     }
 
     @Test
-    fun `a new week starts counting again`() {
-        // 4 January 2026 is a Sunday; the fifth is the Monday after it.
-        val sunday = LocalDate.of(2026, 1, 4)
-        val previous = progress(date = sunday, counted = false)
+    fun `the first day of a left out week is left out too, with no yesterday to copy from`() {
+        val monday = LocalDate.of(2026, 1, 5)
+        val sunday = progress(date = monday.minusDays(1))
 
-        val row = writer.rowFor(day(GoalKind.COUNT, sunday.plusDays(1), previous = previous))
+        val row = writer.rowFor(day(GoalKind.COUNT, monday, previous = sunday).copy(leftOutWeeks = setOf(monday)))
+
+        assertThat(row.counted).isFalse()
+    }
+
+    @Test
+    fun `the week after a left out week counts again`() {
+        val monday = LocalDate.of(2026, 1, 5)
+        val sunday = progress(date = monday.minusDays(1), counted = false)
+
+        val row = writer.rowFor(
+            day(GoalKind.COUNT, monday, previous = sunday).copy(leftOutWeeks = setOf(monday.minusDays(7))),
+        )
 
         assertThat(row.counted).isTrue()
     }

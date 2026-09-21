@@ -12,8 +12,6 @@ import com.buildorbreak.core.domain.export.ExportGoal
 import com.buildorbreak.core.domain.export.ExportItem
 import com.buildorbreak.core.domain.export.ExportReader
 import com.buildorbreak.core.domain.export.ExportTemplate
-import com.buildorbreak.core.domain.gateway.AlarmGateway
-import com.buildorbreak.core.domain.gateway.WidgetGateway
 import com.buildorbreak.core.domain.repository.ResetRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.model.enums.AnchorType
@@ -83,10 +81,8 @@ class RestoreBackupUseCase @Inject constructor(
     private val reader: ExportReader,
     private val reset: ResetRepository,
     private val sources: BackupSources,
+    private val after: RestoreAftermath,
     private val settings: SettingsRepository,
-    private val reschedule: RescheduleAllUseCase,
-    private val alarms: AlarmGateway,
-    private val widget: WidgetGateway,
     private val time: TimeProvider,
     private val dispatchers: AppDispatchers,
 ) {
@@ -107,8 +103,8 @@ class RestoreBackupUseCase @Inject constructor(
         document.goals.forEach { writeGoal(it, planId, itemIds) }
         writeHistory(document, planId, itemIds)
 
-        reschedule()
-        widget.refresh()
+        after.reschedule()
+        after.widget.refresh()
 
         Outcome.Success(
             RestoreSummary(
@@ -137,7 +133,7 @@ class RestoreBackupUseCase @Inject constructor(
      */
     private suspend fun clearEverything() {
         val today = time.today()
-        sources.occurrences.between(today.minusDays(1), today.plusDays(1)).forEach { alarms.cancel(it.id) }
+        sources.occurrences.between(today.minusDays(1), today.plusDays(1)).forEach { after.alarms.cancel(it.id) }
 
         val theme = settings.themeMode.first()
         val tolerance = settings.lateTolerance.first()
@@ -235,8 +231,15 @@ class RestoreBackupUseCase @Inject constructor(
             }
     }
 
+    /**
+     * The goal, then the weeks left out of it, in that order.
+     *
+     * The weeks go in before any history does. The goal's daily rows are
+     * rebuilt at the end of the restore, and each one asks whether its week
+     * counts as it is written.
+     */
     private suspend fun writeGoal(source: ExportGoal, planId: Long, itemIds: Map<Long, Long>) {
-        sources.goals.upsert(
+        val written = sources.goals.upsert(
             Goal(
                 id = 0,
                 planId = planId,
@@ -251,6 +254,11 @@ class RestoreBackupUseCase @Inject constructor(
                 isActive = source.isActive,
             ),
         )
+
+        val goalId = (written as? Outcome.Success)?.value ?: return
+        source.leftOutWeeks.mapNotNull { it.toDateOrNull() }.forEach { week ->
+            sources.goals.setWeekCounted(goalId, week, counted = false)
+        }
     }
 
     /** What happened, as opposed to what was planned, in the order it depends on. */
@@ -259,6 +267,23 @@ class RestoreBackupUseCase @Inject constructor(
         writeReadings(document, itemIds)
         writeBadges(document)
         writeCloses(document, planId)
+        rebuildGoalHistory(document)
+    }
+
+    /**
+     * Works the goals' daily rows out again, from the first day any of them ran.
+     *
+     * They are not in the file, because they are derived: every one can be
+     * rebuilt from the steps, the readings and the closes that are. Nothing
+     * did rebuild them, though. The nightly close only looks forward from the
+     * last day it closed, and that day had just been restored, so a goal came
+     * back from a backup at nought percent with its whole history in the
+     * tables underneath it.
+     */
+    private suspend fun rebuildGoalHistory(document: ExportDocument) {
+        val earliest = document.goals.mapNotNull { it.startDate.toDateOrNull() }.minOrNull() ?: return
+
+        after.recompute(earliest)
     }
 
     private suspend fun writeOccurrences(document: ExportDocument, itemIds: Map<Long, Long>) {

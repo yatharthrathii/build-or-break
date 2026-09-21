@@ -8,6 +8,7 @@ import com.buildorbreak.core.domain.fake.FakeItemRepository
 import com.buildorbreak.core.domain.fake.FakeMeasurementRepository
 import com.buildorbreak.core.domain.fake.FakeOccurrenceRepository
 import com.buildorbreak.core.domain.fake.FakePlanRepository
+import com.buildorbreak.core.domain.fake.FakePointLedgerRepository
 import com.buildorbreak.core.domain.goal.DefaultGoalCalculator
 import com.buildorbreak.core.domain.goal.GoalCloser
 import com.buildorbreak.core.domain.goal.GoalProgressWriter
@@ -63,7 +64,10 @@ class GoalUseCasesTest {
 
     private val today = GoalToday(occurrences, measurements, items, time)
     private val observe = ObserveGoalUseCase(plans, goals, today, calculator, time, dispatchers)
-    private val save = SaveGoalUseCase(plans, goals, dispatchers)
+    private val ledger = FakePointLedgerRepository()
+    private val wallet = ObserveWalletUseCase(closes, ledger, time, dispatchers)
+    private val spend = SpendPointsUseCase(wallet, ledger, time, dispatchers)
+    private val save = SaveGoalUseCase(plans, goals, spend, dispatchers)
     private val retire = RetireGoalUseCase(goals, dispatchers)
 
     private val closer = GoalCloser(
@@ -163,9 +167,10 @@ class GoalUseCasesTest {
     @Test
     fun `the weeks are listed newest first, each with whether it counts`() = runTest {
         givenAPlan()
-        goals.upsert(goal(kind = GoalKind.COUNT))
+        val goalId = (goals.upsert(goal(kind = GoalKind.COUNT)) as Outcome.Success).value
         goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(3), cumulative = 3.0))
-        goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(5), cumulative = 5.0, counted = false))
+        goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(5), cumulative = 5.0))
+        goals.setWeekCounted(goalId, LocalDate.of(2026, 1, 5), counted = false)
 
         // The first of January 2026 is a Thursday, so its week began on the 29th.
         assertThat(observe().first()!!.weeks).containsExactly(
@@ -177,12 +182,37 @@ class GoalUseCasesTest {
     @Test
     fun `a week that was left out is still listed, so it can be put back`() = runTest {
         givenAPlan()
-        goals.upsert(goal(kind = GoalKind.COUNT))
-        goals.upsertProgress(progress(date = GoalFixtures.START, cumulative = 1.0, counted = false))
+        val goalId = (goals.upsert(goal(kind = GoalKind.COUNT)) as Outcome.Success).value
+        goals.upsertProgress(progress(date = GoalFixtures.START, cumulative = 1.0))
+        goals.setWeekCounted(goalId, LocalDate.of(2025, 12, 29), counted = false)
 
-        assertThat(observe().first()!!.weeks).containsExactly(
-            GoalWeek(start = LocalDate.of(2025, 12, 29), counted = false),
-        )
+        assertThat(observe().first()!!.weeks).contains(GoalWeek(start = LocalDate.of(2025, 12, 29), counted = false))
+    }
+
+    @Test
+    fun `this week can be left out before it has a single day in it`() = runTest {
+        givenAPlan()
+        val goalId = (goals.upsert(goal(kind = GoalKind.COUNT)) as Outcome.Success).value
+
+        // Today is the sixth of January, a Tuesday, and nothing has been closed.
+        val thisWeek = LocalDate.of(2026, 1, 5)
+        assertThat(observe().first()!!.weeks).containsExactly(GoalWeek(start = thisWeek, counted = true))
+
+        goals.setWeekCounted(goalId, thisWeek, counted = false)
+
+        assertThat(observe().first()!!.weeks).containsExactly(GoalWeek(start = thisWeek, counted = false))
+    }
+
+    @Test
+    fun `a day closed inside a week left out in advance is written as left out`() = runTest {
+        givenAPlan()
+        val goalId = (goals.upsert(goal(kind = GoalKind.COUNT, itemId = ITEM_ID)) as Outcome.Success).value
+        goals.setWeekCounted(goalId, LocalDate.of(2026, 1, 5), counted = false)
+        occurrences.occurrences.value = listOf(done(ITEM_ID, LocalDate.of(2026, 1, 5)))
+
+        closer.close(PlanFixtures.PLAN_ID, LocalDate.of(2026, 1, 5))
+
+        assertThat(goals.progress.value.single().counted).isFalse()
     }
 
     @Test
@@ -256,15 +286,6 @@ class GoalUseCasesTest {
     // Saving ------------------------------------------------------------------
 
     @Test
-    fun `saving a goal makes it the only active one`() = runTest {
-        givenAPlan()
-        save(goal(id = 0, title = "First"))
-        save(goal(id = 0, title = "Second"))
-
-        assertThat(goals.goals.value.filter { it.isActive }.map { it.title }).containsExactly("Second")
-    }
-
-    @Test
     fun `a goal that ends before it starts is refused rather than saved`() = runTest {
         givenAPlan()
 
@@ -297,7 +318,7 @@ class GoalUseCasesTest {
         val result = closer.close(PlanFixtures.PLAN_ID, GoalFixtures.START)
 
         assertThat(goals.progress.value).hasSize(1)
-        assertThat(result!!.percent).isEqualTo(0.25f)
+        assertThat(result.single().percent).isEqualTo(0.25f)
     }
 
     @Test
@@ -336,7 +357,7 @@ class GoalUseCasesTest {
 
         val result = closer.close(PlanFixtures.PLAN_ID, GoalFixtures.START.minusDays(1))
 
-        assertThat(result).isNull()
+        assertThat(result).isEmpty()
         assertThat(goals.progress.value).isEmpty()
     }
 
@@ -344,7 +365,7 @@ class GoalUseCasesTest {
     fun `with no goal a close reports nothing and does not fail`() = runTest {
         givenAPlan()
 
-        assertThat(closer.close(PlanFixtures.PLAN_ID, GoalFixtures.START)).isNull()
+        assertThat(closer.close(PlanFixtures.PLAN_ID, GoalFixtures.START)).isEmpty()
     }
 
     @Test

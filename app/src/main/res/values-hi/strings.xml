@@ -25,17 +25,14 @@
     <string name="onboarding_failed">सेव नहीं हो पाया। फिर से कोशिश करें।</string>
 
     <string name="onboarding_welcome_title">ऐसा रूटीन ऐप\nजो आपके साथ चलता है।</string>
-    <string name="onboarding_welcome_body">अपनी रोज़ की रूटीन एक बार लिखें। ऐप हर स्टेप सही समय पर याद दिलाता है। अगर आप लेट हो जाएँ, तो बाकी दिन आपके लिए आगे खिसका देता है और बताता है कि क्या खिसकाया।</string>
+    <string name="onboarding_welcome_body">अपनी रूटीन एक बार लिखें। आप लेट हुए, तो बाकी दिन आपके साथ खिसक जाता है।</string>
     <string name="onboarding_before_kicker">दूसरे ऐप में</string>
-    <string name="onboarding_before_body">आप 40 मिनट लेट उठते हैं। नौ अलार्म अब भी पुराने समय पर बजते हैं। ज़्यादातर छूट जाते हैं, पूरी सुबह पिछड़े हुए लगते हैं, और गुरुवार तक ऐप म्यूट।</string>
+    <string name="onboarding_before_body">आप लेट उठते हैं। नौ अलार्म फिर भी पुराने टाइम पर बजते हैं।</string>
     <string name="onboarding_after_kicker">इस ऐप में</string>
-    <string name="onboarding_after_body">आप Running late दबाते हैं। हर स्टेप 40 मिनट आगे। जिम वहीं रहता है, क्योंकि वह बुक है। जो कर लिया, उसका अलार्म नहीं बजता।</string>
+    <string name="onboarding_after_body">आप Running late दबाते हैं। पूरा दिन खिसक जाता है। जो बुक है, वह वहीं रहता है।</string>
     <string name="onboarding_point_1_title">स्टेप जो एक-दूसरे के पीछे चलते हैं</string>
-    <string name="onboarding_point_1_body">समय सेट करें, या कहें जिम के 20 मिनट बाद, या एक विंडो दें। एक स्टेप खिसकाएँ, उसके बाद वाले साथ खिसकते हैं।</string>
     <string name="onboarding_point_2_title">अलार्म जो सच में जगाते हैं</string>
-    <string name="onboarding_point_2_body">पूरी स्क्रीन, बढ़ती आवाज़, लॉक स्क्रीन से ही बंद। ऐप आपके फ़ोन की सेटिंग जाँचता है और बताता है अगर कुछ इसे रोकेगा।</string>
     <string name="onboarding_point_3_title">आपका डेटा आपके फ़ोन पर रहता है</string>
-    <string name="onboarding_point_3_body">न अकाउंट। न इंटरनेट। कुछ भी कहीं अपलोड नहीं होता।</string>
 
     <string name="onboarding_start_title">आप क्या बनाना\nचाहते हैं?</string>
     <string name="onboarding_start_body">एक चुनें। आपको तैयार दिन मिलता है जिसे आप कभी भी बदल सकते हैं।</string>
@@ -694,6 +691,10 @@
     <string name="goal_week_counts">गिना जाएगा</string>
     <string name="goal_week_left_out">छोड़ा गया</string>
     <string name="goal_week_dated">%1$s · %2$s</string>
+    <string name="goal_second_body">आप इसके साथ एक दूसरा गोल भी चला सकते हैं। जैसे एक शरीर के लिए और एक दिमाग के लिए।</string>
+    <string name="goal_second_add">दूसरा गोल जोड़ें · %1$d</string>
+    <string name="goal_second_price">दूसरे गोल के %1$d पॉइंट्स लगते हैं। आपके पास %2$d हैं।</string>
+    <string name="goal_save_for">%1$d में सेव करें</string>
     <plurals name="goal_days_left">
         <item quantity="one">%1$d दिन बाकी</item>
         <item quantity="other">%1$d दिन बाकी</item>
@@ -738,7 +739,7 @@
         <item quantity="other">%1$d हफ़्ते</item>
     </plurals>
     <string name="goal_unit_times">बार</string>
-    <string name="goal_unit_percent">%%</string>
+    <string name="goal_unit_percent" formatted="false">%</string>
     <string name="goal_reason_title">सेव करने के लिए लक्ष्य को नाम दें।</string>
     <string name="goal_reason_target">लक्ष्य में नंबर डालें।</string>
     <string name="goal_reason_start">बताएं कहाँ से शुरू कर रहे हैं।</string>
@@ -794,7 +795,6 @@
     <string name="points_ad_soon_title">अभी तैयार नहीं</string>
     <string name="points_ad_soon_body">ऐड अभी चालू नहीं हैं। यह ऐप अभी इंटरनेट का इस्तेमाल बिलकुल नहीं करता, और जब तक यह बटन चालू नहीं होता तब तक यही सच रहेगा।</string>
     <string name="points_unlocks">पॉइंट्स किस काम आते हैं</string>
-    <string name="points_planned">आने वाला</string>
     <string name="points_unlock_undo">किया हुआ स्टेप वापस लेना</string>
     <string name="points_unlock_undo_body">टुडे में किसी हो चुके स्टेप को दबाए रखें। टैप के तुरंत बाद वाला अनडू फ्री ही रहेगा।</string>
     <string name="points_unlock_freeze">छूटे दिन पर रन बचाना</string>
@@ -809,8 +809,8 @@
     <string name="points_freeze_short">इसके लिए %1$d पॉइंट्स चाहिए।</string>
     <string name="points_unlock_routine">तीसरा रूटीन</string>
     <string name="points_unlock_routine_body">दो दिन फ्री हैं, वीकडे और वीकएंड के लिए। उससे आगे पॉइंट्स लगते हैं।</string>
-    <string name="points_unlock_goal">एक साथ दूसरा गोल</string>
-    <string name="points_unlock_goal_body">अभी बना नहीं है। फिलहाल एक समय पर एक गोल।</string>
+    <string name="points_unlock_goal">दूसरा गोल</string>
+    <string name="points_unlock_goal_body">एक साथ दो गोल। इसे गोल स्क्रीन से जोड़ें।</string>
     <string name="points_history">कहाँ गए</string>
     <string name="points_history_none">अभी कुछ नहीं। एक दिन पूरा करें, आज रात पहले पॉइंट्स आ जाएंगे।</string>
     <string name="points_move_day">उस दिन का रूटीन</string>

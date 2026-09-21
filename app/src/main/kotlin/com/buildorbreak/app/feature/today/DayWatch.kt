@@ -43,7 +43,8 @@ class DayWatch @Inject constructor(
 
     fun milestone(): Flow<MilestoneAward?> = observeMilestone()
 
-    fun goal(): Flow<GoalSnapshot?> = observeGoal()
+    /** Every running goal, oldest first. Two at most. */
+    fun goals(): Flow<List<GoalSnapshot>> = observeGoal.all()
 
     fun points(on: LocalDate): Flow<PointsTally> = observePoints(on)
 

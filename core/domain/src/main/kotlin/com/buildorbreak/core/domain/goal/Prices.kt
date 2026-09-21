@@ -36,6 +36,21 @@ object Prices {
     /** Every plan gets this many day templates without paying. */
     const val FREE_ROUTINES = 2
 
+    /** Three good days. Less than a routine, because a goal ends and a routine does not. */
+    const val SECOND_GOAL = 300
+
+    /** One goal is part of the app. It is what the routine is for. */
+    const val FREE_GOALS = 1
+
+    /**
+     * Two, and not more at any price.
+     *
+     * A goal is a promise about where the days are going, and somebody
+     * chasing four of them at once is keeping none. The second is there for
+     * the ordinary case of one for the body and one for the mind.
+     */
+    const val MAX_GOALS = 2
+
     /** What one rewarded ad is worth, once the SDK is wired up. */
     const val AD_REWARD = 100
 
@@ -54,6 +69,7 @@ object Prices {
         PointReason.STREAK_FREEZE -> STREAK_FREEZE
         PointReason.UNDO_STEP -> UNDO_STEP
         PointReason.EXTRA_ROUTINE -> EXTRA_ROUTINE
+        PointReason.SECOND_GOAL -> SECOND_GOAL
         PointReason.AD_REWARD -> AD_REWARD
     }
 }

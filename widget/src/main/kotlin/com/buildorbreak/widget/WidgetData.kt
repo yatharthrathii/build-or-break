@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import com.buildorbreak.core.domain.usecase.CompleteItemUseCase
 import com.buildorbreak.core.domain.usecase.ObserveTodayUseCase
 import com.buildorbreak.core.domain.usecase.SnoozeItemUseCase
+import com.buildorbreak.core.model.resolved.ResolvedDay
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -56,8 +57,18 @@ internal object WidgetData {
     fun dependencies(context: Context): Dependencies =
         EntryPointAccessors.fromApplication(context.applicationContext, Dependencies::class.java)
 
-    suspend fun read(context: Context): WidgetSnapshot {
-        val day = dependencies(context).observeToday().invoke().first()
+    suspend fun read(context: Context): WidgetSnapshot =
+        snapshotOf(context, dependencies(context).observeToday().invoke().first())
+
+    /**
+     * The day, as the widget says it.
+     *
+     * Apart from [read] so it can be tested without Hilt or a database. What
+     * the widget picks as next, and what it says when there is nothing, are
+     * the only decisions this module makes, and they were the only part of
+     * the app with no test at all.
+     */
+    fun snapshotOf(context: Context, day: ResolvedDay?): WidgetSnapshot {
         val next = day?.entries?.firstOrNull { it.occurrence?.isSettled != true }
         val done = day?.doneCount ?: 0
         val total = day?.total ?: 0

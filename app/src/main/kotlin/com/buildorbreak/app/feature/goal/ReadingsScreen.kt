@@ -78,9 +78,13 @@ fun ReadingsScreen(
     modifier: Modifier = Modifier,
     /** Opened from the goal's "add a reading", which means the editor, not the list. */
     startAdding: Boolean = false,
+    /** The goal whose numbers these are. Null for the measured one, whichever that is. */
+    goalId: Long? = null,
     viewModel: ReadingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(goalId) { viewModel.forGoal(goalId) }
 
     // Once the series has arrived, so the box opens with whatever the day
     // already holds rather than empty and then changing under the thumb.

@@ -144,7 +144,7 @@ private fun NavHostPage(backStack: NavBackStack<NavKey>, actions: ShellActions) 
     NavDisplay(
         backStack = backStack,
         modifier = Modifier.readablePage(),
-        onBack = { backStack.removeLastOrNull() },
+        onBack = { backStack.pop() },
         // Saveable state per entry, so scroll positions survive a tab
         // switch. No per entry ViewModel store on purpose: a tab tap
         // clears the stack, and a ViewModel scoped to the entry would be
@@ -174,6 +174,19 @@ private fun destinations() = listOf(
  * would make the back gesture walk through every tab ever tapped, which is the
  * one behaviour every Android user has learned to hate.
  */
+/**
+ * Goes back one screen, and never past the first.
+ *
+ * A back arrow tapped twice in the time one transition takes fired this
+ * twice. The second took the last screen off as well, and `NavDisplay` throws
+ * on an empty stack, so a double tap on any screen one level deep closed the
+ * app with a crash. Leaving the last screen is the system's job: with one
+ * entry left the back gesture is not intercepted and the activity finishes.
+ */
+private fun NavBackStack<NavKey>.pop() {
+    if (size > 1) removeLastOrNull()
+}
+
 private fun NavBackStack<NavKey>.openTab(route: NavKey) {
     if (lastOrNull() == route) return
 
@@ -232,14 +245,14 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
 
     entry<GoalRoute> {
         GoalScreen(
-            onOpenReadings = { backStack.add(ReadingsRoute()) },
-            onAddReading = { backStack.add(ReadingsRoute(addNow = true)) },
-            onBack = { backStack.removeLastOrNull() },
+            onOpenReadings = { backStack.add(ReadingsRoute(goalId = it)) },
+            onAddReading = { backStack.add(ReadingsRoute(addNow = true, goalId = it)) },
+            onBack = { backStack.pop() },
         )
     }
 
     entry<ReadingsRoute> { key ->
-        ReadingsScreen(onBack = { backStack.removeLastOrNull() }, startAdding = key.addNow)
+        ReadingsScreen(onBack = { backStack.pop() }, startAdding = key.addNow, goalId = key.goalId)
     }
 
     entry<SettingsRoute> {
@@ -260,7 +273,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
             onFix = actions.openSettingsFor,
             onOpenAutostart = actions.openAutostart,
             onOpenLockScreen = actions.openLockScreen,
-            onBack = { backStack.removeLastOrNull() },
+            onBack = { backStack.pop() },
         )
     }
 
@@ -268,20 +281,20 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
         AboutScreen(
             onOpenLegal = { backStack.add(LegalRoute(it)) },
             onOpenContact = { backStack.add(ContactRoute) },
-            onBack = { backStack.removeLastOrNull() },
+            onBack = { backStack.pop() },
         )
     }
 
     entry<ContactRoute> {
-        ContactScreen(onBack = { backStack.removeLastOrNull() })
+        ContactScreen(onBack = { backStack.pop() })
     }
 
     entry<PointsRoute> {
-        PointsScreen(onBack = { backStack.removeLastOrNull() })
+        PointsScreen(onBack = { backStack.pop() })
     }
 
     entry<LegalRoute> { route ->
-        LegalScreen(document = route.document, onBack = { backStack.removeLastOrNull() })
+        LegalScreen(document = route.document, onBack = { backStack.pop() })
     }
 
     entry<ImportRoute> {
@@ -293,7 +306,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
                 backStack.clear()
                 backStack.add(TodayRoute)
             },
-            onBack = { backStack.removeLastOrNull() },
+            onBack = { backStack.pop() },
         )
     }
 
@@ -301,7 +314,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
         ItemEditorScreen(
             itemId = route.itemId,
             templateId = route.templateId,
-            onDone = { backStack.removeLastOrNull() },
+            onDone = { backStack.pop() },
         )
     }
 }

@@ -4,6 +4,7 @@ import com.buildorbreak.core.data.dao.DayCloseDao
 import com.buildorbreak.core.data.dao.DayLogDao
 import com.buildorbreak.core.data.dao.DeliveryAuditDao
 import com.buildorbreak.core.data.dao.GoalDao
+import com.buildorbreak.core.data.dao.GoalWeekDao
 import com.buildorbreak.core.data.dao.ItemDao
 import com.buildorbreak.core.data.dao.MeasurementDao
 import com.buildorbreak.core.data.dao.MilestoneDao
@@ -56,6 +57,9 @@ object DaoModule {
 
     @Provides
     fun provideGoalDao(database: BuildOrBreakDatabase): GoalDao = database.goalDao()
+
+    @Provides
+    fun provideGoalWeekDao(database: BuildOrBreakDatabase): GoalWeekDao = database.goalWeekDao()
 
     @Provides
     fun provideDayCloseDao(database: BuildOrBreakDatabase): DayCloseDao = database.dayCloseDao()

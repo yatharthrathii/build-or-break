@@ -1,5 +1,11 @@
 package com.buildorbreak.app.feature.goal
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +49,12 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 private const val DAYS_IN_WEEK = 7
+
+/** The most a month can spread over. Always drawn, so the dialog never changes height. */
+private const val WEEKS_DRAWN = 6
+
+private const val TURN_MILLIS = 200
+private const val TURN_FRACTION = 6
 private val CellHeight = 40.dp
 
 /** The days the dialog will let through, both ends included. */
@@ -89,18 +101,41 @@ internal fun GoalDateDialog(
                 )
 
                 WeekdayRow()
-                MonthGrid(month = month, picked = picked, bounds = bounds, onPick = { picked = it })
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    GhostButton(text = stringResource(R.string.editor_cancel), onClick = onDismiss)
-                    FillButton(text = stringResource(R.string.editor_set), onClick = { onPicked(picked) })
+                // Later months come in from the right and earlier ones from
+                // the left, the way the arrows point. Six rows are always
+                // kept, so a five week month does not make the buttons jump.
+                AnimatedContent(
+                    targetState = month,
+                    transitionSpec = {
+                        val forward = targetState > initialState
+                        (
+                            slideInHorizontally(tween(TURN_MILLIS)) {
+                                if (forward) it / TURN_FRACTION else -it / TURN_FRACTION
+                            } +
+                                fadeIn(tween(TURN_MILLIS))
+                            ) togetherWith fadeOut(tween(TURN_MILLIS / 2))
+                    },
+                    label = "month",
+                ) { shown ->
+                    MonthGrid(month = shown, picked = picked, bounds = bounds, onPick = { picked = it })
                 }
+
+                DialogActions(onDismiss = onDismiss, onSet = { onPicked(picked) })
             }
         }
+    }
+}
+
+@Composable
+private fun DialogActions(onDismiss: () -> Unit, onSet: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GhostButton(text = stringResource(R.string.editor_cancel), onClick = onDismiss)
+        FillButton(text = stringResource(R.string.editor_set), onClick = onSet)
     }
 }
 
@@ -185,11 +220,8 @@ private fun MonthGrid(
 ) {
     // Monday is one, so a month that starts on a Wednesday is pushed in by two.
     val lead = month.atDay(1).dayOfWeek.value - 1
-    val cells = lead + month.lengthOfMonth()
-    val rows = (cells + DAYS_IN_WEEK - 1) / DAYS_IN_WEEK
-
     Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-        repeat(rows) { row ->
+        repeat(WEEKS_DRAWN) { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 repeat(DAYS_IN_WEEK) { column ->
                     val dayOfMonth = row * DAYS_IN_WEEK + column - lead + 1

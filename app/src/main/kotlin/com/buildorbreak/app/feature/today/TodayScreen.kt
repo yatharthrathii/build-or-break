@@ -394,6 +394,10 @@ private fun LazyListScope.top(
         item(key = "goal") { GoalHeroCard(goal = goal, onOpen = actions.onOpenGoal) }
     }
 
+    state.secondGoal?.let { goal ->
+        item(key = "goal-second") { GoalHeroCard(goal = goal, onOpen = actions.onOpenGoal) }
+    }
+
     item {
         RingRow(
             header = state.header,

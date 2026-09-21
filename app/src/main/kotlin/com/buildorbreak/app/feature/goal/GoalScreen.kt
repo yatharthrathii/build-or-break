@@ -41,6 +41,7 @@ import com.buildorbreak.app.R
 import com.buildorbreak.app.feature.insights.standingText
 import com.buildorbreak.core.designsystem.component.BlockButton
 import com.buildorbreak.core.designsystem.component.EmptyState
+import com.buildorbreak.core.designsystem.component.FillButton
 import com.buildorbreak.core.designsystem.component.GhostButton
 import com.buildorbreak.core.designsystem.component.HairlineRule
 import com.buildorbreak.core.designsystem.component.HeavyRule
@@ -49,6 +50,7 @@ import com.buildorbreak.core.designsystem.component.Label
 import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.component.SectionLabel
+import com.buildorbreak.core.designsystem.component.SegmentedTabs
 import com.buildorbreak.core.designsystem.component.SquareToggle
 import com.buildorbreak.core.designsystem.component.TrailColumns
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
@@ -84,8 +86,8 @@ private const val MIN_BAR = 0.015f
 fun GoalScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenReadings: () -> Unit = {},
-    onAddReading: () -> Unit = {},
+    onOpenReadings: (Long) -> Unit = {},
+    onAddReading: (Long) -> Unit = {},
     viewModel: GoalViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -95,6 +97,7 @@ fun GoalScreen(
         onOpenReadings = onOpenReadings,
         onAddReading = onAddReading,
         onWeekCounted = { week, counted -> viewModel.onWeekCounted(week, counted) },
+        onSelect = viewModel::onSelect,
         onNew = viewModel::onNew,
         onEdit = viewModel::onEdit,
         onChange = viewModel::onChange,
@@ -117,9 +120,10 @@ fun GoalContent(
     onRetire: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenReadings: () -> Unit = {},
-    onAddReading: () -> Unit = {},
+    onOpenReadings: (Long) -> Unit = {},
+    onAddReading: (Long) -> Unit = {},
     onWeekCounted: (LocalDate, Boolean) -> Unit = { _, _ -> },
+    onSelect: (Long) -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -130,15 +134,20 @@ fun GoalContent(
     ) {
         GoalHeader(state = state, onBack = onBack, onCancel = onCancel, onSave = onSave)
 
+        if (state.draft == null && state.tabs.size > 1) {
+            GoalTabs(tabs = state.tabs, selectedId = state.goal?.id, onSelect = onSelect)
+        }
+
         when {
             state.draft != null -> GoalForm(draft = state.draft, items = state.items, onChange = onChange)
             state.goal != null -> GoalBody(
                 goal = state.goal,
+                second = state.second,
                 onNew = onNew,
                 onEdit = onEdit,
                 onRetire = onRetire,
-                onOpenReadings = onOpenReadings,
-                onAddReading = onAddReading,
+                onOpenReadings = { onOpenReadings(state.goal.id) },
+                onAddReading = { onAddReading(state.goal.id) },
                 onWeekCounted = onWeekCounted,
             )
             state.loaded -> NoGoal(onNew = onNew)
@@ -180,23 +189,46 @@ private fun GoalHeader(
                     .padding(start = Theme.spacing.inset),
             )
 
-            if (state.draft != null) {
-                com.buildorbreak.core.designsystem.component.FillButton(
-                    text = stringResource(R.string.editor_save),
-                    onClick = onSave,
-                    enabled = state.draft.canSave,
-                )
-            }
+            state.draft?.let { SaveButton(draft = it, onSave = onSave) }
         }
 
         HeavyRule()
 
-        state.draft?.blocker?.let { BlockerLine(text = stringResource(goalBlockerText(it))) }
+        state.draft?.let { DraftNotices(draft = it) }
 
         if (state.saveFailed) {
             BlockerLine(text = stringResource(R.string.editor_save_failed), error = true)
         }
     }
+}
+
+/** Says the price on the button itself when there is one, so it is read at the moment of paying. */
+@Composable
+private fun SaveButton(draft: GoalDraft, onSave: () -> Unit) {
+    FillButton(
+        text = if (draft.cost > 0) {
+            stringResource(R.string.goal_save_for, draft.cost)
+        } else {
+            stringResource(R.string.editor_save)
+        },
+        onClick = onSave,
+        enabled = draft.canSave,
+    )
+}
+
+/**
+ * What the form has to say before it can be saved.
+ *
+ * The price first, and on its own line. It is the one thing on this form
+ * that cannot be taken back once Save is pressed.
+ */
+@Composable
+private fun DraftNotices(draft: GoalDraft) {
+    if (draft.cost > 0) {
+        BlockerLine(text = stringResource(R.string.goal_second_price, draft.cost, draft.balance))
+    }
+
+    draft.blocker?.let(::goalBlockerText)?.let { BlockerLine(text = stringResource(it)) }
 }
 
 @Composable
@@ -242,9 +274,67 @@ private fun ReadingActions(onOpenReadings: () -> Unit, onAddReading: () -> Unit)
     }
 }
 
+/**
+ * The two running goals, as tabs. Never drawn for one.
+ *
+ * Tabs rather than a list, because a goal is looked at one at a time and
+ * every number below belongs to whichever is in front.
+ */
+@Composable
+private fun GoalTabs(tabs: List<GoalTabUi>, selectedId: Long?, onSelect: (Long) -> Unit) {
+    SegmentedTabs(
+        options = tabs.map { it.title },
+        selectedIndex = tabs.indexOfFirst { it.id == selectedId }.coerceAtLeast(0),
+        onSelect = { onSelect(tabs[it].id) },
+        stretch = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Theme.spacing.medium)
+            .padding(top = Theme.spacing.inset),
+    )
+}
+
+/**
+ * The offer of a second goal, with its price on the button.
+ *
+ * Shown under a goal that is still running, which is the only time a second
+ * one means anything. When the points are short the button stays, turned
+ * off, with the two numbers beside it: hiding it would hide that the app can
+ * do this at all.
+ */
+@Composable
+private fun SecondGoalOffer(second: SecondGoalUi, onNew: () -> Unit) {
+    Column(modifier = Modifier.padding(horizontal = Theme.spacing.medium).padding(bottom = Theme.spacing.medium)) {
+        HairlineRule()
+
+        Text(
+            text = stringResource(R.string.goal_second_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Theme.spacing.inset, bottom = Theme.spacing.small),
+        )
+
+        OutlineButton(
+            text = stringResource(R.string.goal_second_add, second.cost),
+            onClick = onNew,
+            enabled = second.affordable,
+        )
+
+        if (!second.affordable) {
+            Text(
+                text = stringResource(R.string.points_too_few, second.balance, second.cost),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Theme.spacing.small),
+            )
+        }
+    }
+}
+
 @Composable
 private fun GoalBody(
     goal: GoalCardUi,
+    second: SecondGoalUi?,
     onNew: () -> Unit,
     onEdit: () -> Unit,
     onRetire: () -> Unit,
@@ -286,6 +376,8 @@ private fun GoalBody(
                 color = MaterialTheme.colorScheme.error,
             )
         }
+
+        if (second != null && !goal.isFinished) SecondGoalOffer(second = second, onNew = onNew)
     }
 }
 
@@ -650,12 +742,14 @@ internal fun goalUnit(valueKind: ValueKind, kind: GoalKind): Int = when {
     else -> R.string.unit_none
 }
 
-private fun goalBlockerText(blocker: GoalBlocker): Int = when (blocker) {
+private fun goalBlockerText(blocker: GoalBlocker): Int? = when (blocker) {
     GoalBlocker.NO_TITLE -> R.string.goal_reason_title
     GoalBlocker.NO_TARGET -> R.string.goal_reason_target
     GoalBlocker.NO_START -> R.string.goal_reason_start
     GoalBlocker.NO_ITEM -> R.string.goal_reason_item
     GoalBlocker.GOES_NOWHERE -> R.string.goal_reason_nowhere
+    // Said by the price line above the form, which has both numbers in it.
+    GoalBlocker.NO_POINTS -> null
 }
 
 // Preview -----------------------------------------------------------------------

@@ -31,17 +31,14 @@
     <string name="onboarding_failed">That could not be saved. Try again.</string>
 
     <string name="onboarding_welcome_title">A routine app\nthat moves with you.</string>
-    <string name="onboarding_welcome_body">Write your daily routine once. The app reminds you of each step at the right time. If you run late, it moves the rest of the day for you and tells you what it moved.</string>
+    <string name="onboarding_welcome_body">Write your routine once. When you run late, the rest of the day moves with you.</string>
     <string name="onboarding_before_kicker">In other apps</string>
-    <string name="onboarding_before_body">You wake up 40 minutes late. Nine alarms still ring at the old times. You miss most of them, feel behind all morning, and mute the app by Thursday.</string>
+    <string name="onboarding_before_body">You wake up late. Nine alarms still ring at the old times.</string>
     <string name="onboarding_after_kicker">In this app</string>
-    <string name="onboarding_after_body">You tap Running late. Every step moves 40 minutes. Gym stays where it is, because it is booked. Nothing rings for a step you already did.</string>
+    <string name="onboarding_after_body">You tap Running late. The whole day moves. Anything booked stays put.</string>
     <string name="onboarding_point_1_title">Steps that follow each other</string>
-    <string name="onboarding_point_1_body">Set a time, or say 20 minutes after the gym, or give a window. Move one step and the ones after it move too.</string>
     <string name="onboarding_point_2_title">Alarms that really wake you</string>
-    <string name="onboarding_point_2_body">Full screen, gets louder, stop it from the lock screen. The app checks your phone settings and tells you if something will block it.</string>
     <string name="onboarding_point_3_title">Your data stays on your phone</string>
-    <string name="onboarding_point_3_body">No account. No internet. Nothing is uploaded anywhere.</string>
 
     <string name="onboarding_start_title">What are you\ntrying to build?</string>
     <string name="onboarding_start_body">Pick one. You get a ready-made day you can change any time.</string>
@@ -742,6 +739,10 @@
     <string name="goal_week_counts">Counts</string>
     <string name="goal_week_left_out">Left out</string>
     <string name="goal_week_dated">%1$s · %2$s</string>
+    <string name="goal_second_body">You can run a second goal beside this one. One for the body and one for the mind, for example.</string>
+    <string name="goal_second_add">Add a second goal · %1$d</string>
+    <string name="goal_second_price" tools:ignore="PluralsCandidate">A second goal costs %1$d points. You have %2$d.</string>
+    <string name="goal_save_for">Save for %1$d</string>
     <plurals name="goal_days_left">
         <item quantity="one">%1$d day left</item>
         <item quantity="other">%1$d days left</item>
@@ -786,7 +787,8 @@
         <item quantity="other">%1$d weeks</item>
     </plurals>
     <string name="goal_unit_times">times</string>
-    <string name="goal_unit_percent">%%</string>
+    <!-- Read with no arguments, so nothing unescapes it. Two signs here printed two signs on screen. -->
+    <string name="goal_unit_percent" formatted="false">%</string>
     <string name="goal_reason_title">Give the goal a name to save.</string>
     <string name="goal_reason_target">Put a number in the target.</string>
     <string name="goal_reason_start">Say where you are starting from.</string>
@@ -844,7 +846,6 @@
     <string name="points_ad_soon_title">Not ready yet</string>
     <string name="points_ad_soon_body">Ads are not switched on. The app does not use the internet at all today, and that stays true until this button works. Nothing was watched and nothing was earned.</string>
     <string name="points_unlocks">What points are for</string>
-    <string name="points_planned">Planned</string>
     <string name="points_unlock_undo">Undo a done step</string>
     <string name="points_unlock_undo_body">Long press a done step on Today. The undo bar right after a tap stays free.</string>
     <string name="points_unlock_freeze">Keep a run over a missed day</string>
@@ -859,8 +860,8 @@
     <string name="points_freeze_short" tools:ignore="PluralsCandidate">You need %1$d points for this.</string>
     <string name="points_unlock_routine">A third routine</string>
     <string name="points_unlock_routine_body">Two days are free, enough for a weekday and a weekend. Beyond that costs points.</string>
-    <string name="points_unlock_goal">A second goal at the same time</string>
-    <string name="points_unlock_goal_body">Not built yet. One goal at a time for now.</string>
+    <string name="points_unlock_goal">A second goal</string>
+    <string name="points_unlock_goal_body">Two goals at once, side by side. Add it from the Goal screen.</string>
     <string name="points_history">Where they went</string>
     <string name="points_history_none">Nothing yet. Keep a day and the first points land tonight.</string>
     <string name="points_move_day">The day\'s routine</string>

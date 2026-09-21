@@ -40,6 +40,8 @@ data object GoalRoute : NavKey
 data class ReadingsRoute(
     /** Straight into the editor, for "add a reading" on the goal screen. */
     val addNow: Boolean = false,
+    /** Which goal's numbers. Null is the measured one, for callers that cannot say. */
+    val goalId: Long? = null,
 ) : NavKey
 
 @Serializable

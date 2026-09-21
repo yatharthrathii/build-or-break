@@ -238,4 +238,7 @@ enum class PointReason {
 
     /** A day template beyond the ones every plan gets. */
     EXTRA_ROUTINE,
+
+    /** A second goal running beside the first. */
+    SECOND_GOAL,
 }

@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.buildorbreak.android.hilt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.baselineprofile)
-    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -91,9 +90,6 @@ dependencies {
 
     testImplementation(projects.core.testing)
     testImplementation(libs.robolectric)
-    testImplementation(libs.roborazzi)
-    testImplementation(libs.roborazzi.compose)
-    testImplementation(libs.roborazzi.rule)
     testImplementation(libs.androidx.compose.ui.test.junit4)
 
     androidTestImplementation(libs.androidx.test.ext.junit)

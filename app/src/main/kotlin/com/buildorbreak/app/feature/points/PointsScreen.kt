@@ -1,5 +1,7 @@
 package com.buildorbreak.app.feature.points
 
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,7 +26,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.buildorbreak.app.R
 import com.buildorbreak.app.feature.about.BackHeader
-import com.buildorbreak.core.designsystem.component.Badge
 import com.buildorbreak.core.designsystem.component.FillButton
 import com.buildorbreak.core.designsystem.component.GhostButton
 import com.buildorbreak.core.designsystem.component.HairlineRule
@@ -41,6 +42,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
+
+/** Long enough to be seen leaving, short enough not to be waited for. */
+private const val COUNT_MILLIS = 600
 
 /**
  * "Fri 12 Sep". Long enough to place the day, short enough for a list.
@@ -134,9 +138,17 @@ fun PointsContent(
 /** The number that matters, with the two it is made of underneath. */
 @Composable
 private fun Balance(state: PointsUiState) {
+    // Counted, so a spend is seen to leave. A number that is simply different
+    // the next time it is looked at gives no sign that the tap did anything.
+    val balance by animateIntAsState(
+        targetValue = state.balance,
+        animationSpec = tween(COUNT_MILLIS),
+        label = "balance",
+    )
+
     Column(modifier = Modifier.padding(Theme.spacing.medium)) {
         Text(
-            text = count(state.balance),
+            text = count(balance),
             style = MaterialTheme.typography.displayMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -326,19 +338,11 @@ private fun UnlockRow(unlock: UnlockUi, extra: @Composable () -> Unit = {}) {
                 )
             }
 
-            if (unlock.cost == null) {
-                Badge(text = stringResource(R.string.points_planned))
-            } else {
-                Text(
-                    text = count(unlock.cost),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (unlock.affordable) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        Theme.colours.faint
-                    },
-                )
-            }
+            Text(
+                text = count(unlock.cost),
+                style = MaterialTheme.typography.titleMedium,
+                color = if (unlock.affordable) MaterialTheme.colorScheme.primary else Theme.colours.faint,
+            )
         }
 
         extra()
@@ -434,6 +438,7 @@ private fun movementTitle(reason: PointReason?): Int = when (reason) {
     PointReason.UNDO_STEP -> R.string.points_unlock_undo
     PointReason.STREAK_FREEZE -> R.string.points_unlock_freeze
     PointReason.EXTRA_ROUTINE -> R.string.points_unlock_routine
+    PointReason.SECOND_GOAL -> R.string.points_unlock_goal
 }
 
 private fun count(value: Int): String = NumberFormat.getIntegerInstance().format(value)
@@ -455,7 +460,7 @@ private fun PointsPreview() {
                     UnlockUi(UnlockKind.UNDO_STEP, 150, affordable = true),
                     UnlockUi(UnlockKind.STREAK_FREEZE, 200, affordable = true),
                     UnlockUi(UnlockKind.EXTRA_ROUTINE, 500, affordable = true),
-                    UnlockUi(UnlockKind.SECOND_GOAL, null, affordable = false),
+                    UnlockUi(UnlockKind.SECOND_GOAL, 300, affordable = true),
                 ),
                 movements = persistentListOf(
                     MovementUi(LocalDate.of(2026, 9, 19), -150, PointReason.UNDO_STEP),

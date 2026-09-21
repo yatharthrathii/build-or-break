@@ -37,6 +37,8 @@ data class GoalDay(
     val plannedMinutes: Int = 0,
     /** Yesterday's row, which is where a running total comes from. */
     val previous: GoalProgress?,
+    /** The Mondays of the weeks the user left out of this goal. */
+    val leftOutWeeks: Set<LocalDate> = emptySet(),
 )
 
 /**
@@ -74,18 +76,15 @@ class GoalProgressWriter(private val calculator: GoalCalculator = DefaultGoalCal
             // Filled in below, once the row it depends on exists. A projection
             // is a function of the history including today, and today is this.
             projectedFinal = 0.0,
-            // Carried from the day before only inside the same week. The flag
-            // is set for a week, and a new week starts counted; carried past
-            // the Sunday it would have frozen the goal for good.
-            counted = day.previous?.takeIf { sameWeek(it.date, day.date) }?.counted ?: true,
+            // Asked of the week, not carried from yesterday. Carrying it meant
+            // a week could only be left out once it had a day in it, and the
+            // first day of a week, having no yesterday in the same week, came
+            // back as counting every time it was written again.
+            counted = day.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) !in day.leftOutWeeks,
         )
 
         return row.copy(projectedFinal = calculator.project(goal, listOf(row)))
     }
-
-    private fun sameWeek(a: LocalDate, b: LocalDate): Boolean =
-        a.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) ==
-            b.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
     /**
      * What happened today, in whatever unit the goal counts in.
