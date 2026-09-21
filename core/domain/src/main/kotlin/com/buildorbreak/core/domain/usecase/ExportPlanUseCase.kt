@@ -35,7 +35,7 @@ class ExportPlanUseCase @Inject constructor(
         // The goal goes with the routine, not with the history. Somebody
         // sharing a routine is sharing what it is for; what they are not
         // sharing is the weights they have been standing on a scale to get.
-        val goal = sources.goals.observeActive(plan.id).first()
+        val goals = sources.goals.observeAllActive(plan.id).first()
 
         // Archived steps included. The history points at them, and a file
         // without them restores those days as empty.
@@ -46,7 +46,8 @@ class ExportPlanUseCase @Inject constructor(
             templates = planTemplates,
             blocks = planTemplates.flatMap { sources.items.observeBlocksForTemplate(it.id).first() },
             items = planItems,
-            goals = listOfNotNull(goal),
+            goals = goals,
+            leftOutWeeks = goals.associate { it.id to sources.goals.observeLeftOutWeeks(it.id).first() },
             occurrences = if (includeHistory) sources.occurrences.between(from, today) else emptyList(),
             // Every number against every step, not only the goal's own series.
             // A reading is a thing the user typed, and a backup that dropped

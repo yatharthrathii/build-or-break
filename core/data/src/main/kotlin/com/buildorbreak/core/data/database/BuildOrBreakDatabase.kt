@@ -7,6 +7,7 @@ import com.buildorbreak.core.data.dao.DayCloseDao
 import com.buildorbreak.core.data.dao.DayLogDao
 import com.buildorbreak.core.data.dao.DeliveryAuditDao
 import com.buildorbreak.core.data.dao.GoalDao
+import com.buildorbreak.core.data.dao.GoalWeekDao
 import com.buildorbreak.core.data.dao.ItemDao
 import com.buildorbreak.core.data.dao.MeasurementDao
 import com.buildorbreak.core.data.dao.MilestoneDao
@@ -22,6 +23,7 @@ import com.buildorbreak.core.data.entity.DayTemplateEntity
 import com.buildorbreak.core.data.entity.DeliveryAuditEntity
 import com.buildorbreak.core.data.entity.GoalEntity
 import com.buildorbreak.core.data.entity.GoalProgressEntity
+import com.buildorbreak.core.data.entity.GoalWeekSkipEntity
 import com.buildorbreak.core.data.entity.ItemEntity
 import com.buildorbreak.core.data.entity.MeasurementEntity
 import com.buildorbreak.core.data.entity.MilestoneAwardEntity
@@ -65,6 +67,7 @@ import com.buildorbreak.core.data.entity.TrackUnitEntity
         DayLogEntity::class,
         GoalEntity::class,
         GoalProgressEntity::class,
+        GoalWeekSkipEntity::class,
         DayCloseEntity::class,
         MilestoneAwardEntity::class,
         TrackEntity::class,
@@ -86,6 +89,7 @@ abstract class BuildOrBreakDatabase : RoomDatabase() {
     abstract fun measurementDao(): MeasurementDao
     abstract fun dayLogDao(): DayLogDao
     abstract fun goalDao(): GoalDao
+    abstract fun goalWeekDao(): GoalWeekDao
     abstract fun dayCloseDao(): DayCloseDao
     abstract fun milestoneDao(): MilestoneDao
     abstract fun trackDao(): TrackDao
@@ -94,7 +98,7 @@ abstract class BuildOrBreakDatabase : RoomDatabase() {
     abstract fun pointEntryDao(): PointEntryDao
 
     companion object {
-        const val VERSION = 3
+        const val VERSION = 4
 
         const val NAME = "buildorbreak.db"
     }

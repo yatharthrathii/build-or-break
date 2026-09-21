@@ -115,7 +115,9 @@ class CloseDayUseCase @Inject constructor(
         // half way is one of the nine things that can earn one, and asking the
         // evaluator to decide from a row that has not been written yet would
         // mean every goal milestone fired a day late.
-        val goal = goals.close(planId, date)
+        // With two goals the one furthest along speaks for the day. A goal
+        // milestone is earned once, by whichever goal gets there first.
+        val goal = goals.close(planId, date).maxByOrNull { it.percent }
 
         awardMilestoneFor(close, goal)
 

@@ -13,6 +13,7 @@ import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.plan.MinimumVersion
 import com.buildorbreak.core.model.plan.Plan
 import java.time.Instant
+import java.time.LocalDate
 import kotlin.time.Duration
 import kotlinx.serialization.json.Json
 
@@ -29,6 +30,8 @@ data class ExportInput(
     val blocks: List<Block> = emptyList(),
     val items: List<Item> = emptyList(),
     val goals: List<Goal> = emptyList(),
+    /** Goal id to the Mondays left out of it. */
+    val leftOutWeeks: Map<Long, Set<LocalDate>> = emptyMap(),
     val occurrences: List<Occurrence> = emptyList(),
     val measurements: List<Measurement> = emptyList(),
     val closes: List<DayClose> = emptyList(),
@@ -73,7 +76,7 @@ class ExportBuilder(
                     items = itemsByTemplate[template.id].orEmpty(),
                 )
             },
-            goals = input.goals.sortedBy { it.id }.map { it.toExport() },
+            goals = input.goals.sortedBy { it.id }.map { it.toExport(input.leftOutWeeks[it.id].orEmpty()) },
             history = if (includeHistory) input.toHistory() else ExportHistory(),
         )
     }
@@ -161,7 +164,7 @@ private fun Anchor.toExport(): ExportAnchor = when (this) {
     )
 }
 
-private fun Goal.toExport() = ExportGoal(
+private fun Goal.toExport(leftOut: Set<LocalDate>) = ExportGoal(
     id = id,
     kind = kind.name,
     title = title,
@@ -172,6 +175,7 @@ private fun Goal.toExport() = ExportGoal(
     startDate = startDate.toString(),
     targetDate = targetDate.toString(),
     isActive = isActive,
+    leftOutWeeks = leftOut.sorted().map { it.toString() },
 )
 
 private fun ExportInput.toHistory() = ExportHistory(

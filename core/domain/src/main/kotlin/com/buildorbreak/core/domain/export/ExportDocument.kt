@@ -127,6 +127,15 @@ data class ExportGoal(
     @SerialName("start_date") val startDate: String,
     @SerialName("target_date") val targetDate: String,
     @SerialName("is_active") val isActive: Boolean,
+    /**
+     * The Mondays of the weeks left out of this goal.
+     *
+     * Defaulted, so a file written before this existed still reads. The
+     * goal's daily rows are not in the file at all, because they can be
+     * worked out again from everything else that is. This cannot: that a
+     * week should not count is something only the user knew.
+     */
+    @SerialName("left_out_weeks") val leftOutWeeks: List<String> = emptyList(),
 )
 
 /**

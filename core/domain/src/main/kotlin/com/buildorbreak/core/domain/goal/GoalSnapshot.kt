@@ -62,10 +62,10 @@ data class GoalSnapshot(
      */
     val todayReading: Double? = null,
     /**
-     * The recent weeks that have days in them, newest first.
+     * This week and the recent weeks that have days in them, newest first.
      *
-     * Only weeks with a stored day. Leaving a week out works by marking its
-     * days, so a week with no days yet has nothing to mark.
+     * This week is there from its first morning, before it has a day, because
+     * that is when somebody who has just fallen ill comes looking for it.
      */
     val weeks: List<GoalWeek> = emptyList(),
 ) {

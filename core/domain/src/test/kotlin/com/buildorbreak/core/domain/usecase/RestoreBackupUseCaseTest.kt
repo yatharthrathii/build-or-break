@@ -19,6 +19,10 @@ import com.buildorbreak.core.domain.fake.FakeSettingsRepository
 import com.buildorbreak.core.domain.fake.FakeTemplateRepository
 import com.buildorbreak.core.domain.fake.RecordingAlarmGateway
 import com.buildorbreak.core.domain.fake.RecordingWidgetGateway
+import com.buildorbreak.core.domain.goal.DefaultGoalCalculator
+import com.buildorbreak.core.domain.goal.GoalCloser
+import com.buildorbreak.core.domain.goal.GoalProgressWriter
+import com.buildorbreak.core.domain.goal.GoalSources
 import com.buildorbreak.core.domain.repository.ResetRepository
 import com.buildorbreak.core.domain.resolver.DefaultTimelineResolver
 import com.buildorbreak.core.model.enums.DayMode
@@ -104,6 +108,8 @@ class RestoreBackupUseCaseTest {
             items.items.value = emptyList()
             items.blocks.value = emptyList()
             goals.goals.value = emptyList()
+            goals.progress.value = emptyList()
+            goals.leftOutWeeks.value = emptySet()
             occurrences.occurrences.value = emptyList()
             measurements.measurements.value = emptyList()
             closes.closes.value = emptyList()
@@ -144,14 +150,30 @@ class RestoreBackupUseCaseTest {
         dispatchers = dispatchers,
     )
 
+    private val calculator = DefaultGoalCalculator()
+
+    private val recompute = RecomputeGoalHistoryUseCase(
+        plans = plans,
+        goals = goals,
+        closer = GoalCloser(
+            sources = GoalSources(goals, items, measurements, occurrences, closes),
+            writer = GoalProgressWriter(calculator),
+            calculator = calculator,
+        ),
+        time = time,
+    )
+
     private val restore = RestoreBackupUseCase(
         reader = ExportReader(),
         reset = reset,
         sources = backup,
+        after = RestoreAftermath(
+            recompute = recompute,
+            reschedule = RescheduleAllUseCase(observeToday, occurrences, alarms, time, dispatchers),
+            alarms = alarms,
+            widget = widget,
+        ),
         settings = settings,
-        reschedule = RescheduleAllUseCase(observeToday, occurrences, alarms, time, dispatchers),
-        alarms = alarms,
-        widget = widget,
         time = time,
         dispatchers = dispatchers,
     )
@@ -303,6 +325,47 @@ class RestoreBackupUseCaseTest {
         assertThat(goal.targetValue).isEqualTo(51.5)
 
         assertThat(measurements.measurements.value.map { it.value }).containsExactly(50.5)
+    }
+
+    @Test
+    fun `a restored goal stands where it stood, not back at nought`() = runTest {
+        givenADayWorthKeeping()
+        givenAGoal()
+        givenSomeHistory()
+
+        restore(export()!!)
+
+        // Yesterday's weigh in is in the file, and the goal's row for that day is rebuilt from it.
+        val row = goals.progress.value.single { it.date == TODAY.minusDays(1) }
+        assertThat(row.rawValue).isEqualTo(50.5)
+    }
+
+    @Test
+    fun `a week left out of a goal is still left out after a restore`() = runTest {
+        givenADayWorthKeeping()
+        givenAGoal()
+        givenSomeHistory()
+        // The seventeenth of September 2026 is a Thursday, in the week of the fourteenth.
+        val week = LocalDate.of(2026, 9, 14)
+        goals.setWeekCounted(goals.goals.value.single().id, week, counted = false)
+
+        restore(export()!!)
+
+        val goalId = goals.goals.value.single().id
+        assertThat(goals.observeLeftOutWeeks(goalId).first()).containsExactly(week)
+        assertThat(goals.progress.value.single { it.date == TODAY.minusDays(1) }.counted).isFalse()
+    }
+
+    @Test
+    fun `two running goals both come back running`() = runTest {
+        givenADayWorthKeeping()
+        givenAGoal()
+        goals.upsert(goals.goals.value.single().copy(id = 0, title = "Read more", kind = GoalKind.CONSISTENCY))
+
+        restore(export()!!)
+
+        val plan = plans.observeActive().first()!!
+        assertThat(goals.observeAllActive(plan.id).first().map { it.title }).containsExactly("Weight gain", "Read more")
     }
 
     @Test

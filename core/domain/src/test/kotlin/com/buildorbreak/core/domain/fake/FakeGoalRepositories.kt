@@ -19,17 +19,19 @@ import kotlinx.coroutines.flow.map
 /**
  * Goals and their per day rows, in memory.
  *
- * Only one goal can be active on a plan, and this enforces it the same way the
- * real one does. A fake that allowed two would let a test pass over a state the
- * database cannot produce.
+ * It writes what it is given and retires nothing, the same as the real one.
+ * How many goals may run at once is a rule of `SaveGoalUseCase`, and a fake
+ * that enforced it here would hide a use case that had stopped doing so.
  */
 class FakeGoalRepository : GoalRepository {
     val goals = MutableStateFlow<List<Goal>>(emptyList())
     val progress = MutableStateFlow<List<GoalProgress>>(emptyList())
     private var nextId = 1L
 
-    override fun observeActive(planId: Long): Flow<Goal?> =
-        goals.map { list -> list.firstOrNull { it.planId == planId && it.isActive } }
+    override fun observeActive(planId: Long): Flow<Goal?> = observeAllActive(planId).map { it.firstOrNull() }
+
+    override fun observeAllActive(planId: Long): Flow<List<Goal>> =
+        goals.map { list -> list.filter { it.planId == planId && it.isActive }.sortedBy { it.id } }
 
     override suspend fun byId(goalId: Long): Goal? = goals.value.firstOrNull { it.id == goalId }
 
@@ -37,10 +39,7 @@ class FakeGoalRepository : GoalRepository {
         val id = if (goal.id == 0L) nextId++ else goal.id
         val written = goal.copy(id = id)
 
-        goals.value = goals.value
-            .filterNot { it.id == id }
-            .map { if (written.isActive && it.planId == written.planId) it.copy(isActive = false) else it }
-            .plus(written)
+        goals.value = goals.value.filterNot { it.id == id } + written
 
         return Outcome.Success(id)
     }
@@ -61,7 +60,16 @@ class FakeGoalRepository : GoalRepository {
         return Outcome.Success(Unit)
     }
 
+    /** Goal id to the Mondays left out of it, the way the real table holds them. */
+    val leftOutWeeks = MutableStateFlow<Set<Pair<Long, LocalDate>>>(emptySet())
+
+    override fun observeLeftOutWeeks(goalId: Long): Flow<Set<LocalDate>> =
+        leftOutWeeks.map { weeks -> weeks.filter { it.first == goalId }.map { it.second }.toSet() }
+
     override suspend fun setWeekCounted(goalId: Long, week: LocalDate, counted: Boolean): Outcome<Unit, DataError> {
+        leftOutWeeks.value =
+            if (counted) leftOutWeeks.value - (goalId to week) else leftOutWeeks.value + (goalId to week)
+
         val range = week..week.plusDays(6)
         progress.value = progress.value.map {
             if (it.goalId == goalId && it.date in range) it.copy(counted = counted) else it

@@ -5,6 +5,7 @@ import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.data.dao.DayCloseDao
 import com.buildorbreak.core.data.dao.GoalDao
+import com.buildorbreak.core.data.dao.GoalWeekDao
 import com.buildorbreak.core.data.dao.MilestoneDao
 import com.buildorbreak.core.data.mapper.toEntity
 import com.buildorbreak.core.data.mapper.toModel
@@ -29,6 +30,7 @@ private const val DAYS_IN_WEEK = 6L
 
 class GoalRepositoryImpl @Inject constructor(
     private val goals: GoalDao,
+    private val weeks: GoalWeekDao,
     private val dispatchers: AppDispatchers,
 ) : GoalRepository {
 
@@ -37,8 +39,14 @@ class GoalRepositoryImpl @Inject constructor(
 
     override suspend fun byId(goalId: Long): Goal? = withContext(dispatchers.io) { goals.byId(goalId)?.toModel() }
 
-    override suspend fun upsert(goal: Goal): Outcome<Long, DataError> =
-        sqlOutcome(dispatchers.io) { goals.upsertAsOnlyActive(goal.toEntity()) }
+    override fun observeAllActive(planId: Long): Flow<List<Goal>> =
+        goals.observeAllActive(planId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
+
+    /** Room's upsert answers minus one for an update, so the id that went in is the id that comes out. */
+    override suspend fun upsert(goal: Goal): Outcome<Long, DataError> = sqlOutcome(dispatchers.io) {
+        val inserted = goals.upsert(goal.toEntity())
+        if (goal.id == 0L) inserted else goal.id
+    }
 
     override suspend fun deactivate(goalId: Long): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { goals.deactivate(goalId) }
@@ -59,8 +67,11 @@ class GoalRepositoryImpl @Inject constructor(
      */
     override suspend fun setWeekCounted(goalId: Long, week: LocalDate, counted: Boolean): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) {
-            goals.setRangeCounted(goalId, week, week.plusDays(DAYS_IN_WEEK), counted)
+            weeks.setWeekCounted(goalId, week, week.plusDays(DAYS_IN_WEEK), counted)
         }
+
+    override fun observeLeftOutWeeks(goalId: Long): Flow<Set<LocalDate>> =
+        weeks.observeLeftOutWeeks(goalId).map { it.toSet() }.flowOn(dispatchers.io)
 }
 
 class DayCloseRepositoryImpl @Inject constructor(

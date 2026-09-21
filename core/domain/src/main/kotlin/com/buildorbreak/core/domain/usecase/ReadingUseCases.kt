@@ -49,9 +49,16 @@ class ObserveGoalReadingsUseCase @Inject constructor(
     private val dispatchers: AppDispatchers,
 ) {
 
+    /**
+     * [goalId] says which goal, now that there can be two. Without it, the
+     * first running goal that is measured: with one goal that is the goal,
+     * and with a count and a weight it is the weight, which is the only one
+     * of the two that has readings at all.
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
-    operator fun invoke(): Flow<GoalSeries?> = plans.observeActive()
-        .flatMapLatest { plan -> if (plan == null) flowOf(null) else goals.observeActive(plan.id) }
+    operator fun invoke(goalId: Long? = null): Flow<GoalSeries?> = plans.observeActive()
+        .flatMapLatest { plan -> if (plan == null) flowOf(emptyList()) else goals.observeAllActive(plan.id) }
+        .map { running -> running.measured(goalId) }
         .flatMapLatest { goal ->
             if (goal == null || goal.kind != GoalKind.NUMBER) {
                 flowOf(null)
@@ -89,13 +96,15 @@ class AddReadingUseCase @Inject constructor(
     private val dispatchers: AppDispatchers,
 ) {
 
-    suspend operator fun invoke(date: LocalDate, value: Double): Outcome<Unit, DataError> =
+    suspend operator fun invoke(date: LocalDate, value: Double, goalId: Long? = null): Outcome<Unit, DataError> =
         withContext(dispatchers.io) {
             if (!value.isFinite() || value < 0.0) return@withContext Outcome.Failure(DataError.ConstraintViolation)
 
             val plan = plans.observeActive().first() ?: return@withContext Outcome.Failure(DataError.NotFound)
-            val goal = goals.observeActive(plan.id).first() ?: return@withContext Outcome.Failure(DataError.NotFound)
-            if (goal.kind != GoalKind.NUMBER) return@withContext Outcome.Failure(DataError.ConstraintViolation)
+            val running = goals.observeAllActive(plan.id).first()
+            if (running.isEmpty()) return@withContext Outcome.Failure(DataError.NotFound)
+
+            val goal = running.measured(goalId) ?: return@withContext Outcome.Failure(DataError.ConstraintViolation)
 
             val series = measurements.observeSeries(goal.valueKind, goal.itemId).first()
             val existing = series.firstOrNull { it.date == date }
@@ -204,6 +213,11 @@ class DeleteReadingUseCase @Inject constructor(
  * one early would have the live screen add today's work to a row that
  * already contains it.
  */
+/** The goal asked for, or failing that the first one that is measured. */
+private fun List<Goal>.measured(goalId: Long?): Goal? =
+    (if (goalId != null) firstOrNull { it.id == goalId } else null)?.takeIf { it.kind == GoalKind.NUMBER }
+        ?: firstOrNull { it.kind == GoalKind.NUMBER }.takeIf { goalId == null }
+
 class RecomputeGoalHistoryUseCase @Inject constructor(
     private val plans: PlanRepository,
     private val goals: GoalRepository,
@@ -213,10 +227,13 @@ class RecomputeGoalHistoryUseCase @Inject constructor(
 
     suspend operator fun invoke(from: LocalDate) {
         val plan = plans.observeActive().first() ?: return
-        val goal = goals.observeActive(plan.id).first() ?: return
+        val running = goals.observeAllActive(plan.id).first()
+        if (running.isEmpty()) return
 
-        var date = maxOf(from, goal.startDate)
-        val last = minOf(time.today().minusDays(1), goal.targetDate)
+        // The widest window any running goal has. The closer leaves a goal
+        // alone on a date outside its own, so the extra days cost nothing.
+        var date = maxOf(from, running.minOf { it.startDate })
+        val last = minOf(time.today().minusDays(1), running.maxOf { it.targetDate })
 
         while (date <= last) {
             closer.close(plan.id, date)

@@ -49,9 +49,17 @@ class GoalCloser @Inject constructor(
     private val calculator: GoalCalculator,
 ) {
 
-    /** Null when there is no active goal, or the date falls outside its window. */
-    suspend fun close(planId: Long, date: LocalDate): GoalCloseResult? {
-        val goal = sources.goals.observeActive(planId).first() ?: return null
+    /**
+     * One result for each running goal the date falls inside. Usually one, often none.
+     *
+     * Every goal, because each keeps its own history and a day belongs to
+     * all of them. They are independent: one goal being outside its window
+     * says nothing about the other.
+     */
+    suspend fun close(planId: Long, date: LocalDate): List<GoalCloseResult> =
+        sources.goals.observeAllActive(planId).first().mapNotNull { closeOne(it, date) }
+
+    private suspend fun closeOne(goal: Goal, date: LocalDate): GoalCloseResult? {
         if (date < goal.startDate || date > goal.targetDate) return null
 
         val history = sources.goals.observeProgress(goal.id).first()
@@ -65,17 +73,13 @@ class GoalCloser @Inject constructor(
                 measurements = measurementsFor(goal),
                 plannedMinutes = plannedMinutesFor(goal),
                 previous = history.filter { it.date < date }.maxByOrNull { it.date },
+                leftOutWeeks = sources.goals.observeLeftOutWeeks(goal.id).first(),
             ),
         )
 
-        // A day that is written again keeps what the user said about it. The
-        // writer only knows the day before, so the Monday of a week that was
-        // left out came back as counting every time a reading was corrected.
-        val kept = history.firstOrNull { it.date == date }?.let { row.copy(counted = it.counted) } ?: row
+        sources.goals.upsertProgress(row)
 
-        sources.goals.upsertProgress(kept)
-
-        return GoalCloseResult(goal.id, calculator.percentComplete(goal, kept.currentFor(goal), date))
+        return GoalCloseResult(goal.id, calculator.percentComplete(goal, row.currentFor(goal), date))
     }
 
     /**
