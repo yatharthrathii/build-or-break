@@ -6,6 +6,7 @@ import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.goal.GoalCalculator
 import com.buildorbreak.core.domain.goal.GoalSnapshot
+import com.buildorbreak.core.domain.goal.GoalWeek
 import com.buildorbreak.core.domain.goal.currentFor
 import com.buildorbreak.core.domain.repository.GoalRepository
 import com.buildorbreak.core.domain.repository.ItemRepository
@@ -16,7 +17,9 @@ import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.goal.Goal
 import com.buildorbreak.core.model.goal.GoalProgress
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +33,9 @@ import kotlinx.coroutines.withContext
 
 /** How many points the sparkline draws. Wider than this and the trend is unreadable. */
 private const val TRAIL_LENGTH = 30
+
+/** A month back. Further than that and nobody remembers which week they were ill. */
+private const val WEEKS_SHOWN = 4
 
 /**
  * The active goal, and every number a screen would want about it.
@@ -73,36 +79,49 @@ class ObserveGoalUseCase @Inject constructor(
         reading: Double?,
     ): GoalSnapshot {
         val today = time.today()
-        val counted = rows.filter { it.counted }
 
         // Today has no row until tonight, so it is added here. Without this a
         // counting goal sits at the same number all day however many times
         // the step is done, which is the single most deflating thing a goal
         // screen can do. The arithmetic is the writer's, so the number here
         // and the row written at midnight cannot disagree.
-        val current = counted.currentFor(goal) + sinceMidnight
-        val closed = counted.any { it.rawValue != null || it.cumulative > 0.0 }
+        val current = rows.currentFor(goal) + sinceMidnight
+        val closed = rows.any { it.rawValue != null || it.cumulative > 0.0 }
 
         return GoalSnapshot(
             goal = goal,
             current = current,
             paceTarget = calculator.paceTarget(goal, today),
-            projected = calculator.project(goal, counted),
+            // Every row, left out or not. The projector is what knows what
+            // leaving a week out means, and it cannot take a week out of the
+            // rate if the week was filtered away before it arrived.
+            projected = calculator.project(goal, rows),
             percent = calculator.percentComplete(goal, current, today),
             daysLeft = goal.daysLeft(today),
-            trail = trailOf(goal, counted),
+            trail = trailOf(goal, rows),
             // The rows exist from the first close after the goal was set, and
             // a row with nothing in it is not evidence of anything. Without
             // this the screen would draw a confident "behind pace" over a goal
             // set yesterday that nobody has had a chance to work on.
             hasData = sinceMidnight > 0.0 || closed,
-            // The projector reads the newest counted row, so that row is the
-            // one that has to have time behind it.
-            hasProjection = closed && counted.maxByOrNull { it.date }?.let { goal.daysElapsed(it.date) > 0 } == true,
+            // The projector reads the newest row, so that row is the one that
+            // has to have time behind it.
+            hasProjection = closed && rows.maxByOrNull { it.date }?.let { goal.daysElapsed(it.date) > 0 } == true,
             on = today,
             todayReading = reading,
+            weeks = weeksOf(rows),
         )
     }
+
+    /**
+     * From every row, not only the counted ones, or a week that was left out
+     * would vanish from the list and could never be put back.
+     */
+    private fun weeksOf(rows: List<GoalProgress>): List<GoalWeek> = rows
+        .groupBy { it.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
+        .map { (monday, days) -> GoalWeek(start = monday, counted = days.any { it.counted }) }
+        .sortedByDescending { it.start }
+        .take(WEEKS_SHOWN)
 
     private fun trailOf(goal: Goal, rows: List<GoalProgress>): List<Double> = rows
         .sortedBy { it.date }

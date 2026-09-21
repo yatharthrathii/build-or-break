@@ -412,6 +412,11 @@
     <string name="anchor_relative">Relative</string>
     <string name="anchor_window">Window</string>
     <string name="anchor_interval">Repeat</string>
+    <!-- One plain line under the four timing tabs. Without it everybody picks Fixed. -->
+    <string name="editor_timing_hint_fixed">Same time every day. Good for waking up, or anything that is booked.</string>
+    <string name="editor_timing_hint_relative">Comes after another step. If that step runs late, this one moves with it.</string>
+    <string name="editor_timing_hint_window">Any time between two times. It keeps reminding you until the time runs out.</string>
+    <string name="editor_timing_hint_interval">Again and again between two times. Like water every 2 hours.</string>
     <string name="editor_at">At</string>
     <string name="editor_from">From</string>
     <string name="editor_to">To</string>
@@ -467,6 +472,10 @@
     <string name="editor_measure_pick">What kind of number</string>
     <string name="editor_measure_body">Turn on for steps worth tracking with a number: weight, reps, pages.</string>
     <string name="editor_measure_on">Asked when you mark it done. Never required.</string>
+    <plurals name="editor_readings_count">
+        <item quantity="one">%1$d number so far</item>
+        <item quantity="other">Your last %1$d numbers</item>
+    </plurals>
     <string name="measure_none">None</string>
     <string name="measure_weight">Weight</string>
     <string name="measure_reps">Reps</string>
@@ -725,6 +734,14 @@
     <string name="goal_time">Time left</string>
     <string name="goal_day_of">Day %1$d of %2$d</string>
     <string name="goal_trail_range">%1$s to %2$s</string>
+    <string name="goal_weeks_title">Leave a week out</string>
+    <string name="goal_weeks_body">Sick or away? Switch that week off. What you did still counts. The goal just stops using that week to guess how fast you are going.</string>
+    <string name="goal_week_this">This week</string>
+    <string name="goal_week_last">Last week</string>
+    <string name="goal_week_range">%1$s – %2$s</string>
+    <string name="goal_week_counts">Counts</string>
+    <string name="goal_week_left_out">Left out</string>
+    <string name="goal_week_dated">%1$s · %2$s</string>
     <plurals name="goal_days_left">
         <item quantity="one">%1$d day left</item>
         <item quantity="other">%1$d days left</item>
@@ -754,7 +771,16 @@
     <string name="goal_form_target_percent">What percent of days</string>
     <string name="goal_form_target_hint">A number</string>
     <string name="goal_form_length">How long</string>
-    <string name="goal_form_length_body">Counted from today. A goal you can finish beats one you can only fail.</string>
+    <string name="goal_form_length_weeks">In weeks</string>
+    <string name="goal_form_length_date">By a date</string>
+    <string name="goal_form_ends">Ends on %1$s.</string>
+    <string name="goal_form_date_label">End date</string>
+    <string name="goal_form_date_earlier">Earlier month</string>
+    <string name="goal_form_date_later">Later month</string>
+    <plurals name="goal_form_days_long">
+        <item quantity="one">%1$d day from the start.</item>
+        <item quantity="other">%1$d days from the start.</item>
+    </plurals>
     <plurals name="goal_form_weeks">
         <item quantity="one">%1$d week</item>
         <item quantity="other">%1$d weeks</item>
@@ -823,6 +849,14 @@
     <string name="points_unlock_undo_body">Long press a done step on Today. The undo bar right after a tap stays free.</string>
     <string name="points_unlock_freeze">Keep a run over a missed day</string>
     <string name="points_unlock_freeze_body">Covers one day you missed so the run carries on. It does not count as a day kept.</string>
+    <string name="points_freeze_offer" tools:ignore="PluralsCandidate">Your run broke on %1$s. Cover that day and the run goes from %2$d back to %3$d.</string>
+    <string name="points_freeze_none">Nothing to cover right now. When a missed day breaks your run, it shows up here.</string>
+    <string name="points_freeze_action">Cover it</string>
+    <string name="points_freeze_title">Cover %1$s?</string>
+    <string name="points_freeze_body" tools:ignore="PluralsCandidate">This costs %1$d points. Your run carries on over that day. The day still shows as missed, because it was.</string>
+    <string name="points_freeze_confirm">Cover for %1$d</string>
+    <string name="points_freeze_failed">That did not go through. No points were taken.</string>
+    <string name="points_freeze_short" tools:ignore="PluralsCandidate">You need %1$d points for this.</string>
     <string name="points_unlock_routine">A third routine</string>
     <string name="points_unlock_routine_body">Two days are free, enough for a weekday and a weekend. Beyond that costs points.</string>
     <string name="points_unlock_goal">A second goal at the same time</string>

@@ -13,6 +13,7 @@ import com.buildorbreak.core.domain.goal.GoalCloser
 import com.buildorbreak.core.domain.goal.GoalProgressWriter
 import com.buildorbreak.core.domain.goal.GoalSources
 import com.buildorbreak.core.domain.goal.GoalStanding
+import com.buildorbreak.core.domain.goal.GoalWeek
 import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.plan.Plan
 import com.buildorbreak.core.testing.fixtures.ExecutionFixtures.done
@@ -23,6 +24,7 @@ import com.buildorbreak.core.testing.fixtures.PlanFixtures
 import com.buildorbreak.core.testing.time.FakeTimeProvider
 import com.google.common.truth.Truth.assertThat
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -134,13 +136,53 @@ class GoalUseCasesTest {
     }
 
     @Test
-    fun `a week marked as not counting is left out of where the goal stands`() = runTest {
+    fun `what was done in a week left out still counts toward where the goal stands`() = runTest {
         givenAPlan()
         goals.upsert(goal(kind = GoalKind.COUNT))
         goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(3), cumulative = 3.0))
         goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(5), cumulative = 5.0, counted = false))
 
-        assertThat(observe().first()!!.current).isEqualTo(3.0)
+        // Five sessions were done. Leaving the week out is about pace, and
+        // taking two of them away would punish the week twice.
+        assertThat(observe().first()!!.current).isEqualTo(5.0)
+    }
+
+    @Test
+    fun `leaving a week out moves the forecast`() = runTest {
+        givenAPlan()
+        goals.upsert(goal(kind = GoalKind.COUNT))
+        goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(3), cumulative = 3.0))
+        goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(5), cumulative = 3.0))
+        val before = observe().first()!!.projected
+
+        goals.setWeekCounted(goals.progress.value.first().goalId, LocalDate.of(2026, 1, 5), counted = false)
+
+        assertThat(observe().first()!!.projected).isGreaterThan(before)
+    }
+
+    @Test
+    fun `the weeks are listed newest first, each with whether it counts`() = runTest {
+        givenAPlan()
+        goals.upsert(goal(kind = GoalKind.COUNT))
+        goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(3), cumulative = 3.0))
+        goals.upsertProgress(progress(date = GoalFixtures.START.plusDays(5), cumulative = 5.0, counted = false))
+
+        // The first of January 2026 is a Thursday, so its week began on the 29th.
+        assertThat(observe().first()!!.weeks).containsExactly(
+            GoalWeek(start = LocalDate.of(2026, 1, 5), counted = false),
+            GoalWeek(start = LocalDate.of(2025, 12, 29), counted = true),
+        ).inOrder()
+    }
+
+    @Test
+    fun `a week that was left out is still listed, so it can be put back`() = runTest {
+        givenAPlan()
+        goals.upsert(goal(kind = GoalKind.COUNT))
+        goals.upsertProgress(progress(date = GoalFixtures.START, cumulative = 1.0, counted = false))
+
+        assertThat(observe().first()!!.weeks).containsExactly(
+            GoalWeek(start = LocalDate.of(2025, 12, 29), counted = false),
+        )
     }
 
     @Test
@@ -269,6 +311,22 @@ class GoalUseCasesTest {
 
         assertThat(goals.progress.value).hasSize(1)
         assertThat(goals.progress.value.single().cumulative).isEqualTo(1.0)
+    }
+
+    @Test
+    fun `a day written again stays left out if its week was left out`() = runTest {
+        givenAPlan()
+        goals.upsert(goal(kind = GoalKind.COUNT, itemId = ITEM_ID))
+        occurrences.occurrences.value = listOf(done(ITEM_ID, GoalFixtures.START))
+
+        closer.close(PlanFixtures.PLAN_ID, GoalFixtures.START)
+        val goalId = goals.progress.value.single().goalId
+        goals.setWeekCounted(goalId, LocalDate.of(2025, 12, 29), counted = false)
+
+        // What correcting a reading does: the same day goes through the closer again.
+        closer.close(PlanFixtures.PLAN_ID, GoalFixtures.START)
+
+        assertThat(goals.progress.value.single().counted).isFalse()
     }
 
     @Test

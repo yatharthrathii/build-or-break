@@ -14,6 +14,14 @@ private const val ON_PACE_BAND = 0.05
  * unit: kilograms for a measured goal, sessions for a count, minutes for a
  * duration, percent for a consistency goal.
  */
+/**
+ * One Monday to Sunday of a goal, and whether the goal is reading it.
+ *
+ * A week that does not count is still there. Its days are kept and shown;
+ * the pace and the forecast just stop treating them as evidence.
+ */
+data class GoalWeek(val start: LocalDate, val counted: Boolean)
+
 data class GoalSnapshot(
     val goal: Goal,
     /** Where the goal is now, smoothed where smoothing applies. */
@@ -53,6 +61,13 @@ data class GoalSnapshot(
      * unless the card also says what it saw today and why the two differ.
      */
     val todayReading: Double? = null,
+    /**
+     * The recent weeks that have days in them, newest first.
+     *
+     * Only weeks with a stored day. Leaving a week out works by marking its
+     * days, so a week with no days yet has nothing to mark.
+     */
+    val weeks: List<GoalWeek> = emptyList(),
 ) {
     /** How far [current] has come from where the goal began. */
     val changeSinceStart: Double get() = current - goal.startValue

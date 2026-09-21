@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -40,7 +41,12 @@ class GoalContentTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun render(state: GoalUiState, onNew: () -> Unit = {}, onChange: (GoalDraft) -> Unit = {}) {
+    private fun render(
+        state: GoalUiState,
+        onNew: () -> Unit = {},
+        onWeekCounted: (LocalDate, Boolean) -> Unit = { _, _ -> },
+        onChange: (GoalDraft) -> Unit = {},
+    ) {
         compose.setContent {
             BuildOrBreakTheme {
                 GoalContent(
@@ -52,6 +58,7 @@ class GoalContentTest {
                     onCancel = {},
                     onRetire = {},
                     onBack = {},
+                    onWeekCounted = onWeekCounted,
                 )
             }
         }
@@ -154,6 +161,121 @@ class GoalContentTest {
         compose.onNodeWithText("+").performClick()
 
         assertThat(changed?.weeks).isEqualTo(9)
+    }
+
+    @Test
+    fun `in weeks the form still says which day that lands on`() {
+        val draft = GoalDraft(title = "Twelve gym sessions", targetValue = "12", itemId = 3, startDate = TODAY)
+        render(GoalUiState.Empty.copy(loaded = true, draft = draft))
+
+        scrollTo("HOW LONG")
+        // Eight weeks on from Friday the 11th of September 2026.
+        compose.onNodeWithText("Ends on Fri 6 Nov 2026.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a goal can end on a date instead`() {
+        var changed: GoalDraft? = null
+        val draft = GoalDraft(title = "Twelve gym sessions", targetValue = "12", itemId = 3, startDate = TODAY)
+        render(GoalUiState.Empty.copy(loaded = true, draft = draft)) { changed = it }
+
+        scrollTo("HOW LONG")
+        compose.onNodeWithText("BY A DATE").performClick()
+
+        assertThat(changed?.byDate).isTrue()
+    }
+
+    @Test
+    fun `by date the form shows the day and how far off it is`() {
+        val draft = GoalDraft(
+            title = "Twelve gym sessions",
+            targetValue = "12",
+            itemId = 3,
+            startDate = TODAY,
+            targetDate = TODAY.plusDays(18),
+            byDate = true,
+        )
+        render(GoalUiState.Empty.copy(loaded = true, draft = draft))
+
+        scrollTo("HOW LONG")
+        compose.onNodeWithText("Tue 29 Sep 2026").assertIsDisplayed()
+        compose.onNodeWithText("18 days from the start.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `going back to weeks lands the end on a whole week`() {
+        var changed: GoalDraft? = null
+        val draft = GoalDraft(
+            title = "Twelve gym sessions",
+            targetValue = "12",
+            itemId = 3,
+            startDate = TODAY,
+            targetDate = TODAY.plusDays(18),
+            byDate = true,
+        )
+        render(GoalUiState.Empty.copy(loaded = true, draft = draft)) { changed = it }
+
+        scrollTo("HOW LONG")
+        compose.onNodeWithText("IN WEEKS").performClick()
+
+        // Eighteen days rounds up to three weeks, never down to two.
+        assertThat(changed?.targetDate).isEqualTo(TODAY.plusDays(21))
+        assertThat(changed?.byDate).isFalse()
+    }
+
+    @Test
+    fun `the weeks cannot be stepped to an end that has already passed`() {
+        var changed: GoalDraft? = null
+        val draft = GoalDraft(
+            title = "Twelve gym sessions",
+            targetValue = "12",
+            itemId = 3,
+            startDate = TODAY.minusDays(20),
+            targetDate = TODAY.plusDays(1),
+            earliestEnd = TODAY.plusDays(1),
+        )
+        render(GoalUiState.Empty.copy(loaded = true, draft = draft)) { changed = it }
+
+        scrollTo("HOW LONG")
+        compose.onNodeWithText("−").performClick()
+
+        assertThat(changed).isNull()
+    }
+
+    @Test
+    fun `a week can be left out of the goal`() {
+        var left: Pair<LocalDate, Boolean>? = null
+        val monday = LocalDate.of(2026, 9, 7)
+        val weeks = persistentListOf(GoalWeekUi(monday, monday.plusDays(6), counted = true, weeksAgo = 0))
+        render(
+            GoalUiState.Empty.copy(loaded = true, goal = card().copy(weeks = weeks)),
+            onWeekCounted = { week, counted -> left = week to counted },
+        )
+
+        scrollTo("This week")
+        compose.onNodeWithText("7 Sep – 13 Sep · Counts").assertIsDisplayed()
+        compose.onNode(isToggleable()).performClick()
+
+        assertThat(left).isEqualTo(monday to false)
+    }
+
+    @Test
+    fun `a week that was left out says so, and last week is called last week`() {
+        val monday = LocalDate.of(2026, 8, 31)
+        val weeks = persistentListOf(GoalWeekUi(monday, monday.plusDays(6), counted = false, weeksAgo = 1))
+        render(GoalUiState.Empty.copy(loaded = true, goal = card().copy(weeks = weeks)))
+
+        scrollTo("Last week")
+        compose.onNodeWithText("31 Aug – 6 Sep · Left out").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a finished goal has no weeks to leave out`() {
+        val monday = LocalDate.of(2026, 9, 7)
+        val weeks = persistentListOf(GoalWeekUi(monday, monday.plusDays(6), counted = true, weeksAgo = 0))
+        render(GoalUiState.Empty.copy(loaded = true, goal = card().copy(weeks = weeks, isFinished = true)))
+
+        compose.onAllNodesWithText("This week").assertCountEquals(0)
     }
 
     @Test

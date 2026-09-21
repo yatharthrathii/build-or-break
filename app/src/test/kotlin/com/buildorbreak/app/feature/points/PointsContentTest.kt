@@ -100,4 +100,75 @@ class PointsContentTest {
         compose.onNodeWithText("Another tomorrow", substring = true).assertIsDisplayed()
         compose.onNodeWithText("WATCH").assertIsNotEnabled()
     }
+
+    private fun withFreeze(freeze: FreezeUi?) = loaded().copy(
+        unlocks = persistentListOf(UnlockUi(UnlockKind.STREAK_FREEZE, 200, affordable = true)),
+        freeze = freeze,
+    )
+
+    private val offer = FreezeUi(
+        date = LocalDate.of(2026, 9, 19),
+        runNow = 1,
+        runAfter = 12,
+        cost = 200,
+        affordable = true,
+    )
+
+    @Test
+    fun `a broken run names the day and offers to cover it`() {
+        var asked = false
+        compose.setContent {
+            BuildOrBreakTheme {
+                PointsContent(
+                    state = withFreeze(offer),
+                    onWatchAd = {},
+                    onDismissAd = {},
+                    onBack = {},
+                    freezeActions = FreezeActions(onAsk = { asked = true }),
+                )
+            }
+        }
+
+        compose.onNodeWithText("Sat 19 Sep", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("COVER IT").performClick()
+
+        assertThat(asked).isTrue()
+    }
+
+    @Test
+    fun `with no broken run the row says so instead of showing a dead price`() {
+        render(withFreeze(null))
+
+        compose.onNodeWithText("Nothing to cover right now", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `too few points turns the button off and says how many are needed`() {
+        render(withFreeze(offer.copy(affordable = false)))
+
+        compose.onNodeWithText("COVER IT").assertIsNotEnabled()
+        compose.onNodeWithText("You need 200 points", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `points are only taken after the second tap`() {
+        var confirmed = false
+        compose.setContent {
+            BuildOrBreakTheme {
+                PointsContent(
+                    state = withFreeze(offer.copy(asking = true)),
+                    onWatchAd = {},
+                    onDismissAd = {},
+                    onBack = {},
+                    freezeActions = FreezeActions(onConfirm = { confirmed = true }),
+                )
+            }
+        }
+
+        compose.onNodeWithText("This costs 200 points", substring = true).assertIsDisplayed()
+        assertThat(confirmed).isFalse()
+
+        compose.onNodeWithText("COVER FOR 200").performClick()
+        assertThat(confirmed).isTrue()
+    }
 }

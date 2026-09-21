@@ -71,4 +71,45 @@ class StreaksTest {
 
         assertThat(run).isEqualTo(1)
     }
+
+    @Test
+    fun `the offer is the missed day that ended the run`() {
+        val before = GoalFixtures.closes(from = today.minusDays(5), days = 3, itemsDone = 9, itemsTotal = 10)
+        val after = GoalFixtures.closes(from = today.minusDays(1), days = 1, itemsDone = 9, itemsTotal = 10)
+
+        val offer = Streaks.freezeOffer(before + after, today)
+
+        assertThat(offer).isEqualTo(FreezeOffer(date = today.minusDays(2), runNow = 1, runAfter = 4))
+    }
+
+    @Test
+    fun `yesterday is on offer when yesterday is what was missed`() {
+        val before = GoalFixtures.closes(from = today.minusDays(4), days = 3, itemsDone = 9, itemsTotal = 10)
+
+        val offer = Streaks.freezeOffer(before, today)
+
+        assertThat(offer).isEqualTo(FreezeOffer(date = today.minusDays(1), runNow = 0, runAfter = 3))
+    }
+
+    @Test
+    fun `no offer when nothing sits behind the gap`() {
+        val kept = GoalFixtures.closes(from = today.minusDays(2), days = 2, itemsDone = 9, itemsTotal = 10)
+
+        assertThat(Streaks.freezeOffer(kept, today)).isNull()
+    }
+
+    @Test
+    fun `no offer with no history at all`() {
+        assertThat(Streaks.freezeOffer(emptyList(), today)).isNull()
+    }
+
+    @Test
+    fun `a day already covered is not offered twice`() {
+        val before = GoalFixtures.closes(from = today.minusDays(5), days = 3, itemsDone = 9, itemsTotal = 10)
+        val after = GoalFixtures.closes(from = today.minusDays(1), days = 1, itemsDone = 9, itemsTotal = 10)
+
+        val offer = Streaks.freezeOffer(before + after, today, frozen = setOf(today.minusDays(2)))
+
+        assertThat(offer).isNull()
+    }
 }

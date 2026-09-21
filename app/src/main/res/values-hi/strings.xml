@@ -375,6 +375,10 @@
     <string name="anchor_relative">रिलेटिव</string>
     <string name="anchor_window">विंडो</string>
     <string name="anchor_interval">दोहराव</string>
+    <string name="editor_timing_hint_fixed">रोज़ एक ही टाइम पर। उठने के लिए, या जो चीज़ पहले से बुक है उसके लिए सही।</string>
+    <string name="editor_timing_hint_relative">किसी दूसरे स्टेप के बाद आता है। वह स्टेप लेट हुआ तो यह भी उसके साथ खिसक जाता है।</string>
+    <string name="editor_timing_hint_window">दो टाइम के बीच कभी भी। टाइम खत्म होने तक याद दिलाता रहता है।</string>
+    <string name="editor_timing_hint_interval">दो टाइम के बीच बार-बार। जैसे हर 2 घंटे में पानी।</string>
     <string name="editor_at">समय</string>
     <string name="editor_from">से</string>
     <string name="editor_to">तक</string>
@@ -430,6 +434,10 @@
     <string name="editor_measure_pick">किस तरह का नंबर</string>
     <string name="editor_measure_body">उन स्टेप के लिए चालू करें जिन्हें नंबर से मापना हो: वज़न, रेप्स, पेज।</string>
     <string name="editor_measure_on">Done करने पर पूछा जाता है। कभी ज़रूरी नहीं।</string>
+    <plurals name="editor_readings_count">
+        <item quantity="one">अब तक %1$d नंबर</item>
+        <item quantity="other">आपके पिछले %1$d नंबर</item>
+    </plurals>
     <string name="measure_none">कोई नहीं</string>
     <string name="measure_weight">वज़न</string>
     <string name="measure_reps">रेप्स</string>
@@ -678,6 +686,14 @@
     <string name="goal_time">बचा समय</string>
     <string name="goal_day_of">दिन %1$d / %2$d</string>
     <string name="goal_trail_range">%1$s से %2$s</string>
+    <string name="goal_weeks_title">कोई हफ़्ता छोड़ दें</string>
+    <string name="goal_weeks_body">बीमार थे या बाहर गए थे? वह हफ़्ता बंद कर दें। आपने जो किया वह गिना रहेगा। गोल बस उस हफ़्ते से आपकी रफ़्तार का अंदाज़ा लगाना बंद कर देता है।</string>
+    <string name="goal_week_this">यह हफ़्ता</string>
+    <string name="goal_week_last">पिछला हफ़्ता</string>
+    <string name="goal_week_range">%1$s – %2$s</string>
+    <string name="goal_week_counts">गिना जाएगा</string>
+    <string name="goal_week_left_out">छोड़ा गया</string>
+    <string name="goal_week_dated">%1$s · %2$s</string>
     <plurals name="goal_days_left">
         <item quantity="one">%1$d दिन बाकी</item>
         <item quantity="other">%1$d दिन बाकी</item>
@@ -707,7 +723,16 @@
     <string name="goal_form_target_percent">कितने प्रतिशत दिन</string>
     <string name="goal_form_target_hint">एक नंबर</string>
     <string name="goal_form_length">कितने समय का</string>
-    <string name="goal_form_length_body">आज से गिनती। जो गोल पूरा हो सके वह उससे बेहतर है जो सिर्फ़ फ़ेल हो सके।</string>
+    <string name="goal_form_length_weeks">हफ़्तों में</string>
+    <string name="goal_form_length_date">तारीख तक</string>
+    <string name="goal_form_ends">%1$s को खत्म होगा।</string>
+    <string name="goal_form_date_label">आख़िरी तारीख</string>
+    <string name="goal_form_date_earlier">पिछला महीना</string>
+    <string name="goal_form_date_later">अगला महीना</string>
+    <plurals name="goal_form_days_long">
+        <item quantity="one">शुरू से %1$d दिन।</item>
+        <item quantity="other">शुरू से %1$d दिन।</item>
+    </plurals>
     <plurals name="goal_form_weeks">
         <item quantity="one">%1$d हफ़्ता</item>
         <item quantity="other">%1$d हफ़्ते</item>
@@ -774,6 +799,14 @@
     <string name="points_unlock_undo_body">टुडे में किसी हो चुके स्टेप को दबाए रखें। टैप के तुरंत बाद वाला अनडू फ्री ही रहेगा।</string>
     <string name="points_unlock_freeze">छूटे दिन पर रन बचाना</string>
     <string name="points_unlock_freeze_body">एक छूटे दिन को ढक देता है ताकि रन चलता रहे। वह दिन गिना नहीं जाएगा।</string>
+    <string name="points_freeze_offer">आपका रन %1$s को टूटा। वह दिन ढक दें तो रन %2$d से वापस %3$d हो जाएगा।</string>
+    <string name="points_freeze_none">अभी ढकने को कुछ नहीं है। जब कोई छूटा दिन आपका रन तोड़ेगा, वह यहाँ दिखेगा।</string>
+    <string name="points_freeze_action">ढक दें</string>
+    <string name="points_freeze_title">%1$s को ढकें?</string>
+    <string name="points_freeze_body">इसके %1$d पॉइंट्स लगेंगे। रन उस दिन के ऊपर से चलता रहेगा। दिन फिर भी छूटा हुआ ही दिखेगा, क्योंकि वह छूटा था।</string>
+    <string name="points_freeze_confirm">%1$d में ढकें</string>
+    <string name="points_freeze_failed">यह नहीं हो पाया। कोई पॉइंट नहीं कटा।</string>
+    <string name="points_freeze_short">इसके लिए %1$d पॉइंट्स चाहिए।</string>
     <string name="points_unlock_routine">तीसरा रूटीन</string>
     <string name="points_unlock_routine_body">दो दिन फ्री हैं, वीकडे और वीकएंड के लिए। उससे आगे पॉइंट्स लगते हैं।</string>
     <string name="points_unlock_goal">एक साथ दूसरा गोल</string>

@@ -18,17 +18,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.buildorbreak.app.R
+import com.buildorbreak.app.feature.goal.format
 import com.buildorbreak.core.designsystem.component.HairlineRule
 import com.buildorbreak.core.designsystem.component.Kicker
+import com.buildorbreak.core.designsystem.component.Label
 import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.component.PickerField
+import com.buildorbreak.core.designsystem.component.TrailColumns
 import com.buildorbreak.core.designsystem.theme.Theme
 import com.buildorbreak.core.model.enums.ValueKind
+
+/** Half the goal screen's chart. This one is a glance, not the thing being read. */
+private val ReadingsHeight = 40.dp
 
 /**
  * The group this step belongs to, and what belonging costs it.
@@ -146,6 +154,10 @@ internal fun MeasureSection(state: ItemEditorUiState, onChange: (ItemEditorUiSta
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Theme.spacing.small),
         )
+
+        if (state.valueKind != ValueKind.NONE && state.readings.size > 1) {
+            ReadingsSoFar(values = state.readings)
+        }
     }
 
     if (choosing) {
@@ -156,6 +168,33 @@ internal fun MeasureSection(state: ItemEditorUiState, onChange: (ItemEditorUiSta
                 choosing = false
             },
             onDismiss = { choosing = false },
+        )
+    }
+}
+
+/**
+ * The numbers this step has been given, as a shape.
+ *
+ * Small on purpose. The goal screen is where a number is read closely; here
+ * it only has to answer "is this going anywhere" while the step is open.
+ */
+@Composable
+private fun ReadingsSoFar(values: List<Double>) {
+    val range = stringResource(R.string.goal_trail_range, format(values.min()), format(values.max()))
+
+    Column(modifier = Modifier.padding(top = Theme.spacing.inset)) {
+        Kicker(text = pluralStringResource(R.plurals.editor_readings_count, values.size, values.size))
+
+        TrailColumns(
+            values = values,
+            description = range,
+            height = ReadingsHeight,
+            modifier = Modifier.padding(top = Theme.spacing.small),
+        )
+
+        Label(
+            text = range,
+            modifier = Modifier.padding(top = Theme.spacing.tight).clearAndSetSemantics {},
         )
     }
 }

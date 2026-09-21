@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,6 +49,8 @@ import com.buildorbreak.core.designsystem.component.Label
 import com.buildorbreak.core.designsystem.component.OutlineButton
 import com.buildorbreak.core.designsystem.component.Panel
 import com.buildorbreak.core.designsystem.component.SectionLabel
+import com.buildorbreak.core.designsystem.component.SquareToggle
+import com.buildorbreak.core.designsystem.component.TrailColumns
 import com.buildorbreak.core.designsystem.theme.BuildOrBreakTheme
 import com.buildorbreak.core.designsystem.theme.HeroNumberStyle
 import com.buildorbreak.core.designsystem.theme.Theme
@@ -57,6 +58,8 @@ import com.buildorbreak.core.designsystem.theme.TimeStyle
 import com.buildorbreak.core.domain.goal.GoalStanding
 import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.enums.ValueKind
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
@@ -91,6 +94,7 @@ fun GoalScreen(
         state = state,
         onOpenReadings = onOpenReadings,
         onAddReading = onAddReading,
+        onWeekCounted = { week, counted -> viewModel.onWeekCounted(week, counted) },
         onNew = viewModel::onNew,
         onEdit = viewModel::onEdit,
         onChange = viewModel::onChange,
@@ -115,6 +119,7 @@ fun GoalContent(
     modifier: Modifier = Modifier,
     onOpenReadings: () -> Unit = {},
     onAddReading: () -> Unit = {},
+    onWeekCounted: (LocalDate, Boolean) -> Unit = { _, _ -> },
 ) {
     Column(
         modifier = modifier
@@ -134,6 +139,7 @@ fun GoalContent(
                 onRetire = onRetire,
                 onOpenReadings = onOpenReadings,
                 onAddReading = onAddReading,
+                onWeekCounted = onWeekCounted,
             )
             state.loaded -> NoGoal(onNew = onNew)
             // Nothing, rather than "no goal yet", before the first read.
@@ -244,6 +250,7 @@ private fun GoalBody(
     onRetire: () -> Unit,
     onOpenReadings: () -> Unit,
     onAddReading: () -> Unit,
+    onWeekCounted: (LocalDate, Boolean) -> Unit,
 ) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         if (goal.isFinished) Finished(goal = goal, onNew = onNew)
@@ -263,6 +270,11 @@ private fun GoalBody(
             ReadingActions(onOpenReadings = onOpenReadings, onAddReading = onAddReading)
         }
 
+        // Not on a finished goal. There is no forecast left for a week to bend.
+        if (goal.weeks.isNotEmpty() && !goal.isFinished) {
+            Weeks(weeks = goal.weeks, onWeekCounted = onWeekCounted)
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth().padding(Theme.spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -276,6 +288,79 @@ private fun GoalBody(
         }
     }
 }
+
+/**
+ * The weeks that can be left out, each with a switch.
+ *
+ * A week of flu should not decide where a goal is heading. The switch leaves
+ * the week out of the pace and the forecast and touches nothing else: the
+ * days stay saved, and switching it back on brings them straight back.
+ */
+@Composable
+private fun Weeks(weeks: List<GoalWeekUi>, onWeekCounted: (LocalDate, Boolean) -> Unit) {
+    SectionLabel(text = stringResource(R.string.goal_weeks_title))
+
+    Text(
+        text = stringResource(R.string.goal_weeks_body),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = Theme.spacing.medium).padding(bottom = Theme.spacing.small),
+    )
+
+    HairlineRule()
+
+    weeks.forEach { week ->
+        WeekRow(week = week, onCounted = { onWeekCounted(week.start, it) })
+        HairlineRule()
+    }
+}
+
+@Composable
+private fun WeekRow(week: GoalWeekUi, onCounted: (Boolean) -> Unit) {
+    val range = stringResource(R.string.goal_week_range, week.start.format(shortDate()), week.end.format(shortDate()))
+    val status = stringResource(if (week.counted) R.string.goal_week_counts else R.string.goal_week_left_out)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = when (week.weeksAgo) {
+                    0 -> stringResource(R.string.goal_week_this)
+                    1 -> stringResource(R.string.goal_week_last)
+                    else -> range
+                },
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Text(
+                // An older week is already titled with its dates. Saying them twice
+                // made the row read like a mistake.
+                text = if (week.weeksAgo > 1) status else stringResource(R.string.goal_week_dated, range, status),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (week.counted) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                },
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+
+        SquareToggle(
+            checked = week.counted,
+            onCheckedChange = onCounted,
+            modifier = Modifier.padding(start = Theme.spacing.medium),
+        )
+    }
+}
+
+/** "21 Sep". A function, so it follows the language the phone is in now. */
+private fun shortDate(): DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
 
 /**
  * The verdict, once the goal is over.
@@ -526,33 +611,16 @@ private fun NumberRow(label: String, value: String, note: String? = null) {
 /** The line so far, one column per recorded day. Values only; no invented zeroes. */
 @Composable
 private fun Trail(values: List<Double>) {
-    val top = values.max()
-    val bottom = values.min()
-    val span = (top - bottom).takeIf { it > 0.0 } ?: 1.0
-    val range = stringResource(R.string.goal_trail_range, format(bottom), format(top))
+    val range = stringResource(R.string.goal_trail_range, format(values.min()), format(values.max()))
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Theme.spacing.medium, vertical = 12.dp)
-            .height(TrailHeight)
-            // The columns are the shape of the line; the range is what it
-            // says. A reader gets the range once, from the chart itself.
-            .semantics { contentDescription = range },
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        values.forEach { value ->
-            val fraction = ((value - bottom) / span).toFloat().coerceIn(0f, 1f)
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(fraction.coerceAtLeast(MIN_BAR))
-                    .background(MaterialTheme.colorScheme.onSurface),
-            )
-        }
-    }
+    // The columns are the shape of the line; the range is what it says. A
+    // reader gets the range once, from the chart itself.
+    TrailColumns(
+        values = values,
+        description = range,
+        height = TrailHeight,
+        modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 12.dp),
+    )
 
     Label(
         text = range,

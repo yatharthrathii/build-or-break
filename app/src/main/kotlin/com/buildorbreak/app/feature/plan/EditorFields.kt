@@ -74,6 +74,16 @@ internal fun TimingSection(state: ItemEditorUiState, onChange: (ItemEditorUiStat
                 .padding(top = 8.dp),
         )
 
+        // Four bare words taught nobody anything, and everybody picked the
+        // first one. A routine made entirely of fixed times cannot move when
+        // the morning runs late, which is the one thing this app is for.
+        Text(
+            text = stringResource(anchorHint(state.anchor.kind)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Theme.spacing.small),
+        )
+
         Box(modifier = Modifier.padding(top = 14.dp)) {
             when (state.anchor.kind) {
                 AnchorType.FIXED -> TimeField(
@@ -382,4 +392,11 @@ internal fun anchorLabel(kind: AnchorType): Int = when (kind) {
     AnchorType.RELATIVE -> R.string.anchor_relative
     AnchorType.WINDOW -> R.string.anchor_window
     AnchorType.INTERVAL -> R.string.anchor_interval
+}
+
+private fun anchorHint(kind: AnchorType): Int = when (kind) {
+    AnchorType.FIXED -> R.string.editor_timing_hint_fixed
+    AnchorType.RELATIVE -> R.string.editor_timing_hint_relative
+    AnchorType.WINDOW -> R.string.editor_timing_hint_window
+    AnchorType.INTERVAL -> R.string.editor_timing_hint_interval
 }

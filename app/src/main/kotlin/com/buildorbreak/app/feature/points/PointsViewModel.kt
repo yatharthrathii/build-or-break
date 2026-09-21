@@ -3,8 +3,11 @@ package com.buildorbreak.app.feature.points
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.domain.goal.Prices
+import com.buildorbreak.core.domain.usecase.FreezeDayUseCase
 import com.buildorbreak.core.domain.usecase.ObserveAdAvailableUseCase
+import com.buildorbreak.core.domain.usecase.ObserveFreezeOfferUseCase
 import com.buildorbreak.core.domain.usecase.ObserveLedgerUseCase
 import com.buildorbreak.core.domain.usecase.ObserveWalletUseCase
 import com.buildorbreak.core.domain.usecase.PointMovement
@@ -20,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /** One line of the ledger, ready to draw. */
 @Immutable
@@ -34,6 +38,24 @@ data class MovementUi(val date: LocalDate, val delta: Int, val reason: PointReas
  */
 @Immutable
 data class UnlockUi(val kind: UnlockKind, val cost: Int?, val affordable: Boolean)
+
+/**
+ * The one missed day a freeze is worth buying for, and what it would do.
+ *
+ * [asking] is true while the confirmation is open. Points are not taken on
+ * the first tap: spending is the one thing on this screen that cannot be
+ * undone, so it is said out loud first.
+ */
+@Immutable
+data class FreezeUi(
+    val date: LocalDate,
+    val runNow: Int,
+    val runAfter: Int,
+    val cost: Int,
+    val affordable: Boolean,
+    val asking: Boolean = false,
+    val failed: Boolean = false,
+)
 
 /** Everything points buy, built or not. The screen turns each into a sentence. */
 enum class UnlockKind { UNDO_STEP, STREAK_FREEZE, EXTRA_ROUTINE, SECOND_GOAL }
@@ -50,32 +72,56 @@ data class PointsUiState(
     val movements: ImmutableList<MovementUi> = persistentListOf(),
     /** Set when the ad button is tapped, because the ads are not wired up yet. */
     val adNotReady: Boolean = false,
+    /** Null when no missed day is breaking the run, which is most days. */
+    val freeze: FreezeUi? = null,
 )
 
 /**
  * The points screen: what is in the wallet, what it buys, and where it went.
  *
- * The three unlocks that exist are bought where they are used, not from
- * here. Buying a freeze from a list of prices would mean choosing a day
- * from a second list, and the day is already on screen on Insights; buying
- * an undo would mean choosing a step. This screen is the statement, not the
- * shop, which is what makes the ledger the point of it.
+ * An undo and a routine are bought where they are used, because each needs
+ * something chosen first: a step, a name. A freeze is the exception and is
+ * bought here. There is never a day to choose, since only the one missed
+ * day that broke the run is worth covering, so the row can name that day
+ * and carry the button itself.
  */
 @HiltViewModel
 class PointsViewModel @Inject constructor(
     observeWallet: ObserveWalletUseCase,
     observeLedger: ObserveLedgerUseCase,
     observeAdAvailable: ObserveAdAvailableUseCase,
+    observeFreezeOffer: ObserveFreezeOfferUseCase,
+    private val freezeDay: FreezeDayUseCase,
 ) : ViewModel() {
 
     private val adTapped = MutableStateFlow(false)
+    private val freezeAsk = MutableStateFlow(FreezeAsk())
+
+    /** Where the freeze confirmation has got to. Two flags, kept together so they combine as one. */
+    private data class FreezeAsk(val open: Boolean = false, val failed: Boolean = false)
+
+    /** The offer with the wallet beside it, so the row knows whether it can be afforded. */
+    private val freeze = combine(observeFreezeOffer(), observeWallet(), freezeAsk) { offer, wallet, ask ->
+        offer?.let {
+            FreezeUi(
+                date = it.date,
+                runNow = it.runNow,
+                runAfter = it.runAfter,
+                cost = Prices.STREAK_FREEZE,
+                affordable = wallet.canAfford(Prices.STREAK_FREEZE),
+                asking = ask.open,
+                failed = ask.failed,
+            )
+        }
+    }
 
     val state: StateFlow<PointsUiState> = combine(
         observeWallet(),
         observeLedger(),
         observeAdAvailable(),
         adTapped,
-    ) { wallet, ledger, adReady, tapped ->
+        freeze,
+    ) { wallet, ledger, adReady, tapped, freezeOffer ->
         PointsUiState(
             loaded = true,
             balance = wallet.balance,
@@ -85,6 +131,7 @@ class PointsViewModel @Inject constructor(
             unlocks = unlocksFor(wallet.balance),
             movements = ledger.map { it.toUi() }.toImmutableList(),
             adNotReady = tapped,
+            freeze = freezeOffer,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -105,6 +152,28 @@ class PointsViewModel @Inject constructor(
 
     fun onDismissAd() {
         adTapped.value = false
+    }
+
+    fun onAskFreeze() {
+        freezeAsk.value = FreezeAsk(open = true)
+    }
+
+    fun onDismissFreeze() {
+        freezeAsk.value = FreezeAsk()
+    }
+
+    /**
+     * The day comes from the offer, never from the screen.
+     *
+     * When it works the offer itself goes away, because the day is no
+     * longer a gap, and the dialog goes with it. Only a failure has to be
+     * said.
+     */
+    fun onConfirmFreeze() = viewModelScope.launch {
+        val day = state.value.freeze?.date ?: return@launch
+        val bought = freezeDay(day) is Outcome.Success
+
+        freezeAsk.value = FreezeAsk(open = !bought, failed = !bought)
     }
 
     private fun unlocksFor(balance: Int): ImmutableList<UnlockUi> = listOf(

@@ -7,16 +7,21 @@ import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.common.time.TimeProvider
 import com.buildorbreak.core.domain.goal.GoalSnapshot
 import com.buildorbreak.core.domain.goal.GoalStanding
+import com.buildorbreak.core.domain.goal.GoalWeek
 import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.PlanItemChoice
 import com.buildorbreak.core.domain.usecase.RetireGoalUseCase
 import com.buildorbreak.core.domain.usecase.SaveGoalUseCase
+import com.buildorbreak.core.domain.usecase.SetWeekCountedUseCase
 import com.buildorbreak.core.model.enums.GoalKind
 import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.goal.Goal
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -33,6 +38,7 @@ private const val DAYS_PER_WEEK = 7L
 
 /** Eight weeks. Long enough for a habit to prove itself, short enough to finish. */
 private const val DEFAULT_WEEKS = 8
+private const val MAX_WEEKS = 52
 
 /**
  * A step a counting or accumulating goal can be attached to.
@@ -47,10 +53,11 @@ data class GoalItemChoice(val id: Long, val title: String, val templateName: Str
 /**
  * Everything a goal is, while it is being written.
  *
- * A length in weeks rather than a target date, because that is how people
- * actually decide: "in two months" is a real thought and "by the 14th of
- * March" is arithmetic somebody has to do first. The date the domain wants is
- * derived from it, once, here.
+ * The end is held as a date and can be set two ways. Weeks come first,
+ * because "in two months" is how most goals are thought of. A date is the
+ * other way in, for the goals that belong to the calendar rather than to the
+ * person: a wedding, a medical check, a trip. Weeks are read off the date,
+ * never stored beside it, so the two cannot disagree.
  */
 @Immutable
 data class GoalDraft(
@@ -61,7 +68,6 @@ data class GoalDraft(
     val valueKind: ValueKind = ValueKind.WEIGHT_KG,
     val startValue: String = "",
     val targetValue: String = "",
-    val weeks: Int = DEFAULT_WEEKS,
     /**
      * No default, deliberately.
      *
@@ -70,7 +76,31 @@ data class GoalDraft(
      * chose, quietly waiting to be saved by a path that forgot to set it.
      */
     val startDate: LocalDate,
+    val targetDate: LocalDate = startDate.plusDays(DEFAULT_WEEKS * DAYS_PER_WEEK),
+    /** Which of the two ways the end is being set. Only changes what the form shows. */
+    val byDate: Boolean = false,
+    /**
+     * The first day the goal may end on: after it starts, and not in the past.
+     *
+     * Handed in because the form may not read a clock, and because a goal
+     * edited into yesterday would finish the moment it was saved.
+     */
+    val earliestEnd: LocalDate = startDate.plusDays(1),
 ) {
+    /** A year. Past that a goal is a wish, and the pace line is too flat to read. */
+    val latestEnd: LocalDate get() = startDate.plusDays(MAX_WEEKS * DAYS_PER_WEEK)
+
+    val days: Int get() = ChronoUnit.DAYS.between(startDate, targetDate).toInt()
+
+    /** Rounded up, so a goal of ten days reads as two weeks rather than one. */
+    val weeks: Int get() = ((days + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK).toInt().coerceIn(1, MAX_WEEKS)
+
+    /** The draft, ending this many whole weeks after it starts. Null when that is not allowed. */
+    fun endingAfter(weeks: Int): GoalDraft? {
+        val end = startDate.plusDays(weeks * DAYS_PER_WEEK)
+        return copy(targetDate = end).takeIf { weeks >= 1 && end >= earliestEnd && end <= latestEnd }
+    }
+
     val start: Double? get() = startValue.trim().toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
     val target: Double? get() = targetValue.trim().toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
 
@@ -118,6 +148,15 @@ data class GoalUiState(
     }
 }
 
+/**
+ * One week of the goal, and whether the goal is reading it.
+ *
+ * [weeksAgo] is zero for the week today is in. A fact, so the screen can say
+ * "this week" in whatever language it is in.
+ */
+@Immutable
+data class GoalWeekUi(val start: LocalDate, val end: LocalDate, val counted: Boolean, val weeksAgo: Int)
+
 /** The goal, formatted. Every number here is read off the snapshot. */
 @Immutable
 data class GoalCardUi(
@@ -149,6 +188,8 @@ data class GoalCardUi(
     /** Where the goal began, kept so an edit does not restart it from today. */
     val startValue: Double = 0.0,
     val startDate: LocalDate? = null,
+    /** The recent weeks that can be left out of the goal, newest first. */
+    val weeks: ImmutableList<GoalWeekUi> = persistentListOf(),
 )
 
 /**
@@ -165,6 +206,7 @@ class GoalViewModel @Inject constructor(
     private val observePlan: ObservePlanUseCase,
     private val saveGoal: SaveGoalUseCase,
     private val retireGoal: RetireGoalUseCase,
+    private val setWeekCounted: SetWeekCountedUseCase,
     private val time: TimeProvider,
 ) : ViewModel() {
 
@@ -203,13 +245,15 @@ class GoalViewModel @Inject constructor(
 
     /** Opens the form on a blank goal, starting today. */
     fun onNew() {
-        draft.value = GoalDraft(startDate = time.today())
+        val today = time.today()
+        draft.value = GoalDraft(startDate = today, earliestEnd = today.plusDays(1))
         failed.value = false
     }
 
     /** Opens the form on the goal that exists, keeping the day it started. */
     fun onEdit() {
         val card = state.value.goal ?: return
+        val started = card.startDate ?: time.today().minusDays(card.daysElapsed.toLong())
 
         draft.value = GoalDraft(
             id = card.id,
@@ -223,8 +267,12 @@ class GoalViewModel @Inject constructor(
             // progress behind it were gone.
             startValue = card.startValue.takeIf { card.kind == GoalKind.NUMBER }?.toString().orEmpty(),
             targetValue = card.target.toString(),
-            weeks = ((card.totalDays + DAYS_PER_WEEK - 1) / DAYS_PER_WEEK).toInt().coerceAtLeast(1),
-            startDate = card.startDate ?: time.today().minusDays(card.daysElapsed.toLong()),
+            startDate = started,
+            targetDate = started.plusDays(card.totalDays.toLong()),
+            // A goal set by date keeps being edited by date. Whole weeks is
+            // what the stepper writes, so anything else came from the calendar.
+            byDate = card.totalDays % DAYS_PER_WEEK != 0L,
+            earliestEnd = maxOf(started, time.today()).plusDays(1),
         )
         failed.value = false
     }
@@ -248,6 +296,11 @@ class GoalViewModel @Inject constructor(
         failed.value = !written
     }
 
+    /** Leaves a week out of the goal, or puts it back. The days themselves are untouched. */
+    fun onWeekCounted(weekStart: LocalDate, counted: Boolean) = viewModelScope.launch {
+        state.value.goal?.let { setWeekCounted(it.id, weekStart, counted) }
+    }
+
     /** Its history stays, because it happened. */
     fun onRetire() = viewModelScope.launch {
         state.value.goal?.let { retireGoal(it.id) }
@@ -264,7 +317,7 @@ class GoalViewModel @Inject constructor(
         startValue = if (from.needsStart) from.start ?: 0.0 else 0.0,
         targetValue = from.target ?: 0.0,
         startDate = from.startDate,
-        targetDate = from.startDate.plusDays(from.weeks * DAYS_PER_WEEK),
+        targetDate = from.targetDate,
         isActive = true,
     )
 
@@ -292,7 +345,19 @@ class GoalViewModel @Inject constructor(
         trail = snapshot.trail.toImmutableList(),
         startValue = snapshot.goal.startValue,
         startDate = snapshot.goal.startDate,
+        weeks = snapshot.weeks.map { toWeek(it, snapshot.on) }.toImmutableList(),
     )
+
+    private fun toWeek(week: GoalWeek, today: LocalDate): GoalWeekUi {
+        val thisMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+        return GoalWeekUi(
+            start = week.start,
+            end = week.start.plusDays(DAYS_PER_WEEK - 1),
+            counted = week.counted,
+            weeksAgo = (ChronoUnit.DAYS.between(week.start, thisMonday) / DAYS_PER_WEEK).toInt(),
+        )
+    }
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
