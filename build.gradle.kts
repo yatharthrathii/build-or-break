@@ -14,7 +14,6 @@ plugins {
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.room) apply false
     alias(libs.plugins.baselineprofile) apply false
-    alias(libs.plugins.roborazzi) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.spotless)
 }

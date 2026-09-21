@@ -59,11 +59,6 @@ desktop.ini
 *.log
 **/build/reports/
 
-# Roborazzi screenshot diffs. The recorded goldens are committed, the failure
-# output is not.
-**/build/outputs/roborazzi/
-*_compare.png
-*_actual.png
 
 # Kotlin's build session and error scratch files. Machine local, never useful
 # in a diff, and written by any Gradle invocation.

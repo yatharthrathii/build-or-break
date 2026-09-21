@@ -13,6 +13,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons)
 
     testImplementation(projects.core.testing)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 }
 
 // Tokens, theme and the handful of components every screen shares.
