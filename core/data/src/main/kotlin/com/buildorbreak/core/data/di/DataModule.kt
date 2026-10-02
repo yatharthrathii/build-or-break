@@ -14,6 +14,7 @@ import com.buildorbreak.core.data.repository.ResetRepositoryImpl
 import com.buildorbreak.core.data.repository.SettingsRepositoryImpl
 import com.buildorbreak.core.data.repository.TemplateRepositoryImpl
 import com.buildorbreak.core.data.repository.TrackRepositoryImpl
+import com.buildorbreak.core.data.repository.TrackSessionRepositoryImpl
 import com.buildorbreak.core.domain.repository.DayCloseRepository
 import com.buildorbreak.core.domain.repository.DayLogRepository
 import com.buildorbreak.core.domain.repository.DeliveryAuditRepository
@@ -28,6 +29,7 @@ import com.buildorbreak.core.domain.repository.ResetRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
 import com.buildorbreak.core.domain.repository.TrackRepository
+import com.buildorbreak.core.domain.repository.TrackSessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -88,6 +90,10 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindTrackRepository(impl: TrackRepositoryImpl): TrackRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTrackSessionRepository(impl: TrackSessionRepositoryImpl): TrackSessionRepository
 
     @Binds
     @Singleton

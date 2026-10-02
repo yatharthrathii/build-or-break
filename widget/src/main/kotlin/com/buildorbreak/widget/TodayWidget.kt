@@ -5,13 +5,16 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -32,18 +35,50 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 
 /**
+ * The three faces, by the room the launcher gives.
+ *
+ * Glance picks the largest of these that fits the cell the widget was placed
+ * in, and the face is chosen from that. A widget resized by the user moves
+ * between faces on its own, so a two by one strip and a four by four card
+ * are the same widget at two sizes rather than two things to maintain.
+ */
+internal object WidgetSizes {
+    /** A strip: the next step and a Done square. */
+    val SMALL = DpSize(110.dp, 48.dp)
+
+    /** The card: the next step with Done and Snooze under it. */
+    val MEDIUM = DpSize(250.dp, 110.dp)
+
+    /** The card, and the day under it. */
+    val LARGE = DpSize(250.dp, 230.dp)
+}
+
+/** What the tall face spends on everything above the list, and on each row of it. */
+private val LIST_HEADROOM = 150.dp
+private val ROW_HEIGHT = 24.dp
+
+/** Glance allows ten children in a column, and the rows get a column of their own. */
+private const val MAX_ROWS = 10
+
+/**
  * The day, on the home screen, without opening anything.
  *
- * One size and one job: what is next, and the two answers to it. A widget that
- * lists the whole day is a widget nobody reads, and one that only shows a count
- * is a widget nobody keeps. The next step with Done beside it is the smallest
- * thing that saves a launch, which is the only reason a widget earns its space.
+ * One job at every size: what is next, and the answer to it. The strip is
+ * the step and a tick, the card adds a snooze, and the tall one adds the
+ * rest of the day underneath so a glance at breakfast says what the evening
+ * holds. None of them is a widget nobody reads: the next step with Done
+ * beside it is the smallest thing that saves a launch, which is the only
+ * reason a widget earns its space.
  *
  * Drawn flat and in the app's own colours rather than the system's. Glance
  * cannot use the Compose design system, so the handful of values the widget
  * needs are restated in [WidgetColours] and nowhere else.
  */
 class TodayWidget : GlanceAppWidget() {
+
+    override val sizeMode: SizeMode = SizeMode.Responsive(
+        setOf(WidgetSizes.SMALL, WidgetSizes.MEDIUM, WidgetSizes.LARGE),
+    )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val snapshot = WidgetData.read(context)
@@ -53,23 +88,135 @@ class TodayWidget : GlanceAppWidget() {
 
     @Composable
     private fun Face(snapshot: WidgetSnapshot) {
+        val size = LocalSize.current
+
         GlanceTheme(colors = WidgetColours.providers) {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(GlanceTheme.colors.background)
-                    .padding(14.dp)
                     .clickable(actionRunCallback<OpenAppAction>()),
             ) {
-                Header(snapshot)
-
-                Spacer(modifier = GlanceModifier.height(10.dp))
-
                 when {
-                    snapshot.title == null -> Line(snapshot.emptyLine, GlanceTheme.colors.onSurfaceVariant)
-                    else -> Next(snapshot)
+                    size.height < WidgetSizes.MEDIUM.height -> Strip(snapshot)
+                    size.height < WidgetSizes.LARGE.height ->
+                        Card(snapshot, modifier = GlanceModifier.fillMaxSize().padding(14.dp))
+                    else -> Tall(snapshot, size)
                 }
             }
+        }
+    }
+
+    /** The strip: time, title, one square. The smallest thing that saves a launch. */
+    @Composable
+    private fun Strip(snapshot: WidgetSnapshot) {
+        Row(
+            modifier = GlanceModifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = GlanceModifier.defaultWeight()) { StripText(snapshot) }
+
+            if (snapshot.title != null) {
+                Spacer(modifier = GlanceModifier.width(8.dp))
+
+                Action(
+                    text = snapshot.tick,
+                    ground = GlanceTheme.colors.primary,
+                    ink = GlanceTheme.colors.onPrimary,
+                    modifier = GlanceModifier.width(36.dp),
+                    onClick = WidgetActions.done(snapshot.occurrenceId),
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun StripText(snapshot: WidgetSnapshot) {
+        if (snapshot.title == null) {
+            Line(snapshot.emptyLine, GlanceTheme.colors.onSurfaceVariant)
+            return
+        }
+
+        Text(
+            text = snapshot.time.orEmpty(),
+            style = TextStyle(color = GlanceTheme.colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold),
+        )
+
+        Text(
+            text = snapshot.title,
+            maxLines = 1,
+            style = TextStyle(color = GlanceTheme.colors.onBackground, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+        )
+    }
+
+    /** The card: header, next step, Done and Snooze. */
+    @Composable
+    private fun Card(snapshot: WidgetSnapshot, modifier: GlanceModifier = GlanceModifier) {
+        Column(modifier = modifier) {
+            Header(snapshot)
+
+            Spacer(modifier = GlanceModifier.height(10.dp))
+
+            when {
+                snapshot.title == null -> Line(snapshot.emptyLine, GlanceTheme.colors.onSurfaceVariant)
+                else -> Next(snapshot)
+            }
+        }
+    }
+
+    /**
+     * The card with the day under it, as many rows as the height allows.
+     *
+     * Grouped into inner columns on purpose. Glance refuses a column with more
+     * than ten children, and the header, the card and the rows add up to
+     * more than that on any phone tall enough to want this face.
+     */
+    @Composable
+    private fun Tall(snapshot: WidgetSnapshot, size: DpSize) {
+        val roomFor = ((size.height - LIST_HEADROOM) / ROW_HEIGHT).toInt().coerceIn(1, MAX_ROWS)
+
+        Column(modifier = GlanceModifier.fillMaxSize().padding(14.dp)) {
+            Card(snapshot)
+
+            Spacer(modifier = GlanceModifier.height(10.dp))
+            Spacer(modifier = GlanceModifier.height(1.dp).fillMaxWidth().background(GlanceTheme.colors.outline))
+
+            // The day from the next step on. What is already done is behind
+            // the count in the header, and a list that opened with six
+            // finished rows would push the evening off the bottom.
+            val from = snapshot.rows.indexOfFirst { it.isNext }.coerceAtLeast(0)
+            Column { snapshot.rows.drop(from).take(roomFor).forEach { DayRow(it) } }
+        }
+    }
+
+    @Composable
+    private fun DayRow(row: WidgetRow) {
+        val ink = when {
+            row.isNext -> GlanceTheme.colors.primary
+            row.settled -> GlanceTheme.colors.outline
+            else -> GlanceTheme.colors.onSurfaceVariant
+        }
+
+        Row(
+            modifier = GlanceModifier.fillMaxWidth().height(ROW_HEIGHT),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = row.time,
+                style = TextStyle(color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                modifier = GlanceModifier.width(44.dp),
+            )
+
+            Text(
+                text = row.title,
+                maxLines = 1,
+                style = TextStyle(
+                    color = ink,
+                    fontSize = 12.sp,
+                    fontWeight = if (row.isNext) FontWeight.Bold else FontWeight.Normal,
+                ),
+                modifier = GlanceModifier.defaultWeight(),
+            )
         }
     }
 
@@ -144,7 +291,7 @@ class TodayWidget : GlanceAppWidget() {
     ) {
         Row(
             modifier = modifier
-                .height(38.dp)
+                .height(36.dp)
                 .background(ground)
                 // Square, like everything else. Glance insists on a value here
                 // on Android 12 and above, so it is stated rather than left to

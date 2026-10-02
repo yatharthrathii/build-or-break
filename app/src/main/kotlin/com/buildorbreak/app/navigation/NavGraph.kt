@@ -49,10 +49,13 @@ import com.buildorbreak.app.feature.onboarding.StartChoice
 import com.buildorbreak.app.feature.plan.ImportScreen
 import com.buildorbreak.app.feature.plan.ItemEditorScreen
 import com.buildorbreak.app.feature.plan.PlanScreen
+import com.buildorbreak.app.feature.plan.PlansScreen
 import com.buildorbreak.app.feature.points.PointsScreen
 import com.buildorbreak.app.feature.settings.ReliabilityScreen
 import com.buildorbreak.app.feature.settings.SettingsScreen
 import com.buildorbreak.app.feature.today.TodayScreen
+import com.buildorbreak.app.feature.track.TrackScreen
+import com.buildorbreak.app.feature.track.TracksScreen
 import com.buildorbreak.core.designsystem.component.BottomNavBar
 import com.buildorbreak.core.designsystem.component.NavDestination
 import com.buildorbreak.core.designsystem.component.NavRail
@@ -228,6 +231,7 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
             onImport = { backStack.add(ImportRoute) },
             onAddStep = { backStack.add(ItemEditorRoute(ItemEditorRoute.NEW_ITEM)) },
             onOpenGoal = { backStack.add(GoalRoute) },
+            onOpenTrack = { backStack.add(TrackRoute(it)) },
         )
     }
 
@@ -236,7 +240,20 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
             onEditItem = { backStack.add(ItemEditorRoute(it)) },
             onAddItem = { templateId -> backStack.add(ItemEditorRoute(ItemEditorRoute.NEW_ITEM, templateId)) },
             onImport = { backStack.add(ImportRoute) },
+            onOpenPlans = { backStack.add(PlansRoute) },
         )
+    }
+
+    entry<PlansRoute> {
+        PlansScreen(onBack = { backStack.pop() })
+    }
+
+    entry<TracksRoute> {
+        TracksScreen(onOpenTrack = { backStack.add(TrackRoute(it)) }, onBack = { backStack.pop() })
+    }
+
+    entry<TrackRoute> { route ->
+        TrackScreen(trackId = route.trackId, onBack = { backStack.pop() })
     }
 
     entry<InsightsRoute> {
@@ -262,6 +279,8 @@ private fun entries(backStack: NavBackStack<NavKey>, actions: ShellActions) = en
             onOpenPoints = { backStack.add(PointsRoute) },
             onOpenAbout = { backStack.add(AboutRoute) },
             onOpenLegal = { backStack.add(LegalRoute(it)) },
+            onOpenPlans = { backStack.add(PlansRoute) },
+            onOpenTracks = { backStack.add(TracksRoute) },
             onImport = { backStack.add(ImportRoute) },
             onShare = actions.share,
             onOpenAlarmChannel = actions.openAlarmChannel,

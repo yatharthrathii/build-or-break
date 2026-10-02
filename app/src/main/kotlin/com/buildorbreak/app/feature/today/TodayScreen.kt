@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -71,9 +72,11 @@ fun TodayScreen(
     onAddStep: () -> Unit,
     onOpenGoal: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenTrack: (Long) -> Unit = {},
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     TodayContent(
         state = state,
@@ -100,6 +103,10 @@ fun TodayScreen(
             onImport = onImport,
             onAddStep = onAddStep,
             onOpenGoal = onOpenGoal,
+            onLogSession = viewModel::onLogSession,
+            onDismissSession = viewModel::onDismissSession,
+            onOpenLink = { context.openLink(it) },
+            onOpenTrack = onOpenTrack,
         ),
         modifier = modifier,
     )
@@ -132,6 +139,12 @@ data class TodayActions(
     val onImport: () -> Unit,
     val onAddStep: () -> Unit,
     val onOpenGoal: () -> Unit = {},
+    /** What the sitting had to say, for a step that follows a syllabus. */
+    val onLogSession: (finished: Boolean, minutes: Int, leftOff: String) -> Unit = { _, _, _ -> },
+    val onDismissSession: () -> Unit = {},
+    /** Opens the link or file a step carries. The screen owns the intent. */
+    val onOpenLink: (String) -> Unit = {},
+    val onOpenTrack: (Long) -> Unit = {},
 ) {
     companion object {
         val None = TodayActions(
@@ -229,6 +242,23 @@ private fun Sheets(
         MeasureSheet(prompt = prompt, onLog = actions.onLogNumber, onDismiss = actions.onDismissNumber)
     }
 
+    // One question at a time. The number first, the sitting after it.
+    state.askSession?.takeIf { state.askNumber == null }?.let { prompt ->
+        SessionSheet(prompt = prompt, onLog = actions.onLogSession, onDismiss = actions.onDismissSession)
+    }
+
+    SkipSheets(state = state, actions = actions, skipping = skipping, explaining = explaining, onClose = onClose)
+}
+
+/** The two skip questions: before the settle, and after a skip made from a notification. */
+@Composable
+private fun SkipSheets(
+    state: TodayUiState,
+    actions: TodayActions,
+    skipping: Long,
+    explaining: Long,
+    onClose: () -> Unit,
+) {
     if (skipping != NO_OCCURRENCE) {
         SkipSheet(
             title = state.entries.firstOrNull { it.occurrenceId == skipping }?.title.orEmpty(),
@@ -531,6 +561,8 @@ private fun LazyListScope.nextUp(
             onDoneMinimum = actions.onDoneMinimum,
             onSnooze = actions.onSnooze,
             onSkip = onSkip,
+            onOpenLink = actions.onOpenLink,
+            onOpenTrack = actions.onOpenTrack,
         )
     }
 }

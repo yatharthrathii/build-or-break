@@ -85,6 +85,8 @@ data class TodayUiState(
     val consistency: Consistency? = null,
     /** A number owed for a step that was just completed. Always skippable. */
     val askNumber: MeasurePrompt? = null,
+    /** What the sitting had to say, for a step that follows a syllabus. Always skippable. */
+    val askSession: SessionPrompt? = null,
     /**
      * The one goal, at the top of the day.
      *
@@ -235,6 +237,42 @@ data class CatchUpRow(
 )
 
 /**
+ * The syllabus line on the card: which part this sitting is, and where the
+ * last one stopped. [unitTitle] is null once every part is dealt with.
+ */
+@Immutable
+data class TrackLineUi(
+    val trackId: Long,
+    val unitId: Long,
+    val name: String,
+    val unitTitle: String?,
+    /** One based. Zero once there is nothing left. */
+    val position: Int,
+    val total: Int,
+    val leftOff: String?,
+    val estimateMinutes: Int?,
+) {
+    val isFinished: Boolean get() = unitTitle == null
+}
+
+/**
+ * A step that was just completed and follows a syllabus.
+ *
+ * Asked after the settle, like the number. Not answering leaves the part
+ * where it was, so the same part comes up next time.
+ */
+@Immutable
+data class SessionPrompt(
+    val occurrenceId: Long,
+    val unitId: Long,
+    val unitTitle: String,
+    val position: Int,
+    val total: Int,
+    /** Where the minutes stepper opens: the step's length, or the part's estimate. */
+    val minutes: Int,
+)
+
+/**
  * The goal as the top of Today draws it.
  *
  * [current] is the honest number: a seven day average for a measured goal, a
@@ -354,6 +392,10 @@ data class NextUp(
     val detail: String? = null,
     /** The number this step asks for once it is done, if any. */
     val measure: ValueKind? = null,
+    /** A link or a file to open, when the step carries one. */
+    val link: String? = null,
+    /** The syllabus line, when the step follows one. */
+    val track: TrackLineUi? = null,
     /** This one rings and takes over the screen. */
     val isAlarm: Boolean = false,
     /** Running as its smaller version today. Done means the minimum was done. */

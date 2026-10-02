@@ -139,9 +139,20 @@ class InsightsContentTest {
 
     @Test
     fun `no goal means no goal line, not an empty one`() {
-        render(state().copy(goal = null))
+        render(state().copy(goals = persistentListOf()))
 
         compose.onAllNodesWithText("THE GOAL").assertCountEquals(0)
+    }
+
+    @Test
+    fun `with two goals running, both are on the review`() {
+        val second = GoalStripUi("Read more", 30, GoalStanding.BEHIND, 40, hasData = true)
+        render(state().copy(goals = persistentListOf(state().goals.first(), second)))
+
+        scrollTo("THE GOALS")
+        compose.onNodeWithText("THE GOALS").assertIsDisplayed()
+        compose.onNodeWithText("Twelve gym sessions").assertIsDisplayed()
+        compose.onNodeWithText("Read more").assertIsDisplayed()
     }
 
     @Test
@@ -188,7 +199,7 @@ class InsightsContentTest {
             PatternUi(4, "Language drill", 3, 7, SkipCause.REMINDER, weekday = "Saturday"),
         ),
         suggestion = suggestion(),
-        goal = GoalStripUi("Twelve gym sessions", 58, GoalStanding.ON_PACE, 19, hasData = true),
+        goals = persistentListOf(GoalStripUi("Twelve gym sessions", 58, GoalStanding.ON_PACE, 19, hasData = true)),
         hasHistory = true,
         story = ReviewStory.TIMING_PROBLEM,
         rewards = RewardsUi(

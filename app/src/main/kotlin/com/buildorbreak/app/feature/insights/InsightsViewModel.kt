@@ -138,7 +138,8 @@ data class InsightsUiState(
     val win: WinUi?,
     val patterns: ImmutableList<PatternUi>,
     val suggestion: SuggestionUi?,
-    val goal: GoalStripUi?,
+    /** Every running goal, oldest first. Two at most, and most often none. */
+    val goals: ImmutableList<GoalStripUi>,
     /** Whether the last four weeks hold anything, even if this period does not. */
     val hasHistory: Boolean,
     val story: ReviewStory,
@@ -167,7 +168,7 @@ data class InsightsUiState(
             win = null,
             patterns = persistentListOf(),
             suggestion = null,
-            goal = null,
+            goals = persistentListOf(),
             hasHistory = false,
             story = ReviewStory.SETTLING_IN,
         )
@@ -198,9 +199,11 @@ class InsightsViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<InsightsUiState> = period
         .flatMapLatest { chosen ->
-            combine(observeInsights(chosen), observeGoal(), rewards) { insights, goal, earned ->
-                insights?.let { toUiState(it, goal, earned) }
-                    ?: InsightsUiState.Empty.copy(period = chosen, goal = goal?.let(::toGoalStrip), rewards = earned)
+            combine(observeInsights(chosen), observeGoal.all(), rewards) { insights, goals, earned ->
+                val strips = goals.map(::toGoalStrip).toImmutableList()
+
+                insights?.let { toUiState(it, strips, earned) }
+                    ?: InsightsUiState.Empty.copy(period = chosen, goals = strips, rewards = earned)
             }
         }
         .stateIn(
@@ -230,7 +233,7 @@ class InsightsViewModel @Inject constructor(
         badges = badges.map { BadgeUi(it.milestone, it.earnedOn?.format(DAY)) }.toImmutableList(),
     )
 
-    private fun toUiState(insights: Insights, goal: GoalSnapshot?, rewards: RewardsUi): InsightsUiState {
+    private fun toUiState(insights: Insights, goals: ImmutableList<GoalStripUi>, rewards: RewardsUi): InsightsUiState {
         val best = insights.bars.mapNotNull { it.fraction }.maxOrNull()
         val problemId = insights.suggestion?.itemId
 
@@ -250,7 +253,7 @@ class InsightsViewModel @Inject constructor(
             win = insights.win?.let { WinUi(it.itemId, it.title, it.kept, it.outOf, it.isPerfect) },
             patterns = insights.patterns.map(::toPattern).toImmutableList(),
             suggestion = insights.suggestion?.let(::toSuggestion),
-            goal = goal?.let(::toGoalStrip),
+            goals = goals,
             hasHistory = insights.hasHistory,
             story = insights.story,
             rewards = rewards,

@@ -931,4 +931,111 @@
     <string name="terms_changes_body">ये शर्तें ऐप के नए वर्ज़न के साथ बदल सकती हैं। ऊपर की तारीख बताती है कब।</string>
     <string name="terms_contact_title">संपर्क</string>
     <string name="terms_contact_body">सेटिंग में अबाउट के नीचे "संपर्क करें" देखें।</string>
+
+    <!-- प्लान: एक से ज़्यादा रूटीन, एक बार में एक चलता है। -->
+    <plurals name="plans_kicker">
+        <item quantity="one">%1$d प्लान</item>
+        <item quantity="other">%1$d प्लान</item>
+    </plurals>
+    <string name="plans_title">प्लान</string>
+    <string name="plans_body">एक प्लान पूरा रूटीन है: उसके दिन, उसके स्टेप, उसके लक्ष्य। एक बार में एक चलता है। एक एग्ज़ाम के दिनों के लिए रखें, एक बाकी साल के लिए।</string>
+    <string name="plans_since">%1$s से</string>
+    <string name="plans_running">चल रहा है</string>
+    <string name="plans_use">चलाएँ</string>
+    <string name="plans_edit">%1$s बदलें</string>
+    <string name="plans_add">नया प्लान</string>
+    <string name="plans_new_title">नया प्लान</string>
+    <string name="plans_edit_title">प्लान बदलें</string>
+    <string name="plans_name_hint">एग्ज़ाम के दिन</string>
+    <string name="plans_new_body">खाली शुरू होता है, लिखने के लिए एक दिन के साथ, और अभी से चलता है।</string>
+    <string name="plans_delete_body">प्लान हटाने से उसके दिन, स्टेप, इतिहास और लक्ष्य हट जाते हैं। बाकी प्लान रहते हैं।</string>
+
+    <!-- सिलेबस: हिस्सों की सूची जिस पर एक स्टेप एक बैठक में एक हिस्सा आगे बढ़ता है। -->
+    <plurals name="tracks_kicker">
+        <item quantity="one">%1$d सिलेबस</item>
+        <item quantity="other">%1$d सिलेबस</item>
+    </plurals>
+    <string name="tracks_title">सिलेबस</string>
+    <string name="tracks_none_title">अभी कोई सिलेबस नहीं</string>
+    <string name="tracks_none_body">सिलेबस हिस्सों की सूची है, जिस पर एक स्टेप एक बैठक में एक हिस्सा आगे बढ़ता है। कोई कोर्स, कोई किताब, कोई भाषा।</string>
+    <string name="tracks_add">नया सिलेबस</string>
+    <string name="track_next_part">अगला: %1$s</string>
+    <string name="track_all_done">सभी %1$d हिस्से पूरे</string>
+    <string name="track_progress">हिस्सा %1$d / %2$d · %3$d पूरे</string>
+    <string name="track_kicker">सिलेबस</string>
+    <string name="track_gone_title">हट गया</string>
+    <string name="track_gone_body">यह सिलेबस हटा दिया गया है।</string>
+    <string name="track_parts">हिस्से</string>
+    <string name="track_edit">सूची बदलें</string>
+    <string name="track_delete">हटाएँ</string>
+    <string name="track_standing">हिस्सा %1$d / %2$d</string>
+    <string name="track_finished_count">%1$d पूरे</string>
+    <string name="track_minutes_spent">%1$d मिनट लगे</string>
+    <string name="track_state_done">हो गया</string>
+    <string name="track_left_off">यहाँ रुके थे: %1$s</string>
+    <string name="track_up_next">अब यह</string>
+    <string name="track_state_skipped">छोड़ा</string>
+    <string name="track_state_started">शुरू किया</string>
+    <string name="track_part_number">हिस्सा %1$d</string>
+    <string name="track_mark_done">हो गया</string>
+    <string name="track_mark_waiting">अभी नहीं</string>
+    <string name="track_mark_skipped">यह हिस्सा छोड़ें</string>
+    <string name="track_name">नाम</string>
+    <string name="track_name_hint">बैकएंड कोर्स</string>
+    <string name="track_text">हिस्से, हर लाइन पर एक</string>
+    <string name="track_text_hint">1. HTTP basics · 30 min\n2. REST and JSON\n3. Authentication</string>
+    <string name="track_text_body">सूची उसी क्रम में पेस्ट करें जिसमें करेंगे। लाइन के अंत में समय, जैसे · 30 min, अनुमान बन जाता है। कोलन पर ख़त्म होने वाली लाइन हेडिंग है और छोड़ दी जाती है।</string>
+    <string name="track_new_title">नया सिलेबस</string>
+    <string name="track_edit_title">सिलेबस बदलें</string>
+    <plurals name="track_parts_found">
+        <item quantity="one">%1$d हिस्सा मिला</item>
+        <item quantity="other">%1$d हिस्से मिले</item>
+    </plurals>
+    <string name="track_parts_none">अभी कोई हिस्सा नहीं मिला। हर लाइन पर एक हिस्सा।</string>
+    <string name="track_edit_body">हिस्से अपनी लाइन से अपनी जगह रखते हैं। अंत से कटी लाइनें चली जाती हैं, उन पर हुए काम के साथ।</string>
+
+    <!-- स्टेप एडिटर: लिंक या फ़ाइल, और सिलेबस। -->
+    <string name="editor_link">लिंक या फ़ाइल</string>
+    <string name="editor_link_hint">youtube.com/… या कोई PDF</string>
+    <string name="editor_link_body">स्टेप आने पर कार्ड से खुलता है। कोई वीडियो, PDF, प्लेलिस्ट।</string>
+    <string name="editor_link_pick">फ़ाइल चुनें</string>
+    <string name="editor_link_remove">हटाएँ</string>
+    <string name="editor_track">सिलेबस</string>
+    <string name="editor_track_none">कोई नहीं</string>
+    <string name="editor_track_body">उन चीज़ों के लिए जो आगे बढ़ती हैं: कोई कोर्स, कोई किताब। हर बार यह स्टेप पूरा होने पर एक हिस्सा आगे बढ़ता है।</string>
+    <string name="editor_track_on">हर बार यह स्टेप पूरा होने पर कार्ड अगला हिस्सा दिखाता है और पूछता है कहाँ रुके।</string>
+    <string name="editor_track_finished">%1$s · सभी %2$d पूरे</string>
+    <string name="editor_track_line">%1$s · हिस्सा %2$d / %3$d</string>
+    <string name="editor_track_pick">कौन सा सिलेबस</string>
+    <string name="editor_track_new">नया सिलेबस…</string>
+
+    <!-- आज: कार्ड पर लिंक और सिलेबस, और बाद में बैठक। -->
+    <string name="today_link_failed">इस फ़ोन पर कुछ भी इसे खोल नहीं सकता।</string>
+    <string name="today_link_file">फ़ाइल</string>
+    <string name="today_track_finished">%1$s · सब पूरा</string>
+    <string name="today_track_part">हिस्सा %1$d / %2$d · %3$s</string>
+    <string name="today_track_left_off">यहाँ रुके थे: %1$s</string>
+    <string name="today_open_file">फ़ाइल खोलें</string>
+    <string name="today_open_link">लिंक खोलें</string>
+    <string name="today_session_kicker">हिस्सा %1$d / %2$d</string>
+    <string name="today_session_left_off">कहाँ रुके?</string>
+    <string name="today_session_left_off_hint">पेज 42, दूसरा उदाहरण</string>
+    <string name="today_session_left_off_body">अभी की एक लाइन अगली बार पाँच मिनट बचाती है।</string>
+    <string name="today_session_minutes">लगा समय</string>
+    <string name="today_session_body">वैकल्पिक। स्टेप पहले ही Done है। इसे छोड़ें तो अगली बार वही हिस्सा आएगा।</string>
+    <string name="today_session_save">सहेजें</string>
+    <string name="today_session_finished">यह हिस्सा पूरा हुआ</string>
+    <string name="today_session_finished_on">अगली बैठक इसके बाद वाले हिस्से से खुलेगी।</string>
+    <string name="today_session_finished_off">अगली बार वही हिस्सा आएगा, आपके नोट के साथ।</string>
+
+    <!-- प्लान सूची: स्टेप पर दो और निशान। -->
+    <string name="plan_line_track">%1$s पर चलता है</string>
+    <string name="plan_line_link">लिंक है</string>
+
+    <string name="insights_goals">लक्ष्य</string>
+
+    <string name="settings_plans">प्लान</string>
+    <string name="settings_plans_body">एक से ज़्यादा रूटीन, जैसे एग्ज़ाम के दिन और आम दिन। एक बार में एक चलता है।</string>
+    <string name="settings_tracks">सिलेबस</string>
+    <string name="settings_tracks_body">हिस्सों की सूची जिस पर एक स्टेप एक बैठक में एक हिस्सा आगे बढ़ता है।</string>
 </resources>

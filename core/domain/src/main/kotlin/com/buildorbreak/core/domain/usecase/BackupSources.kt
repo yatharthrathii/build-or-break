@@ -8,6 +8,8 @@ import com.buildorbreak.core.domain.repository.MilestoneRepository
 import com.buildorbreak.core.domain.repository.OccurrenceRepository
 import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
+import com.buildorbreak.core.domain.repository.TrackRepository
+import com.buildorbreak.core.domain.repository.TrackSessionRepository
 import javax.inject.Inject
 
 /**
@@ -30,4 +32,11 @@ class BackupSources @Inject constructor(
     val measurements: MeasurementRepository,
     val milestones: MilestoneRepository,
     val closes: DayCloseRepository,
+    val tracks: TrackSources,
+)
+
+/** The two tables a syllabus lives in. One handle, so the bag above stays readable. */
+class TrackSources @Inject constructor(
+    val tracks: TrackRepository,
+    val sessions: TrackSessionRepository,
 )

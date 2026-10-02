@@ -165,7 +165,7 @@ private fun Body(
 
         StoryPanel(state = state)
 
-        state.goal?.let { GoalStrip(goal = it, onOpen = onOpenGoal) }
+        GoalStrips(goals = state.goals, onOpen = onOpenGoal)
 
         state.rewards?.let { RewardsSection(rewards = it) }
 
@@ -719,7 +719,7 @@ private val PreviewState = InsightsUiState(
             ReviewAnswer.REMOVE_ITEM,
         ),
     ),
-    goal = GoalStripUi("Twelve gym sessions", 58, GoalStanding.ON_PACE, 19, hasData = true),
+    goals = persistentListOf(GoalStripUi("Twelve gym sessions", 58, GoalStanding.ON_PACE, 19, hasData = true)),
     hasHistory = true,
     story = ReviewStory.TIMING_PROBLEM,
     rewards = RewardsUi(

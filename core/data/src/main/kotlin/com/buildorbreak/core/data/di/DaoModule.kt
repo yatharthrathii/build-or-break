@@ -13,6 +13,7 @@ import com.buildorbreak.core.data.dao.PlanDao
 import com.buildorbreak.core.data.dao.PointEntryDao
 import com.buildorbreak.core.data.dao.TemplateDao
 import com.buildorbreak.core.data.dao.TrackDao
+import com.buildorbreak.core.data.dao.TrackSessionDao
 import com.buildorbreak.core.data.database.BuildOrBreakDatabase
 import dagger.Module
 import dagger.Provides
@@ -69,6 +70,9 @@ object DaoModule {
 
     @Provides
     fun provideTrackDao(database: BuildOrBreakDatabase): TrackDao = database.trackDao()
+
+    @Provides
+    fun provideTrackSessionDao(database: BuildOrBreakDatabase): TrackSessionDao = database.trackSessionDao()
 
     @Provides
     fun provideDeliveryAuditDao(database: BuildOrBreakDatabase): DeliveryAuditDao = database.deliveryAuditDao()

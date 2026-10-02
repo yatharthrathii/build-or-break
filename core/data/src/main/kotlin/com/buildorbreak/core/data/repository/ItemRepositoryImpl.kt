@@ -64,6 +64,9 @@ class ItemRepositoryImpl @Inject constructor(
     override suspend fun archive(itemId: Long): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { items.archive(itemId, time.now()) }
 
+    override suspend fun detachTrack(trackId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { items.detachTrack(trackId) }
+
     // One write per row rather than one transaction. A reorder cut off half
     // way leaves some rows renumbered and the rest as they were, which is a
     // list in almost the order the user gave, and the next drag rewrites all

@@ -15,10 +15,13 @@ import com.buildorbreak.core.domain.repository.PlanRepository
 import com.buildorbreak.core.domain.repository.ResetRepository
 import com.buildorbreak.core.domain.repository.SettingsRepository
 import com.buildorbreak.core.domain.repository.TemplateRepository
+import com.buildorbreak.core.domain.repository.TrackRepository
+import com.buildorbreak.core.domain.repository.TrackSessionRepository
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.enums.OccurrenceState
 import com.buildorbreak.core.model.enums.ThemeMode
+import com.buildorbreak.core.model.enums.TrackUnitState
 import com.buildorbreak.core.model.enums.ValueKind
 import com.buildorbreak.core.model.execution.DayLog
 import com.buildorbreak.core.model.execution.Measurement
@@ -32,6 +35,9 @@ import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.plan.Plan
 import com.buildorbreak.core.model.resolved.CascadePreview
 import com.buildorbreak.core.model.resolved.ResolvedEntry
+import com.buildorbreak.core.model.track.Track
+import com.buildorbreak.core.model.track.TrackSession
+import com.buildorbreak.core.model.track.TrackUnit
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration
@@ -68,6 +74,12 @@ class FakePlanRepository : PlanRepository {
 
     override suspend fun setActive(planId: Long): Outcome<Unit, DataError> {
         plans.value = plans.value.map { it.copy(isActive = it.id == planId) }
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun delete(planId: Long): Outcome<Unit, DataError> {
+        plans.value = plans.value.filterNot { it.id == planId }
 
         return Outcome.Success(Unit)
     }
@@ -150,6 +162,101 @@ class FakeItemRepository : ItemRepository {
 
         return Outcome.Success(Unit)
     }
+
+    override suspend fun detachTrack(trackId: Long): Outcome<Unit, DataError> {
+        items.value = items.value.map {
+            if (it.trackId ==
+                trackId
+            ) {
+                it.copy(trackId = null, kind = com.buildorbreak.core.model.enums.ItemKind.DO)
+            } else {
+                it
+            }
+        }
+
+        return Outcome.Success(Unit)
+    }
+}
+
+class FakeTrackRepository : TrackRepository {
+    val tracks = MutableStateFlow<List<Track>>(emptyList())
+    val units = MutableStateFlow<List<TrackUnit>>(emptyList())
+    private var nextId = 1L
+    private var nextUnitId = 1L
+
+    override fun observeForPlan(planId: Long): Flow<List<Track>> =
+        tracks.map { list -> list.filter { it.planId == planId }.sortedBy { it.id } }
+
+    override fun observeTrack(trackId: Long): Flow<Track?> = tracks.map { list ->
+        list.firstOrNull { it.id == trackId }
+    }
+
+    override fun observeUnits(trackId: Long): Flow<List<TrackUnit>> =
+        units.map { list -> list.filter { it.trackId == trackId }.sortedBy { it.ordinal } }
+
+    override suspend fun nextUnit(trackId: Long): TrackUnit? = units.value
+        .filter { it.trackId == trackId }
+        .sortedBy { it.ordinal }
+        .firstOrNull { it.state == TrackUnitState.PENDING || it.state == TrackUnitState.IN_PROGRESS }
+
+    /** Drops the parts past the end first, as the real transaction does. */
+    override suspend fun upsertTrack(track: Track, units: List<TrackUnit>): Outcome<Long, DataError> {
+        val id = if (track.id == 0L) nextId++ else track.id
+        tracks.value = tracks.value.filterNot { it.id == id } + track.copy(id = id)
+
+        val kept = this.units.value.filterNot { it.trackId == id && it.ordinal >= units.size }
+        val written = units.map { unit ->
+            val unitId = if (unit.id == 0L) nextUnitId++ else unit.id
+            unit.copy(id = unitId, trackId = id)
+        }
+        this.units.value = kept.filterNot { row -> written.any { it.id == row.id } } + written
+
+        return Outcome.Success(id)
+    }
+
+    override suspend fun setUnitState(unitId: Long, state: TrackUnitState): Outcome<Unit, DataError> {
+        units.value = units.value.map { if (it.id == unitId) it.copy(state = state) else it }
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun delete(trackId: Long): Outcome<Unit, DataError> {
+        tracks.value = tracks.value.filterNot { it.id == trackId }
+        units.value = units.value.filterNot { it.trackId == trackId }
+
+        return Outcome.Success(Unit)
+    }
+}
+
+class FakeTrackSessionRepository(private val tracks: FakeTrackRepository) : TrackSessionRepository {
+    val sessions = MutableStateFlow<List<TrackSession>>(emptyList())
+    private var nextId = 1L
+
+    override fun observeForTrack(trackId: Long): Flow<List<TrackSession>> =
+        combineUnits(trackId).map { ids -> sessions.value.filter { it.trackUnitId in ids }.sortedBy { it.id } }
+
+    private fun combineUnits(trackId: Long): Flow<Set<Long>> =
+        kotlinx.coroutines.flow.combine(tracks.units, sessions) { units, _ ->
+            units.filter { it.trackId == trackId }.map { it.id }.toSet()
+        }
+
+    override suspend fun record(session: TrackSession): Outcome<Unit, DataError> {
+        val id = if (session.id == 0L) nextId++ else session.id
+        sessions.value = sessions.value.filterNot { it.id == id } + session.copy(id = id)
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun forOccurrence(occurrenceId: Long): List<TrackSession> =
+        sessions.value.filter { it.occurrenceId == occurrenceId }
+
+    override suspend fun delete(sessionId: Long): Outcome<Unit, DataError> {
+        sessions.value = sessions.value.filterNot { it.id == sessionId }
+
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun countForUnit(unitId: Long): Int = sessions.value.count { it.trackUnitId == unitId }
 }
 
 class FakeOccurrenceRepository : OccurrenceRepository {

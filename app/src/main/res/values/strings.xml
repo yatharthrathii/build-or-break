@@ -984,4 +984,111 @@
     <string name="terms_changes_body">These terms may change with a new version of the app. The date at the top says when.</string>
     <string name="terms_contact_title">Contact</string>
     <string name="terms_contact_body">See Contact us, under About in Settings.</string>
+
+    <!-- Plans: more than one routine, one running at a time. -->
+    <plurals name="plans_kicker">
+        <item quantity="one">%1$d plan</item>
+        <item quantity="other">%1$d plans</item>
+    </plurals>
+    <string name="plans_title">Plans</string>
+    <string name="plans_body">A plan is a whole routine: its days, its steps, its goals. One runs at a time. Keep one for exam season and one for the rest of the year.</string>
+    <string name="plans_since">Since %1$s</string>
+    <string name="plans_running">Running</string>
+    <string name="plans_use">Use</string>
+    <string name="plans_edit">Edit %1$s</string>
+    <string name="plans_add">New plan</string>
+    <string name="plans_new_title">New plan</string>
+    <string name="plans_edit_title">Edit plan</string>
+    <string name="plans_name_hint">Exam season</string>
+    <string name="plans_new_body">Starts empty, with one day to write on, and runs from now.</string>
+    <string name="plans_delete_body">Deleting a plan deletes its days, steps, history and goals. Other plans stay.</string>
+
+    <!-- Syllabuses: a list of parts a step works through, one sitting at a time. -->
+    <plurals name="tracks_kicker">
+        <item quantity="one">%1$d syllabus</item>
+        <item quantity="other">%1$d syllabuses</item>
+    </plurals>
+    <string name="tracks_title">Syllabuses</string>
+    <string name="tracks_none_title">No syllabus yet</string>
+    <string name="tracks_none_body">A syllabus is a list of parts a step works through, one sitting at a time. A course, a book, a language.</string>
+    <string name="tracks_add">New syllabus</string>
+    <string name="track_next_part">Next: %1$s</string>
+    <string name="track_all_done" tools:ignore="PluralsCandidate">All %1$d parts done</string>
+    <string name="track_progress" tools:ignore="PluralsCandidate">Part %1$d of %2$d · %3$d done</string>
+    <string name="track_kicker">Syllabus</string>
+    <string name="track_gone_title">Gone</string>
+    <string name="track_gone_body">This syllabus has been deleted.</string>
+    <string name="track_parts">The parts</string>
+    <string name="track_edit">Edit the list</string>
+    <string name="track_delete">Delete</string>
+    <string name="track_standing">Part %1$d of %2$d</string>
+    <string name="track_finished_count" tools:ignore="PluralsCandidate">%1$d done</string>
+    <string name="track_minutes_spent">%1$d min spent</string>
+    <string name="track_state_done">Done</string>
+    <string name="track_left_off">You stopped at: %1$s</string>
+    <string name="track_up_next">Up next</string>
+    <string name="track_state_skipped">Skipped</string>
+    <string name="track_state_started">Started</string>
+    <string name="track_part_number">Part %1$d</string>
+    <string name="track_mark_done">Done</string>
+    <string name="track_mark_waiting">Not yet</string>
+    <string name="track_mark_skipped">Skip this part</string>
+    <string name="track_name">Name</string>
+    <string name="track_name_hint">Backend course</string>
+    <string name="track_text">The parts, one per line</string>
+    <string name="track_text_hint">1. HTTP basics · 30 min\n2. REST and JSON\n3. Authentication</string>
+    <string name="track_text_body">Paste the list in the order you will do it. A time at the end of a line, like · 30 min, becomes the estimate. A line ending in a colon is a heading and is skipped.</string>
+    <string name="track_new_title">New syllabus</string>
+    <string name="track_edit_title">Edit syllabus</string>
+    <plurals name="track_parts_found">
+        <item quantity="one">%1$d part found</item>
+        <item quantity="other">%1$d parts found</item>
+    </plurals>
+    <string name="track_parts_none">No parts found yet. One part per line.</string>
+    <string name="track_edit_body">Parts keep their place by line. Lines cut from the end are gone, with what was done on them.</string>
+
+    <!-- The step editor: a link or file, and a syllabus. -->
+    <string name="editor_link">Link or file</string>
+    <string name="editor_link_hint">youtube.com/… or a PDF</string>
+    <string name="editor_link_body">Opens from the card when the step comes round. A video, a PDF, a playlist.</string>
+    <string name="editor_link_pick">Pick a file</string>
+    <string name="editor_link_remove">Remove</string>
+    <string name="editor_track">Syllabus</string>
+    <string name="editor_track_none">None</string>
+    <string name="editor_track_body">For things that go somewhere: a course, a book. Each time this step is done, it moves one part along.</string>
+    <string name="editor_track_on">Each time this step is done, the card shows the next part and asks where you stopped.</string>
+    <string name="editor_track_finished" tools:ignore="PluralsCandidate">%1$s · all %2$d done</string>
+    <string name="editor_track_line">%1$s · part %2$d of %3$d</string>
+    <string name="editor_track_pick">Which syllabus</string>
+    <string name="editor_track_new">New syllabus…</string>
+
+    <!-- Today: the link and the syllabus on the card, and the sitting afterwards. -->
+    <string name="today_link_failed">Nothing on this phone can open this.</string>
+    <string name="today_link_file">File</string>
+    <string name="today_track_finished">%1$s · all done</string>
+    <string name="today_track_part">Part %1$d of %2$d · %3$s</string>
+    <string name="today_track_left_off">You stopped at: %1$s</string>
+    <string name="today_open_file">Open file</string>
+    <string name="today_open_link">Open link</string>
+    <string name="today_session_kicker">Part %1$d of %2$d</string>
+    <string name="today_session_left_off">Where did you stop?</string>
+    <string name="today_session_left_off_hint">Page 42, the second example</string>
+    <string name="today_session_left_off_body">One line now saves five minutes next time.</string>
+    <string name="today_session_minutes">Time spent</string>
+    <string name="today_session_body">Optional. The step is already marked done. Skip this and the same part comes up next time.</string>
+    <string name="today_session_save">Save</string>
+    <string name="today_session_finished">Finished this part</string>
+    <string name="today_session_finished_on">The next sitting opens on the part after it.</string>
+    <string name="today_session_finished_off">The same part comes up next time, with your note.</string>
+
+    <!-- The plan list: two more marks on a step. -->
+    <string name="plan_line_track">Follows %1$s</string>
+    <string name="plan_line_link">Has a link</string>
+
+    <string name="insights_goals">The goals</string>
+
+    <string name="settings_plans">Plans</string>
+    <string name="settings_plans_body">More than one routine, like exam season and normal days. One runs at a time.</string>
+    <string name="settings_tracks">Syllabuses</string>
+    <string name="settings_tracks_body">A list of parts a step works through, one sitting at a time.</string>
 </resources>

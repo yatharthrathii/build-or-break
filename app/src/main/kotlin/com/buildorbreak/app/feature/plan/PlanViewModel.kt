@@ -9,7 +9,6 @@ import com.buildorbreak.core.common.result.getOrNull
 import com.buildorbreak.core.domain.usecase.AddRoutineUseCase
 import com.buildorbreak.core.domain.usecase.DeleteBlockUseCase
 import com.buildorbreak.core.domain.usecase.DeleteTemplateUseCase
-import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.domain.usecase.ReorderItemsUseCase
 import com.buildorbreak.core.domain.usecase.SaveBlockUseCase
@@ -90,6 +89,8 @@ data class PlanUiState(
     /** What a new routine costs past the free two. Zero while they are free. */
     val routineCost: Int = 0,
     val balance: Int = 0,
+    /** How many plans there are. Past one, the screen says which this is. */
+    val planCount: Int = 1,
 ) {
     val isEmpty: Boolean get() = hasPlan && rows.isEmpty()
 
@@ -155,6 +156,10 @@ data class PlanItemRow(
     val slot: Int = PlanOrder.NO_SLOT,
     /** Whether the handle does anything on this row. */
     val movable: Boolean = false,
+    /** The syllabus this step follows, when it follows one. */
+    val trackName: String? = null,
+    /** Whether it carries a link or a file to open. */
+    val hasLink: Boolean = false,
 )
 
 /**
@@ -166,7 +171,7 @@ data class PlanItemRow(
  */
 @HiltViewModel
 class PlanViewModel @Inject constructor(
-    observePlan: ObservePlanUseCase,
+    sources: PlanSources,
     private val saveTemplate: SaveTemplateUseCase,
     private val points: RoutinePrice,
     private val addRoutine: AddRoutineUseCase,
@@ -184,11 +189,13 @@ class PlanViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<PlanUiState> = combine(
-        selectedTemplate.flatMapLatest { observePlan(it) }.map(::toUiState),
+        selectedTemplate.flatMapLatest { sources.plan(it) },
+        sources.tracks().map { heads -> heads.associate { it.track.id to it.track.name } },
+        sources.plans().map { it.size },
         points.cost(),
         points.wallet(),
-    ) { plan, cost, wallet ->
-        plan.copy(routineCost = cost, balance = wallet.balance)
+    ) { plan, trackNames, planCount, cost, wallet ->
+        toUiState(plan, trackNames).copy(routineCost = cost, balance = wallet.balance, planCount = planCount)
     }
         .stateIn(
             scope = viewModelScope,
@@ -276,7 +283,7 @@ class PlanViewModel @Inject constructor(
         reorderItems(rest.take(first) + tie + rest.drop(first))
     }
 
-    private fun toUiState(contents: PlanContents): PlanUiState = when (contents) {
+    private fun toUiState(contents: PlanContents, trackNames: Map<Long, String>): PlanUiState = when (contents) {
         PlanContents.None -> PlanUiState.Empty
 
         is PlanContents.Loaded -> {
@@ -284,7 +291,9 @@ class PlanViewModel @Inject constructor(
             val titles = contents.items.associate { it.id to it.title }
             val starts = contents.items.mapNotNull { startOf(it.anchor) }
 
-            val rows = withTies(PlanOrder.sorted(contents.items).map { toRow(it, titles, contents.items) })
+            val rows = withTies(
+                PlanOrder.sorted(contents.items).map { toRow(it, titles, contents.items, trackNames) },
+            )
             val groups = contents.blocks.map { toGroup(it, rows) }
 
             PlanUiState(
@@ -305,7 +314,12 @@ class PlanViewModel @Inject constructor(
         }
     }
 
-    private fun toRow(item: Item, titles: Map<Long, String>, all: List<Item>) = PlanItemRow(
+    private fun toRow(
+        item: Item,
+        titles: Map<Long, String>,
+        all: List<Item>,
+        trackNames: Map<Long, String>,
+    ) = PlanItemRow(
         id = item.id,
         title = item.title,
         kind = kindOf(item.anchor, titles),
@@ -317,6 +331,8 @@ class PlanViewModel @Inject constructor(
         hasNote = !item.detail.isNullOrBlank(),
         measured = item.valueKind != ValueKind.NONE,
         slot = PlanOrder.slotOf(item, all),
+        trackName = item.trackId?.let(trackNames::get),
+        hasLink = item.bundleUri != null,
     )
 
     /** A row can move when another row shares its minute and its group. */

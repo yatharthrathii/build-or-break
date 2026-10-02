@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -96,6 +97,7 @@ fun PlanScreen(
     onAddItem: (templateId: Long) -> Unit,
     onImport: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPlans: () -> Unit = {},
     viewModel: PlanViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -112,6 +114,7 @@ fun PlanScreen(
             onAddItem = { onAddItem(state.templateId) },
             onImport = onImport,
             onReorder = viewModel::onReorder,
+            onOpenPlans = onOpenPlans,
         ),
         modifier = modifier,
     )
@@ -129,6 +132,8 @@ data class PlanActions(
     val onImport: () -> Unit,
     /** A tie of steps at one minute, in the order the user just put them. */
     val onReorder: (List<Long>) -> Unit = {},
+    /** Every plan, and the switch between them. */
+    val onOpenPlans: () -> Unit = {},
 ) {
     companion object {
         val None = PlanActions(
@@ -194,12 +199,18 @@ private fun PlanBody(
             .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding(),
     ) {
-        ScreenHeader(kicker = kickerText(state), title = stringResource(R.string.plan_title)) {
+        // With several plans the title is the plan's own name, because
+        // "Plan" says nothing about which one is on screen.
+        ScreenHeader(
+            kicker = kickerText(state),
+            title = if (state.planCount > 1) state.planName else stringResource(R.string.plan_title),
+        ) {
             HeaderIcons(
                 state = state,
                 onEditTemplate = { onEditTemplate(state.templates.getOrNull(state.selectedIndex)?.id) },
                 onNewGroup = { onEditGroup(NEW_GROUP) },
                 onImport = actions.onImport,
+                onOpenPlans = actions.onOpenPlans,
             )
         }
 
@@ -262,15 +273,22 @@ private fun TemplateDialogHost(
     )
 }
 
-/** Edit the template being shown, make a group, and import. */
+/** Switch plans, edit the template being shown, make a group, and import. */
 @Composable
 private fun HeaderIcons(
     state: PlanUiState,
     onEditTemplate: () -> Unit,
     onNewGroup: () -> Unit,
     onImport: () -> Unit,
+    onOpenPlans: () -> Unit,
 ) {
     if (state.hasPlan) {
+        HeaderIcon(
+            icon = Icons.Outlined.SwapHoriz,
+            description = stringResource(R.string.plans_title),
+            onClick = onOpenPlans,
+        )
+
         HeaderIcon(
             icon = Icons.Outlined.Edit,
             description = stringResource(R.string.plan_template_edit),
@@ -556,6 +574,8 @@ private fun kindLine(row: PlanItemRow): String {
         if (row.salience == Salience.ALARM && row.groupId == null) add(stringResource(R.string.plan_line_alarm))
         if (row.pinned) add(stringResource(R.string.plan_line_pinned))
         if (row.measured) add(stringResource(R.string.plan_line_measured))
+        row.trackName?.let { add(stringResource(R.string.plan_line_track, it)) }
+        if (row.hasLink) add(stringResource(R.string.plan_line_link))
         if (row.hasNote) add(stringResource(R.string.plan_line_note))
         if (row.weekdaysText.isNotEmpty()) add(row.weekdaysText)
     }

@@ -6,6 +6,8 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -100,6 +102,47 @@ class ItemEditorContentTest {
         render(step().copy(isNew = false, valueKind = ValueKind.WEIGHT_KG, readings = persistentListOf(49.5)))
 
         compose.onAllNodesWithText("number so far", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a step on a syllabus says which one, and where it stands`() {
+        render(
+            step().copy(
+                trackId = 4,
+                tracks = persistentListOf(TrackChoice(4, "Backend course", position = 3, total = 30)),
+            ),
+        )
+
+        scrollTo("Backend course")
+        compose.onNodeWithText("Backend course · part 3 of 30").assertIsDisplayed()
+        scrollTo("the card shows the next part")
+        compose.onNodeWithText("the card shows the next part", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `letting go of a syllabus is reported, and none is always on offer`() {
+        var changed: ItemEditorUiState? = null
+        val course = TrackChoice(4, "Backend course", 1, 30)
+        render(step().copy(trackId = 4, tracks = persistentListOf(course))) { changed = it }
+
+        scrollTo("Backend course")
+        // The field and the row in the dialog read the same. The field is the
+        // one on screen first; the dialog opens on top of it.
+        compose.onAllNodesWithText("Backend course · part 1 of 30").onFirst().performClick()
+        compose.onAllNodesWithText("None").onLast().performClick()
+
+        assertThat(changed?.trackId).isNull()
+    }
+
+    @Test
+    fun `a link typed in can be taken out again`() {
+        var changed: ItemEditorUiState? = null
+        render(step().copy(link = "youtube.com/watch?v=abc")) { changed = it }
+
+        scrollTo("REMOVE")
+        compose.onNodeWithText("REMOVE").performClick()
+
+        assertThat(changed?.link).isEmpty()
     }
 
     @Test
