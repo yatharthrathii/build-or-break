@@ -6,6 +6,7 @@ import com.buildorbreak.core.domain.resolver.CascadeCalculator
 import com.buildorbreak.core.domain.resolver.DefaultCascadeCalculator
 import com.buildorbreak.core.domain.resolver.DefaultTimelineResolver
 import com.buildorbreak.core.domain.resolver.TimelineResolver
+import com.buildorbreak.core.domain.track.TrackTextParser
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -51,4 +52,8 @@ object DomainModule {
     @Provides
     @Singleton
     fun provideExportBuilder(): ExportBuilder = ExportBuilder()
+
+    @Provides
+    @Singleton
+    fun provideTrackTextParser(): TrackTextParser = TrackTextParser()
 }

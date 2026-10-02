@@ -3,6 +3,7 @@ package com.buildorbreak.widget
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.buildorbreak.core.model.enums.DayMode
+import com.buildorbreak.core.model.enums.Salience
 import com.buildorbreak.core.model.execution.Occurrence
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.resolved.ResolvedDay
@@ -133,6 +134,30 @@ class WidgetSnapshotTest {
         assertThat(snapshot.title).isNull()
         assertThat(snapshot.time).isNull()
         assertThat(snapshot.emptyLine).isEqualTo("Nothing left on the rails.")
+    }
+
+    @Test
+    fun `the tall face gets the whole day in order, with the next step marked`() {
+        val snapshot = WidgetData.snapshotOf(
+            context,
+            day(entry(wake, hour = 6, occurrence = ExecutionFixtures.done(itemId = 1)), entry(gym, hour = 7)),
+        )
+
+        assertThat(snapshot.rows.map { it.title }).containsExactly("Wake up", "Gym").inOrder()
+        assertThat(snapshot.rows.map { it.settled }).containsExactly(true, false).inOrder()
+        assertThat(snapshot.rows.map { it.isNext }).containsExactly(false, true).inOrder()
+        // Whichever clock the phone keeps, six in the morning is on the row.
+        assertThat(snapshot.rows.first().time).contains("6:00")
+    }
+
+    @Test
+    fun `a timeline note is never the next step, because it has no done button`() {
+        val note = PlanFixtures.item(id = 4, title = "Lights out", salience = Salience.TIMELINE)
+
+        val snapshot = WidgetData.snapshotOf(context, day(entry(note, hour = 22), entry(gym, hour = 7)))
+
+        assertThat(snapshot.title).isEqualTo("Gym")
+        assertThat(snapshot.count).isEqualTo("0 / 1")
     }
 
     @Test

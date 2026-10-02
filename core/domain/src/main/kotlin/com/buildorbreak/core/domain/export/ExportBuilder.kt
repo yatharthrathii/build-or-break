@@ -1,5 +1,6 @@
 package com.buildorbreak.core.domain.export
 
+import com.buildorbreak.core.model.enums.TrackUnitState
 import com.buildorbreak.core.model.execution.DayLog
 import com.buildorbreak.core.model.execution.Measurement
 import com.buildorbreak.core.model.execution.Occurrence
@@ -12,6 +13,9 @@ import com.buildorbreak.core.model.plan.DayTemplate
 import com.buildorbreak.core.model.plan.Item
 import com.buildorbreak.core.model.plan.MinimumVersion
 import com.buildorbreak.core.model.plan.Plan
+import com.buildorbreak.core.model.track.Track
+import com.buildorbreak.core.model.track.TrackSession
+import com.buildorbreak.core.model.track.TrackUnit
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration
@@ -36,6 +40,11 @@ data class ExportInput(
     val measurements: List<Measurement> = emptyList(),
     val closes: List<DayClose> = emptyList(),
     val milestones: List<MilestoneAward> = emptyList(),
+    val tracks: List<Track> = emptyList(),
+    /** Track id to its parts, in order. */
+    val trackUnits: Map<Long, List<TrackUnit>> = emptyMap(),
+    /** Track id to its sittings, oldest first. */
+    val trackSessions: Map<Long, List<TrackSession>> = emptyMap(),
 )
 
 /**
@@ -77,6 +86,15 @@ class ExportBuilder(
                 )
             },
             goals = input.goals.sortedBy { it.id }.map { it.toExport(input.leftOutWeeks[it.id].orEmpty()) },
+            // The parts go with the routine; how far along they are is history.
+            // A shared syllabus starts from the top for whoever receives it.
+            tracks = input.tracks.sortedBy { it.id }.map { track ->
+                track.toExport(
+                    units = input.trackUnits[track.id].orEmpty(),
+                    sessions = if (includeHistory) input.trackSessions[track.id].orEmpty() else emptyList(),
+                    withProgress = includeHistory,
+                )
+            },
             history = if (includeHistory) input.toHistory() else ExportHistory(),
         )
     }
@@ -136,7 +154,39 @@ private fun Item.toExport() = ExportItem(
     sortOrder = sortOrder,
     archivedAt = archivedAt?.toString(),
     catchable = catchable,
+    bundleUri = bundleUri,
+    trackId = trackId,
 )
+
+private fun Track.toExport(units: List<TrackUnit>, sessions: List<TrackSession>, withProgress: Boolean): ExportTrack {
+    val ordered = units.sortedBy { it.ordinal }
+    val ordinalOf = ordered.associate { it.id to it.ordinal }
+
+    return ExportTrack(
+        id = id,
+        name = name,
+        sourceText = sourceText,
+        createdAt = createdAt.toString(),
+        units = ordered.map { unit ->
+            ExportTrackUnit(
+                ordinal = unit.ordinal,
+                title = unit.title,
+                estimateMinutes = unit.estimateMinutes,
+                state = if (withProgress) unit.state.name else TrackUnitState.PENDING.name,
+            )
+        },
+        sessions = sessions.mapNotNull { sitting ->
+            ordinalOf[sitting.trackUnitId]?.let { ordinal ->
+                ExportTrackSession(
+                    unitOrdinal = ordinal,
+                    minutesSpent = sitting.minutesSpent,
+                    finished = sitting.completedUnit,
+                    leftOff = sitting.leftOffNote,
+                )
+            }
+        },
+    )
+}
 
 private fun MinimumVersion.toExport() = ExportMinimum(title = title, durationMinutes = duration?.wholeMinutes())
 

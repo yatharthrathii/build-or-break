@@ -25,6 +25,9 @@ interface PlanRepository {
     suspend fun upsert(plan: Plan): Outcome<Long, DataError>
 
     suspend fun setActive(planId: Long): Outcome<Unit, DataError>
+
+    /** Takes the plan and everything under it: days, steps, history, goals. */
+    suspend fun delete(planId: Long): Outcome<Unit, DataError>
 }
 
 interface TemplateRepository {
@@ -90,4 +93,12 @@ interface ItemRepository {
      * order they had.
      */
     suspend fun reorder(orderedIds: List<Long>): Outcome<Unit, DataError>
+
+    /**
+     * Turns every step that followed a syllabus back into an ordinary step.
+     *
+     * For a deleted syllabus. The steps stay: somebody removing a course
+     * outline has not asked for their study slot to go with it.
+     */
+    suspend fun detachTrack(trackId: Long): Outcome<Unit, DataError>
 }

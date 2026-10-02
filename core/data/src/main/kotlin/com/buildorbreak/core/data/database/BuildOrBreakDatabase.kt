@@ -16,6 +16,7 @@ import com.buildorbreak.core.data.dao.PlanDao
 import com.buildorbreak.core.data.dao.PointEntryDao
 import com.buildorbreak.core.data.dao.TemplateDao
 import com.buildorbreak.core.data.dao.TrackDao
+import com.buildorbreak.core.data.dao.TrackSessionDao
 import com.buildorbreak.core.data.entity.BlockEntity
 import com.buildorbreak.core.data.entity.DayCloseEntity
 import com.buildorbreak.core.data.entity.DayLogEntity
@@ -93,6 +94,7 @@ abstract class BuildOrBreakDatabase : RoomDatabase() {
     abstract fun dayCloseDao(): DayCloseDao
     abstract fun milestoneDao(): MilestoneDao
     abstract fun trackDao(): TrackDao
+    abstract fun trackSessionDao(): TrackSessionDao
     abstract fun deliveryAuditDao(): DeliveryAuditDao
 
     abstract fun pointEntryDao(): PointEntryDao

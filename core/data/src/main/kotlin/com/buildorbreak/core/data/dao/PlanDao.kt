@@ -38,4 +38,8 @@ interface PlanDao {
 
     @Query("UPDATE plan SET is_active = 1 WHERE id = :planId")
     suspend fun markActive(planId: Long)
+
+    /** Cascades to the days, the steps and their history. */
+    @Query("DELETE FROM plan WHERE id = :planId")
+    suspend fun delete(planId: Long)
 }

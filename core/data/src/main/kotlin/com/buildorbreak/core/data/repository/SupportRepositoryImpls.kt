@@ -4,11 +4,13 @@ import com.buildorbreak.core.common.coroutines.AppDispatchers
 import com.buildorbreak.core.common.result.Outcome
 import com.buildorbreak.core.data.dao.DeliveryAuditDao
 import com.buildorbreak.core.data.dao.TrackDao
+import com.buildorbreak.core.data.dao.TrackSessionDao
 import com.buildorbreak.core.data.mapper.toEntity
 import com.buildorbreak.core.data.mapper.toModel
 import com.buildorbreak.core.domain.error.DomainError.DataError
 import com.buildorbreak.core.domain.repository.DeliveryAuditRepository
 import com.buildorbreak.core.domain.repository.TrackRepository
+import com.buildorbreak.core.domain.repository.TrackSessionRepository
 import com.buildorbreak.core.model.audit.DeliveryAudit
 import com.buildorbreak.core.model.enums.TrackUnitState
 import com.buildorbreak.core.model.track.Track
@@ -32,6 +34,9 @@ class TrackRepositoryImpl @Inject constructor(
     override fun observeForPlan(planId: Long): Flow<List<Track>> =
         tracks.observeForPlan(planId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
 
+    override fun observeTrack(trackId: Long): Flow<Track?> =
+        tracks.observeTrack(trackId).map { it?.toModel() }.flowOn(dispatchers.io)
+
     override fun observeUnits(trackId: Long): Flow<List<TrackUnit>> =
         tracks.observeUnits(trackId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
 
@@ -44,18 +49,34 @@ class TrackRepositoryImpl @Inject constructor(
             tracks.upsertWithUnits(track.toEntity(), units.map { it.toEntity() })
         }
 
-    /**
-     * Advancing the unit is part of recording the session.
-     *
-     * They are written together because a session that says it finished a unit
-     * while the unit still reads as pending would put the syllabus one step
-     * behind reality, and the next sitting would reopen work already done.
-     */
-    override suspend fun recordSession(session: TrackSession): Outcome<Unit, DataError> = sqlOutcome(dispatchers.io) {
-        tracks.upsertSession(session.toEntity())
-        if (session.completedUnit) {
-            tracks.setUnitState(session.trackUnitId, TrackUnitState.DONE.name)
-        }
+    override suspend fun setUnitState(unitId: Long, state: TrackUnitState): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { tracks.setUnitState(unitId, state.name) }
+
+    override suspend fun delete(trackId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { tracks.delete(trackId) }
+}
+
+class TrackSessionRepositoryImpl @Inject constructor(
+    private val sessions: TrackSessionDao,
+    private val dispatchers: AppDispatchers,
+) : TrackSessionRepository {
+
+    override fun observeForTrack(trackId: Long): Flow<List<TrackSession>> =
+        sessions.observeForTrack(trackId).map { rows -> rows.map { it.toModel() } }.flowOn(dispatchers.io)
+
+    override suspend fun record(session: TrackSession): Outcome<Unit, DataError> = sqlOutcome(dispatchers.io) {
+        sessions.upsertSession(session.toEntity())
+    }
+
+    override suspend fun forOccurrence(occurrenceId: Long): List<TrackSession> = withContext(dispatchers.io) {
+        sessions.forOccurrence(occurrenceId).map { it.toModel() }
+    }
+
+    override suspend fun delete(sessionId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { sessions.delete(sessionId) }
+
+    override suspend fun countForUnit(unitId: Long): Int = withContext(dispatchers.io) {
+        sessions.countForUnit(unitId)
     }
 }
 

@@ -32,6 +32,8 @@ data class ExportDocument(
     val plan: ExportPlan,
     val templates: List<ExportTemplate> = emptyList(),
     val goals: List<ExportGoal> = emptyList(),
+    /** Defaulted, so a file written before syllabuses existed still reads. */
+    val tracks: List<ExportTrack> = emptyList(),
     val history: ExportHistory = ExportHistory(),
 )
 
@@ -83,6 +85,10 @@ data class ExportItem(
     @SerialName("sort_order") val sortOrder: Int,
     @SerialName("archived_at") val archivedAt: String? = null,
     val catchable: Boolean = true,
+    /** A link or a file to open when the step comes round. */
+    @SerialName("bundle_uri") val bundleUri: String? = null,
+    /** The syllabus this step works through, by the id it has in [ExportDocument.tracks]. */
+    @SerialName("track_id") val trackId: Long? = null,
 )
 
 @Serializable
@@ -136,6 +142,41 @@ data class ExportGoal(
      * week should not count is something only the user knew.
      */
     @SerialName("left_out_weeks") val leftOutWeeks: List<String> = emptyList(),
+)
+
+/**
+ * A syllabus: the parts in order, and where each one stands.
+ *
+ * The parts travel by position rather than by id, because the ids are
+ * rebuilt on the way back in and a sitting that pointed at a number would
+ * point at nothing. The text as it was pasted comes too, so the original is
+ * always there to read.
+ */
+@Serializable
+data class ExportTrack(
+    val id: Long,
+    val name: String,
+    @SerialName("source_text") val sourceText: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    val units: List<ExportTrackUnit> = emptyList(),
+    val sessions: List<ExportTrackSession> = emptyList(),
+)
+
+@Serializable
+data class ExportTrackUnit(
+    val ordinal: Int,
+    val title: String,
+    @SerialName("estimate_minutes") val estimateMinutes: Int? = null,
+    val state: String,
+)
+
+/** One sitting. The occurrence it belonged to is not in the file, so it stands on its part alone. */
+@Serializable
+data class ExportTrackSession(
+    @SerialName("unit_ordinal") val unitOrdinal: Int,
+    @SerialName("minutes_spent") val minutesSpent: Int,
+    val finished: Boolean,
+    @SerialName("left_off") val leftOff: String? = null,
 )
 
 /**

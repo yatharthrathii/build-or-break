@@ -7,6 +7,7 @@ import com.buildorbreak.core.domain.goal.Points
 import com.buildorbreak.core.domain.goal.PointsTally
 import com.buildorbreak.core.domain.review.CatchUpViewBuilder
 import com.buildorbreak.core.domain.usecase.PlanContents
+import com.buildorbreak.core.domain.usecase.TrackHead
 import com.buildorbreak.core.model.enums.DayMode
 import com.buildorbreak.core.model.enums.DeliveryTier
 import com.buildorbreak.core.model.enums.OccurrenceState
@@ -59,6 +60,8 @@ data class DayFacts(
     val points: PointsTally? = null,
     /** What is left to spend from closed days: earned, less everything spent. Null until read. */
     val balance: Int? = null,
+    /** Every syllabus on the plan, by id, for the steps that follow one. */
+    val tracks: Map<Long, TrackHead> = emptyMap(),
 )
 
 /** Zero to one, drawn as zero to a hundred. */
@@ -107,7 +110,7 @@ class TodayMapper @Inject constructor(
             consistency = facts.consistency,
             shiftMinutes = day.dayShift.inWholeMinutes.toInt(),
             movedCount = day.entries.count { !it.item.pinned && !settled(it) },
-            next = next?.let { toNextUp(it, titles, now) },
+            next = next?.let { toNextUp(it, titles, now, facts.tracks) },
             entries = day.entries.map { toEntry(it, titles, stateOf(it, ahead)) }.toImmutableList(),
             nowIndex = next?.let { day.entries.indexOf(it) } ?: -1,
             budget = day.budgetWarning?.let(::toBudgetNotice),
@@ -197,7 +200,23 @@ class TodayMapper @Inject constructor(
     private fun titleOf(entry: ResolvedEntry): String =
         if (entry.reduced) entry.item.minimum?.title ?: entry.item.title else entry.item.title
 
-    private fun toNextUp(entry: ResolvedEntry, titles: Map<Long, String>, now: LocalDateTime) = NextUp(
+    private fun toTrackLine(head: TrackHead) = TrackLineUi(
+        trackId = head.track.id,
+        unitId = head.next?.id ?: 0,
+        name = head.track.name,
+        unitTitle = head.next?.title,
+        position = head.position,
+        total = head.total,
+        leftOff = head.leftOff,
+        estimateMinutes = head.next?.estimateMinutes,
+    )
+
+    private fun toNextUp(
+        entry: ResolvedEntry,
+        titles: Map<Long, String>,
+        now: LocalDateTime,
+        tracks: Map<Long, TrackHead>,
+    ) = NextUp(
         occurrenceId = entry.occurrence?.id ?: 0,
         itemId = entry.item.id,
         time = clock.format(entry.at),
@@ -208,6 +227,8 @@ class TodayMapper @Inject constructor(
         hasMinimum = entry.item.hasMinimum && !entry.reduced,
         detail = entry.item.detail?.takeIf { it.isNotBlank() },
         measure = entry.item.valueKind.takeIf { it != ValueKind.NONE },
+        link = entry.item.bundleUri,
+        track = entry.item.trackId?.let(tracks::get)?.let(::toTrackLine),
         isAlarm = entry.item.salience == Salience.ALARM,
         isReduced = entry.reduced,
         isOverdue = entry.at < now,

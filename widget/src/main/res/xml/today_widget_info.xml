@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    One size that works rather than five that are mediocre. Four columns by two
-    rows is the smallest cell that fits a time, a title on two lines and two
-    buttons, and resizing is allowed horizontally so a wider home screen gets a
-    longer title rather than a stretched one.
+    The card: four columns by two rows is the smallest cell that fits a time,
+    a title on two lines and two buttons. Resizable both ways, and the widget
+    changes face as it goes: squeezed to one row it becomes the strip, pulled
+    down it becomes the tall one with the day under it.
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:minWidth="250dp"
     android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="48dp"
     android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"

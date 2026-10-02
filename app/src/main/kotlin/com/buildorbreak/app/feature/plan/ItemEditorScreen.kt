@@ -1,5 +1,8 @@
 package com.buildorbreak.app.feature.plan
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -70,8 +74,26 @@ fun ItemEditorScreen(
     viewModel: ItemEditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(itemId, templateId) { viewModel.load(itemId, templateId) }
+
+    // The permission is taken for keeps, because the file has to open on a
+    // morning weeks from now, long after the picker's own grant has lapsed.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        @Suppress("SwallowedException")
+        try {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (notOffered: SecurityException) {
+            // Some providers never offer a lasting grant. The link is still
+            // kept: it opens for as long as the phone allows, and says so
+            // the day it stops.
+        }
+
+        viewModel.onChange(state.copy(link = uri.toString()))
+    }
 
     ItemEditorContent(
         state = state,
@@ -80,6 +102,9 @@ fun ItemEditorScreen(
         onArchive = { viewModel.onArchive(onDone) },
         onCancel = onDone,
         modifier = modifier,
+        onPickFile = { picker.launch(arrayOf("*/*")) },
+        countParts = viewModel::partsIn,
+        onCreateTrack = viewModel::onCreateTrack,
     )
 }
 
@@ -91,6 +116,9 @@ fun ItemEditorContent(
     onArchive: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    onPickFile: () -> Unit = {},
+    countParts: (String) -> Int = { 0 },
+    onCreateTrack: (String, String) -> Unit = { _, _ -> },
 ) {
     Column(
         modifier = modifier
@@ -110,6 +138,14 @@ fun ItemEditorContent(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             EditorBody(state = state, onChange = onChange)
+
+            ExtrasBody(
+                state = state,
+                onChange = onChange,
+                onPickFile = onPickFile,
+                countParts = countParts,
+                onCreateTrack = onCreateTrack,
+            )
 
             if (!state.isNew) {
                 GhostButton(
@@ -160,6 +196,20 @@ private fun EditorBody(state: ItemEditorUiState, onChange: (ItemEditorUiState) -
     )
 
     MeasureSection(state = state, onChange = onChange)
+}
+
+/** The sections past the ordinary ones: what the step carries, what it follows, how it moves. */
+@Composable
+private fun ExtrasBody(
+    state: ItemEditorUiState,
+    onChange: (ItemEditorUiState) -> Unit,
+    onPickFile: () -> Unit,
+    countParts: (String) -> Int,
+    onCreateTrack: (String, String) -> Unit,
+) {
+    LinkSection(state = state, onChange = onChange, onPickFile = onPickFile)
+
+    TrackSection(state = state, onChange = onChange, countParts = countParts, onCreateTrack = onCreateTrack)
 
     PinnedRow(state = state, onChange = onChange)
 

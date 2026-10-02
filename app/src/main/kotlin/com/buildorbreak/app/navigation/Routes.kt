@@ -74,6 +74,18 @@ data class ItemEditorRoute(val itemId: Long, val templateId: Long = 0) : NavKey 
     }
 }
 
+/** Every plan, and the one that runs. */
+@Serializable
+data object PlansRoute : NavKey
+
+/** Every syllabus on the plan. */
+@Serializable
+data object TracksRoute : NavKey
+
+/** One syllabus: its parts, and where it stands. */
+@Serializable
+data class TrackRoute(val trackId: Long) : NavKey
+
 /**
  * The four screens on the bottom bar, in bar order.
  *

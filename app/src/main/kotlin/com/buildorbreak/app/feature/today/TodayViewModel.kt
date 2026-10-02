@@ -129,7 +129,7 @@ class TodayViewModel @Inject constructor(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private val facts: Flow<DayFacts> = date.flatMapLatest { on ->
-        combine(
+        val dayFacts = combine(
             watch.run(on),
             watch.consistency(on),
             watch.goals(),
@@ -145,6 +145,8 @@ class TodayViewModel @Inject constructor(
                 balance = wallet.balance,
             )
         }
+
+        combine(dayFacts, watch.tracks()) { base, heads -> base.copy(tracks = heads) }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -188,6 +190,7 @@ class TodayViewModel @Inject constructor(
                 askAbout = extra.ask,
                 actionFailed = extra.local.failed,
                 askNumber = extra.local.measure,
+                askSession = extra.local.session,
                 milestone = extra.earned?.let { MilestoneNotice(it.milestone) },
             )
         }
@@ -215,7 +218,20 @@ class TodayViewModel @Inject constructor(
         expect(occurrenceId, if (reduced) OccurrenceState.DONE_MINIMUM else OccurrenceState.DONE)
         offerUndo(occurrenceId, if (reduced) SettleKind.MINIMUM else SettleKind.DONE)
         askForNumber(occurrenceId)
+        askForSession(occurrenceId)
         report(occurrenceId, actions.complete(occurrenceId, minimum = reduced))
+    }
+
+    /** What the sitting had to say. Optional, and the part stays where it was if nothing is said. */
+    fun onLogSession(finished: Boolean, minutes: Int, leftOff: String) = viewModelScope.launch {
+        val prompt = local.value.session ?: return@launch
+
+        local.update { it.copy(session = null) }
+        watch.recordSession(prompt.occurrenceId, prompt.unitId, minutes, finished, leftOff)
+    }
+
+    fun onDismissSession() {
+        local.update { it.copy(session = null) }
     }
 
     fun onSnooze(occurrenceId: Long) = viewModelScope.launch {
@@ -304,17 +320,22 @@ class TodayViewModel @Inject constructor(
         val ask = local.value.undoAsk ?: return@launch
 
         local.update { it.copy(undoAsk = null) }
-        report(ask.occurrenceId, actions.undoForPoints(ask.occurrenceId))
+        val outcome = actions.undoForPoints(ask.occurrenceId)
+        if (outcome is Outcome.Success) watch.forgetSession(ask.occurrenceId)
+        report(ask.occurrenceId, outcome)
     }
 
     fun onUndo() = viewModelScope.launch {
         val offer = local.value.undo ?: return@launch
 
-        // A number owed for a settle that is being taken back is not owed.
+        // A number owed for a settle that is being taken back is not owed,
+        // and neither is the sitting.
         undoTimer?.cancel()
-        local.update { it.copy(undo = null, measure = null) }
+        local.update { it.copy(undo = null, measure = null, session = null) }
         pending.update { it - offer.occurrenceId }
-        report(offer.occurrenceId, actions.undo(offer.occurrenceId))
+        val outcome = actions.undo(offer.occurrenceId)
+        if (outcome is Outcome.Success) watch.forgetSession(offer.occurrenceId)
+        report(offer.occurrenceId, outcome)
     }
 
     /** The number a completed step asked for. Optional, and closed either way. */
@@ -390,6 +411,22 @@ class TodayViewModel @Inject constructor(
         local.update { it.copy(measure = MeasurePrompt(occurrenceId, card.itemId, card.title, kind)) }
     }
 
+    /** The sitting question, for a step that follows a syllabus with a part still open. */
+    private fun askForSession(occurrenceId: Long) {
+        val card = state.value.next?.takeIf { it.occurrenceId == occurrenceId } ?: return
+        val line = card.track?.takeIf { !it.isFinished } ?: return
+
+        val prompt = SessionPrompt(
+            occurrenceId = occurrenceId,
+            unitId = line.unitId,
+            unitTitle = line.unitTitle.orEmpty(),
+            position = line.position,
+            total = line.total,
+            minutes = card.durationMinutes ?: line.estimateMinutes ?: 0,
+        )
+        local.update { it.copy(session = prompt) }
+    }
+
     /**
      * Opens the window in which the last tap can be taken back.
      *
@@ -421,7 +458,7 @@ class TodayViewModel @Inject constructor(
         pending.update { it - occurrenceId }
         undoTimer?.cancel()
 
-        local.update { it.copy(undo = null, failed = true, measure = null) }
+        local.update { it.copy(undo = null, failed = true, measure = null, session = null) }
         failureTimer?.cancel()
         failureTimer = viewModelScope.launch {
             delay(FAILURE_MILLIS)
@@ -442,6 +479,7 @@ class TodayViewModel @Inject constructor(
         val waved: Set<Long> = emptySet(),
         val failed: Boolean = false,
         val measure: MeasurePrompt? = null,
+        val session: SessionPrompt? = null,
     )
 
     /** The three things the screen shows that the resolved day knows nothing about. */

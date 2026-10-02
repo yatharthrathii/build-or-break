@@ -77,13 +77,16 @@ there is nothing to install.
 
 **What works end to end:** the timeline engine and its four anchor types, day
 templates, the whole day shift and the snooze preview, the tiered scheduler
-with full screen alarms and its delivery audit, the daily close, goals with a
-seven day average and a pace line, the weekly review and Insights, import from
-pasted text, backup and restore, points with a ledger, the nine badges,
-English and Hindi, light and dark.
+with full screen alarms and its delivery audit, the daily close, up to two
+goals at once with a seven day average, a pace line and weeks that can be
+left out, the weekly review and Insights, import from pasted text, backup and
+restore, points with a ledger, the nine badges, more than one plan with one
+running at a time, syllabuses that a step works through one sitting at a time
+with a note on where you stopped, a link or file on a step that opens from the
+card, a home screen widget in three sizes, English and Hindi, light and dark.
 
 **What does not exist yet:** anything paid, the ads SDK behind the "watch an
-ad" button, multi week programs, and everything to do with the store listing.
+ad" button, and everything to do with the store listing.
 
 ## The hard part
 

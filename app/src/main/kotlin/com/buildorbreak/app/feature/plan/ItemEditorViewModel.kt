@@ -3,14 +3,18 @@ package com.buildorbreak.app.feature.plan
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.buildorbreak.app.feature.today.normaliseLink
 import com.buildorbreak.app.format.ClockFormat
 import com.buildorbreak.core.common.result.Outcome
+import com.buildorbreak.core.domain.track.TrackTextParser
 import com.buildorbreak.core.domain.usecase.ArchiveItemUseCase
 import com.buildorbreak.core.domain.usecase.ObservePlanUseCase
 import com.buildorbreak.core.domain.usecase.ObserveReadingsUseCase
 import com.buildorbreak.core.domain.usecase.ObserveTodayUseCase
+import com.buildorbreak.core.domain.usecase.ObserveTracksUseCase
 import com.buildorbreak.core.domain.usecase.PlanContents
 import com.buildorbreak.core.domain.usecase.SaveItemUseCase
+import com.buildorbreak.core.domain.usecase.SaveTrackUseCase
 import com.buildorbreak.core.model.enums.AnchorType
 import com.buildorbreak.core.model.enums.ItemKind
 import com.buildorbreak.core.model.enums.Salience
@@ -76,6 +80,12 @@ data class ParentChoice(val id: Long, val title: String)
 @Immutable
 data class GroupChoice(val id: Long, val title: String, val salience: Salience)
 
+/** A syllabus this step could follow, and where it stands. */
+@Immutable
+data class TrackChoice(val id: Long, val name: String, val position: Int, val total: Int) {
+    val isFinished: Boolean get() = position == 0 && total > 0
+}
+
 /** Why the save button is off. Facts; the screen has the words. */
 enum class SaveBlocker { NO_TITLE, NO_PARENT, WINDOW_BACKWARDS }
 
@@ -124,9 +134,18 @@ data class ItemEditorUiState(
      * tracker. Empty for a new step and for one that asks for nothing.
      */
     val readings: ImmutableList<Double> = persistentListOf(),
+    /** A link or a file to open when the step comes round. Empty for none. */
+    val link: String = "",
+    /** The syllabus this step works through, if it works through one. */
+    val trackId: Long? = null,
+    val tracks: ImmutableList<TrackChoice> = persistentListOf(),
+    /** The plan the step is on, for a syllabus made from inside the editor. */
+    val planId: Long = 0,
 ) {
     /** The group this step is in, when it is in one. */
     val group: GroupChoice? get() = groups.firstOrNull { it.id == blockId }
+
+    val track: TrackChoice? get() = tracks.firstOrNull { it.id == trackId }
 
     /**
      * Whether the group, rather than this step, decides how loud it is.
@@ -192,8 +211,11 @@ class ItemEditorViewModel @Inject constructor(
     private val observePlan: ObservePlanUseCase,
     private val observeToday: ObserveTodayUseCase,
     private val observeReadings: ObserveReadingsUseCase,
+    private val observeTracks: ObserveTracksUseCase,
     private val saveItem: SaveItemUseCase,
+    private val saveTrack: SaveTrackUseCase,
     private val archiveItem: ArchiveItemUseCase,
+    private val parser: TrackTextParser,
     private val clock: ClockFormat,
 ) : ViewModel() {
 
@@ -234,7 +256,14 @@ class ItemEditorViewModel @Inject constructor(
         val children = siblings.count { (it.anchor as? Anchor.Relative)?.parentItemId == itemId }
         val groups = loaded?.blocks.orEmpty().map { GroupChoice(it.id, it.title, it.salience) }
 
-        val context = EditorContext(parents.toImmutableList(), groups.toImmutableList(), landsAt, children)
+        val context = EditorContext(
+            parents = parents.toImmutableList(),
+            groups = groups.toImmutableList(),
+            landsAt = landsAt,
+            children = children,
+            tracks = trackChoices(),
+            planId = loaded?.planId ?: 0,
+        )
 
         _state.value = existing?.let { toState(it, context).copy(readings = readingsOf(it)) } ?: newState(context)
     }
@@ -246,13 +275,47 @@ class ItemEditorViewModel @Inject constructor(
         observeReadings(item.id).first().map { it.value }.takeLast(READINGS_SHOWN).toImmutableList()
     }
 
+    private suspend fun trackChoices(): ImmutableList<TrackChoice> =
+        observeTracks().first().map { TrackChoice(it.track.id, it.track.name, it.position, it.total) }.toImmutableList()
+
     /** What the editor knows about the rest of the plan, kept out of the row it is editing. */
     private data class EditorContext(
         val parents: ImmutableList<ParentChoice>,
         val groups: ImmutableList<GroupChoice>,
         val landsAt: String?,
         val children: Int,
+        val tracks: ImmutableList<TrackChoice>,
+        val planId: Long,
     )
+
+    /** How many parts a pasted syllabus would become, for the line under the box. */
+    fun partsIn(text: String): Int = parser.parse(text).size
+
+    /**
+     * A syllabus made without leaving the step.
+     *
+     * Written at once rather than held in the draft, because a syllabus is
+     * its own thing on the plan: the step merely follows it. Once saved it
+     * is picked for this step, which is what somebody who just pasted thirty
+     * lines into the editor meant.
+     */
+    fun onCreateTrack(name: String, text: String) = viewModelScope.launch {
+        val current = _state.value
+
+        when (
+            val written = saveTrack(
+                trackId = null,
+                name = name,
+                text = text,
+                planId = current.planId.takeIf {
+                    it > 0
+                },
+            )
+        ) {
+            is Outcome.Success -> _state.value = current.copy(trackId = written.value, tracks = trackChoices())
+            is Outcome.Failure -> _state.value = current.copy(saveFailed = true)
+        }
+    }
 
     /** Any edit clears the failure. The next Save is a fresh attempt, not the old one. */
     fun onChange(state: ItemEditorUiState) {
@@ -288,6 +351,8 @@ class ItemEditorViewModel @Inject constructor(
         parents = context.parents,
         groups = context.groups,
         isNew = true,
+        tracks = context.tracks,
+        planId = context.planId,
     )
 
     private fun toState(item: Item, context: EditorContext) = ItemEditorUiState(
@@ -308,6 +373,10 @@ class ItemEditorViewModel @Inject constructor(
         isNew = false,
         landsAtToday = context.landsAt,
         childCount = context.children,
+        link = item.bundleUri.orEmpty(),
+        trackId = item.trackId,
+        tracks = context.tracks,
+        planId = context.planId,
     )
 
     /**
@@ -351,14 +420,16 @@ class ItemEditorViewModel @Inject constructor(
         )
     }
 
-    private fun toItem(state: ItemEditorUiState) = Item(
+    private fun toItem(state: ItemEditorUiState): Item = toItem(state, state.track?.id)
+
+    private fun toItem(state: ItemEditorUiState, track: Long?) = Item(
         id = state.itemId,
         templateId = templateId,
         // Only a group that still exists. A stale id would put the step in a
         // group nothing answers to, and SQLite is free to hand that row id to
         // the next group created.
         blockId = state.blockId?.takeIf { id -> state.groups.any { it.id == id } },
-        kind = ItemKind.DO,
+        kind = if (track == null) ItemKind.DO else ItemKind.TRACK_SESSION,
         title = state.title.trim(),
         detail = state.detail.trim().takeIf { it.isNotEmpty() },
         anchor = toAnchor(state.anchor),
@@ -370,8 +441,8 @@ class ItemEditorViewModel @Inject constructor(
         // title would show as a blank button on the notification.
         minimum = state.minimumTitle.trim().takeIf { it.isNotEmpty() }?.let { MinimumVersion(title = it) },
         valueKind = state.valueKind,
-        bundleUri = null,
-        trackId = null,
+        bundleUri = normaliseLink(state.link),
+        trackId = track,
         sortOrder = sortOrder,
         archivedAt = null,
         catchable = state.catchable,

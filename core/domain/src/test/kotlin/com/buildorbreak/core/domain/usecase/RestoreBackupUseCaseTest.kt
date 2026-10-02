@@ -17,6 +17,8 @@ import com.buildorbreak.core.domain.fake.FakeOccurrenceRepository
 import com.buildorbreak.core.domain.fake.FakePlanRepository
 import com.buildorbreak.core.domain.fake.FakeSettingsRepository
 import com.buildorbreak.core.domain.fake.FakeTemplateRepository
+import com.buildorbreak.core.domain.fake.FakeTrackRepository
+import com.buildorbreak.core.domain.fake.FakeTrackSessionRepository
 import com.buildorbreak.core.domain.fake.RecordingAlarmGateway
 import com.buildorbreak.core.domain.fake.RecordingWidgetGateway
 import com.buildorbreak.core.domain.goal.DefaultGoalCalculator
@@ -82,6 +84,8 @@ class RestoreBackupUseCaseTest {
     private val closes = FakeDayCloseRepository()
     private val settings = FakeSettingsRepository()
     private val dayLogs = FakeDayLogRepository()
+    private val tracks = FakeTrackRepository()
+    private val sessions = FakeTrackSessionRepository(tracks)
     private val alarms = RecordingAlarmGateway()
     private val widget = RecordingWidgetGateway()
 
@@ -114,6 +118,9 @@ class RestoreBackupUseCaseTest {
             measurements.measurements.value = emptyList()
             closes.closes.value = emptyList()
             milestones.awards.value = emptyList()
+            tracks.tracks.value = emptyList()
+            tracks.units.value = emptyList()
+            sessions.sessions.value = emptyList()
 
             return Outcome.Success(Unit)
         }
@@ -141,6 +148,7 @@ class RestoreBackupUseCaseTest {
         measurements = measurements,
         milestones = milestones,
         closes = closes,
+        tracks = TrackSources(tracks, sessions),
     )
 
     private val export = ExportPlanUseCase(
@@ -167,6 +175,7 @@ class RestoreBackupUseCaseTest {
         reader = ExportReader(),
         reset = reset,
         sources = backup,
+        restoreTracks = RestoreTracks(backup, time),
         after = RestoreAftermath(
             recompute = recompute,
             reschedule = RescheduleAllUseCase(observeToday, occurrences, alarms, time, dispatchers),

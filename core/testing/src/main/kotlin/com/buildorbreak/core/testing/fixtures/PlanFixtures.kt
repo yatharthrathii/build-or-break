@@ -48,6 +48,8 @@ object PlanFixtures {
         minimum: MinimumVersion? = null,
         valueKind: ValueKind = ValueKind.NONE,
         sortOrder: Int = id.toInt(),
+        bundleUri: String? = null,
+        trackId: Long? = null,
     ): Item = Item(
         id = id,
         templateId = templateId,
@@ -62,8 +64,8 @@ object PlanFixtures {
         pinned = pinned,
         minimum = minimum,
         valueKind = valueKind,
-        bundleUri = null,
-        trackId = null,
+        bundleUri = bundleUri,
+        trackId = trackId,
         sortOrder = sortOrder,
         archivedAt = null,
     )

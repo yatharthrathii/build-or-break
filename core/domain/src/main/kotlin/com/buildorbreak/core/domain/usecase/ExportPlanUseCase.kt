@@ -41,6 +41,8 @@ class ExportPlanUseCase @Inject constructor(
         // without them restores those days as empty.
         val planItems = planTemplates.flatMap { sources.items.allForTemplate(it.id) }
 
+        val planTracks = sources.tracks.tracks.observeForPlan(plan.id).first()
+
         val input = ExportInput(
             plan = plan,
             templates = planTemplates,
@@ -59,6 +61,13 @@ class ExportPlanUseCase @Inject constructor(
                 emptyList()
             },
             closes = if (includeHistory) sources.closes.observeRange(from, today).first() else emptyList(),
+            tracks = planTracks,
+            trackUnits = planTracks.associate { it.id to sources.tracks.tracks.observeUnits(it.id).first() },
+            trackSessions = if (includeHistory) {
+                planTracks.associate { it.id to sources.tracks.sessions.observeForTrack(it.id).first() }
+            } else {
+                emptyMap()
+            },
             // Not trimmed to the ninety days. A badge earned in the first week
             // is the record that stops it being awarded again, and one aged
             // out of the file would come back as a brand new banner.

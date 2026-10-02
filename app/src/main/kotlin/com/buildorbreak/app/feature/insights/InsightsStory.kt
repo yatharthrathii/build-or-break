@@ -183,9 +183,16 @@ private fun patternText(pattern: PatternUi): String = when {
  * is the week it stops being obvious and starts mattering.
  */
 @Composable
-internal fun GoalStrip(goal: GoalStripUi, onOpen: () -> Unit) {
-    SectionLabel(text = stringResource(R.string.insights_goal))
+internal fun GoalStrips(goals: List<GoalStripUi>, onOpen: () -> Unit) {
+    if (goals.isEmpty()) return
 
+    SectionLabel(text = stringResource(if (goals.size > 1) R.string.insights_goals else R.string.insights_goal))
+
+    goals.forEach { GoalStrip(goal = it, onOpen = onOpen) }
+}
+
+@Composable
+private fun GoalStrip(goal: GoalStripUi, onOpen: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

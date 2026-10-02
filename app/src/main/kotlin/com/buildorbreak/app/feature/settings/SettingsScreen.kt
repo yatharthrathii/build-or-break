@@ -86,6 +86,8 @@ fun SettingsScreen(
     onShare: (String) -> Unit,
     onOpenAlarmChannel: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPlans: () -> Unit = {},
+    onOpenTracks: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -120,17 +122,26 @@ fun SettingsScreen(
         onDismissRestore = viewModel::onDismissRestore,
         onWipe = { viewModel.onWipe { } },
         modifier = modifier,
+        onOpenPlans = onOpenPlans,
+        onOpenTracks = onOpenTracks,
     )
 
-    offered?.let { text ->
-        RestoreDialog(
-            onConfirm = {
-                offered = null
-                viewModel.onRestore(text)
-            },
-            onDismiss = { offered = null },
-        )
-    }
+    RestoreOffer(
+        text = offered,
+        onConfirm = {
+            offered = null
+            viewModel.onRestore(it)
+        },
+        onDismiss = { offered = null },
+    )
+}
+
+/** The file that was picked, waiting on the one word that replaces everything with it. */
+@Composable
+private fun RestoreOffer(text: String?, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    if (text == null) return
+
+    RestoreDialog(onConfirm = { onConfirm(text) }, onDismiss = onDismiss)
 }
 
 /**
@@ -185,6 +196,8 @@ fun SettingsContent(
     onOpenPoints: () -> Unit = {},
     onRestore: () -> Unit = {},
     onDismissRestore: () -> Unit = {},
+    onOpenPlans: () -> Unit = {},
+    onOpenTracks: () -> Unit = {},
 ) {
     var confirmingWipe by rememberSaveable { mutableStateOf(false) }
 
@@ -206,6 +219,8 @@ fun SettingsContent(
             onLateTolerance = onLateTolerance,
             onOpenGoal = onOpenGoal,
             onOpenPoints = onOpenPoints,
+            onOpenPlans = onOpenPlans,
+            onOpenTracks = onOpenTracks,
             onThemeMode = onThemeMode,
             onExport = onExport,
             onImport = onImport,
@@ -256,6 +271,8 @@ private fun Rows(
     onLateTolerance: (Int) -> Unit,
     onOpenGoal: () -> Unit,
     onOpenPoints: () -> Unit,
+    onOpenPlans: () -> Unit,
+    onOpenTracks: () -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -269,7 +286,14 @@ private fun Rows(
         ReliabilityRow(state = state, onClick = onOpenReliability)
         AlarmRows(state = state, onOpenAlarmChannel = onOpenAlarmChannel, onLateTolerance = onLateTolerance)
 
-        DayRows(state = state, onOpenGoal = onOpenGoal, onOpenPoints = onOpenPoints, onThemeMode = onThemeMode)
+        DayRows(
+            state = state,
+            onOpenGoal = onOpenGoal,
+            onOpenPoints = onOpenPoints,
+            onOpenPlans = onOpenPlans,
+            onOpenTracks = onOpenTracks,
+            onThemeMode = onThemeMode,
+        )
 
         SectionLabel(text = stringResource(R.string.settings_section_data), underlined = true)
         DataRows(
@@ -292,9 +316,23 @@ private fun DayRows(
     state: SettingsUiState,
     onOpenGoal: () -> Unit,
     onOpenPoints: () -> Unit,
+    onOpenPlans: () -> Unit,
+    onOpenTracks: () -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
 ) {
     SectionLabel(text = stringResource(R.string.settings_section_day), underlined = true)
+
+    SettingsRow(
+        title = stringResource(R.string.settings_plans),
+        body = stringResource(R.string.settings_plans_body),
+        onClick = onOpenPlans,
+    ) { Chevron() }
+
+    SettingsRow(
+        title = stringResource(R.string.settings_tracks),
+        body = stringResource(R.string.settings_tracks_body),
+        onClick = onOpenTracks,
+    ) { Chevron() }
 
     SettingsRow(
         title = stringResource(R.string.settings_goal),

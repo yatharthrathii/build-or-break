@@ -222,7 +222,7 @@ private fun MeasureDialog(selected: ValueKind, onPick: (ValueKind) -> Unit, onDi
 }
 
 @Composable
-private fun ChoiceRow(text: String, chosen: Boolean, onClick: () -> Unit) {
+internal fun ChoiceRow(text: String, chosen: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

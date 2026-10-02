@@ -293,6 +293,8 @@ internal fun NextUpCard(
     onDoneMinimum: (Long) -> Unit,
     onSnooze: (Long) -> Unit,
     onSkip: (Long) -> Unit,
+    onOpenLink: (String) -> Unit = {},
+    onOpenTrack: (Long) -> Unit = {},
 ) {
     AnimatedContent(
         targetState = next,
@@ -312,7 +314,16 @@ internal fun NextUpCard(
     ) { card ->
         Box(modifier = Modifier.padding(horizontal = Theme.spacing.medium, vertical = 14.dp)) {
             when {
-                card != null -> NextUpPanel(card, onDone, onDoneMinimum, onSnooze, onSkip)
+                card != null -> NextUpPanel(
+                    card = card,
+                    onDone = onDone,
+                    onDoneMinimum = onDoneMinimum,
+                    onSnooze = onSnooze,
+                    onSkip = onSkip,
+                    onOpenLink = onOpenLink,
+                    onOpenTrack = onOpenTrack,
+                )
+
                 allDone -> DayDonePanel(keptNothing = keptNothing)
             }
         }
@@ -326,10 +337,12 @@ private fun NextUpPanel(
     onDoneMinimum: (Long) -> Unit,
     onSnooze: (Long) -> Unit,
     onSkip: (Long) -> Unit,
+    onOpenLink: (String) -> Unit,
+    onOpenTrack: (Long) -> Unit,
 ) {
     Panel {
         Column {
-            NextUpHeading(card = card)
+            NextUpHeading(card = card, onOpenLink = onOpenLink, onOpenTrack = onOpenTrack)
 
             // Said plainly rather than left to a greyed out button. A control
             // that does nothing and does not say why is the most annoying
@@ -383,7 +396,7 @@ private fun NextUpTitle(card: NextUp) {
 
 /** The kicker, the time, the title and the badges. Everything above the button. */
 @Composable
-private fun NextUpHeading(card: NextUp) {
+private fun NextUpHeading(card: NextUp, onOpenLink: (String) -> Unit, onOpenTrack: (Long) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -400,6 +413,11 @@ private fun NextUpHeading(card: NextUp) {
     }
 
     NextUpTitle(card = card)
+
+    // The syllabus and the link, between the title and the badges: the two
+    // things somebody about to do the step actually reaches for.
+    card.track?.let { TrackLine(line = it, onOpen = onOpenTrack) }
+    card.link?.let { LinkRow(link = it, onOpen = onOpenLink) }
 
     Row(
         modifier = Modifier.padding(horizontal = 12.dp).padding(top = Theme.spacing.small, bottom = 12.dp),

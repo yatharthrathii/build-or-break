@@ -81,6 +81,7 @@ class RestoreBackupUseCase @Inject constructor(
     private val reader: ExportReader,
     private val reset: ResetRepository,
     private val sources: BackupSources,
+    private val restoreTracks: RestoreTracks,
     private val after: RestoreAftermath,
     private val settings: SettingsRepository,
     private val time: TimeProvider,
@@ -97,7 +98,9 @@ class RestoreBackupUseCase @Inject constructor(
         clearEverything()
 
         val planId = writePlan(document) ?: return@withContext Outcome.Failure(BackupProblem.NOT_READABLE)
-        val itemIds = writeTemplates(document.templates, planId)
+        // The syllabuses first, because a step points at the one it follows.
+        val trackIds = restoreTracks.write(document.tracks, planId)
+        val itemIds = writeTemplates(document.templates, planId, trackIds)
 
         pointRelativeAnchorsAtTheirParents(document.templates, itemIds)
         document.goals.forEach { writeGoal(it, planId, itemIds) }
@@ -166,7 +169,11 @@ class RestoreBackupUseCase @Inject constructor(
     }
 
     /** Returns old item id to new item id, for everything that points at a step. */
-    private suspend fun writeTemplates(fromFile: List<ExportTemplate>, planId: Long): Map<Long, Long> {
+    private suspend fun writeTemplates(
+        fromFile: List<ExportTemplate>,
+        planId: Long,
+        trackIds: Map<Long, Long>,
+    ): Map<Long, Long> {
         val itemIds = mutableMapOf<Long, Long>()
 
         fromFile.forEach { source ->
@@ -199,7 +206,8 @@ class RestoreBackupUseCase @Inject constructor(
                 // Written with the anchor as the file has it. A RELATIVE one
                 // still points at an old id here; the second pass repoints it
                 // once every step in the file has a new id to point at.
-                val written = sources.items.upsert(item.toItem(templateId, blockIds[item.blockId])).getOrNull()
+                val track = item.trackId?.let(trackIds::get)
+                val written = sources.items.upsert(item.toItem(templateId, blockIds[item.blockId], track)).getOrNull()
 
                 if (written != null) itemIds[item.id] = written
             }
@@ -375,11 +383,13 @@ class RestoreBackupUseCase @Inject constructor(
 // way. Anything unreadable falls back rather than throwing: one bad field in a
 // ninety day file should cost that field, not the routine.
 
-private fun ExportItem.toItem(templateId: Long, blockId: Long?) = Item(
+private fun ExportItem.toItem(templateId: Long, blockId: Long?, trackId: Long?) = Item(
     id = 0,
     templateId = templateId,
     blockId = blockId,
-    kind = enumOrNull<ItemKind>(kind) ?: ItemKind.DO,
+    // A step whose syllabus did not come back is an ordinary step, not a
+    // session of nothing.
+    kind = if (trackId == null) ItemKind.DO else enumOrNull<ItemKind>(kind) ?: ItemKind.DO,
     title = title,
     detail = detail,
     anchor = anchor.toAnchor(),
@@ -389,8 +399,8 @@ private fun ExportItem.toItem(templateId: Long, blockId: Long?) = Item(
     pinned = pinned,
     minimum = minimum?.let { MinimumVersion(title = it.title, duration = it.durationMinutes?.minutes) },
     valueKind = enumOrNull<ValueKind>(valueKind) ?: ValueKind.NONE,
-    bundleUri = null,
-    trackId = null,
+    bundleUri = bundleUri,
+    trackId = trackId,
     sortOrder = sortOrder,
     archivedAt = archivedAt?.toInstantOrNull(),
     catchable = catchable,
@@ -427,14 +437,14 @@ private fun ExportAnchor.toAnchor(): Anchor = when (enumOrNull<AnchorType>(type)
     null -> Anchor.Fixed(LocalTime.MIDNIGHT)
 }
 
-private inline fun <reified T : Enum<T>> enumOrNull(name: String?): T? =
+internal inline fun <reified T : Enum<T>> enumOrNull(name: String?): T? =
     name?.let { value -> enumValues<T>().firstOrNull { it.name == value } }
 
 private fun String?.toDateOrNull(): LocalDate? = this?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
 
 private fun String?.toTimeOrNull(): LocalTime? = this?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
 
-private fun String?.toInstantOrNull(): Instant? = this?.let { runCatching { Instant.parse(it) }.getOrNull() }
+internal fun String?.toInstantOrNull(): Instant? = this?.let { runCatching { Instant.parse(it) }.getOrNull() }
 
 private fun String?.toDateTimeOrNull(): LocalDateTime? =
     this?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() }

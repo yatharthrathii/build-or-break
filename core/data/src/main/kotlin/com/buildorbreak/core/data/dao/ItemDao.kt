@@ -85,4 +85,8 @@ interface ItemDao {
 
     @Query("UPDATE item SET sort_order = :order WHERE id = :id")
     suspend fun setSortOrder(id: Long, order: Int)
+
+    /** Every step that followed the syllabus becomes an ordinary step again. */
+    @Query("UPDATE item SET track_id = NULL, kind = 'DO' WHERE track_id = :trackId")
+    suspend fun detachTrack(trackId: Long)
 }

@@ -11,6 +11,7 @@ import com.buildorbreak.core.domain.usecase.ObserveGoalUseCase
 import com.buildorbreak.core.domain.usecase.ObservePointsUseCase
 import com.buildorbreak.core.domain.usecase.ObserveRunUseCase
 import com.buildorbreak.core.domain.usecase.ObserveWalletUseCase
+import com.buildorbreak.core.domain.usecase.TrackHead
 import com.buildorbreak.core.model.enums.Milestone
 import com.buildorbreak.core.model.goal.MilestoneAward
 import com.buildorbreak.core.model.goal.Wallet
@@ -36,7 +37,26 @@ class DayWatch @Inject constructor(
     private val observeWallet: ObserveWalletUseCase,
     private val markSeen: MarkMilestoneSeenUseCase,
     private val logNumber: LogMeasurementUseCase,
+    private val trackWatch: TrackWatch,
 ) {
+    /** Every syllabus on the plan, keyed by id. */
+    fun tracks(): Flow<Map<Long, TrackHead>> = trackWatch.heads()
+
+    suspend fun recordSession(
+        occurrenceId: Long,
+        unitId: Long,
+        minutes: Int,
+        finished: Boolean,
+        leftOff: String,
+    ) {
+        trackWatch.recordSession(occurrenceId, unitId, minutes, finished, leftOff)
+    }
+
+    /** No sitting for an undone step. A no op when there was none. */
+    suspend fun forgetSession(occurrenceId: Long) {
+        trackWatch.forgetSession(occurrenceId)
+    }
+
     fun run(on: LocalDate): Flow<Int> = observeRun(on)
 
     fun consistency(on: LocalDate): Flow<ConsistencyScore> = observeConsistency(on)

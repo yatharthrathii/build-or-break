@@ -5,9 +5,13 @@
 
         <!--
             Exported, because a widget host is another process and has to be
-            able to reach it. That is the whole of its surface: it takes no
-            extras and every action it offers goes through a callback this app
-            registered itself.
+            able to reach them. That is the whole of their surface: they take
+            no extras and every action they offer goes through a callback this
+            app registered itself.
+
+            Three receivers for one widget, so the picker offers three sizes.
+            The first keeps its name so a widget placed before the other two
+            existed survives the update.
         -->
         <receiver
             android:name=".TodayWidgetReceiver"
@@ -20,6 +24,32 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/today_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".NextStepWidgetReceiver"
+            android:label="@string/widget_name_small"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/next_step_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".WholeDayWidgetReceiver"
+            android:label="@string/widget_name_large"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/whole_day_widget_info" />
         </receiver>
 
     </application>

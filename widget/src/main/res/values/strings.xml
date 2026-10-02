@@ -2,15 +2,23 @@
 <resources>
     <string name="widget_name">Today</string>
     <string name="widget_description">The next step, with Done beside it.</string>
+    <string name="widget_name_small">Next step</string>
+    <string name="widget_description_small">One line: the next step and a tick.</string>
+    <string name="widget_name_large">Whole day</string>
+    <string name="widget_description_large">The next step, and the rest of the day under it.</string>
 
     <string name="widget_kicker">TODAY</string>
     <string name="widget_count">%1$d / %2$d</string>
     <string name="widget_done">DONE</string>
     <string name="widget_snooze">SNOOZE 10</string>
+    <!-- The tick on the strip. One glyph, because the strip has room for one. -->
+    <string name="widget_tick" translatable="false">✓</string>
     <string name="widget_all_done">Nothing left on the rails.</string>
     <string name="widget_no_plan">No plan yet. Open the app to add one.</string>
 
-    <!-- The picker has no data, so the preview shows a made up step. -->
+    <!-- The picker has no data, so the preview shows a made up day. -->
     <string name="widget_preview_time" translatable="false">07:30</string>
     <string name="widget_preview_title">Morning walk</string>
+    <string name="widget_preview_row_one" translatable="false">09:00   Deep work</string>
+    <string name="widget_preview_row_two" translatable="false">12:30   Lunch + walk</string>
 </resources>

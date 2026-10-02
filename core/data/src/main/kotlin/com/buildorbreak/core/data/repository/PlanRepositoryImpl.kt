@@ -40,6 +40,9 @@ class PlanRepositoryImpl @Inject constructor(
 
     override suspend fun setActive(planId: Long): Outcome<Unit, DataError> =
         sqlOutcome(dispatchers.io) { plans.setActive(planId) }
+
+    override suspend fun delete(planId: Long): Outcome<Unit, DataError> =
+        sqlOutcome(dispatchers.io) { plans.delete(planId) }
 }
 
 class TemplateRepositoryImpl @Inject constructor(
